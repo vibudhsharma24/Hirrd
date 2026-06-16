@@ -164,6 +164,83 @@ let activeStoreCategory = 'Most popular';
 let activeStoreStatus = 'All';
 let agentPrefs = {};
 let activeAgentTab = 'overview';
+let agentPollInterval = null;
+
+function formatLastRunTime(isoStr) {
+  if (!isoStr) return "never";
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return "never";
+  const diffMs = new Date() - d;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function getRenewsStr() {
+  let renewsStr = "—";
+  if (U.agent_buyer && U.agent_buyer.subscription_expires_at) {
+    renewsStr = new Date(U.agent_buyer.subscription_expires_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+  } else if (U.is_agent_buyer) {
+    const future = new Date();
+    future.setMonth(future.getMonth() + 3);
+    renewsStr = future.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+  }
+  return renewsStr;
+}
+
+async function pollAgentData() {
+  try {
+    const meRes = await fetch('/api/me');
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      if (meData.ok) {
+        U = meData.user;
+        const lastRunTextEl = document.getElementById('lastRunText');
+        if (lastRunTextEl) {
+          lastRunTextEl.innerHTML = `3-month plan &middot; renews ${getRenewsStr()} &middot; last run ${formatLastRunTime(U.last_activity_at)}`;
+        }
+      }
+    }
+    
+    const logsRes = await fetch('/api/submission-logs');
+    if (logsRes.ok) {
+      subLogs = await logsRes.json();
+      if (activeAgentTab === 'overview') {
+        renderAgentLogsFeed();
+      } else if (activeAgentTab === 'logs') {
+        renderAgentFullLogsTable();
+      }
+    }
+    
+    const appsRes = await fetch('/api/my-applications');
+    if (appsRes.ok) {
+      myApps = await appsRes.json();
+      if (activeAgentTab === 'overview') {
+        const todayISO = new Date().toISOString().slice(0, 10);
+        const todayApps = myApps.filter(a => (a.created_at || '').slice(0, 10) === todayISO).length;
+        const todayPercent = Math.min(100, Math.round((todayApps / 5) * 100));
+        
+        const todayValEl = document.getElementById('statsTodayVal');
+        if (todayValEl) {
+          todayValEl.textContent = `${todayApps} / 5`;
+        }
+        const todayBarEl = document.getElementById('statsTodayBar');
+        if (todayBarEl) {
+          todayBarEl.style.width = `${todayPercent}%`;
+        }
+        const todayLeftEl = document.getElementById('statsTodayLeft');
+        if (todayLeftEl) {
+          todayLeftEl.textContent = `Applications left: ${Math.max(0, 5 - todayApps)}`;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to poll agent data:', e);
+  }
+}
 
 async function loadDashboard() {
   try {
@@ -691,6 +768,12 @@ async function uploadDashboardResume(event) {
 
 function handleRouting() {
   const hash = window.location.hash;
+  
+  if (agentPollInterval) {
+    clearInterval(agentPollInterval);
+    agentPollInterval = null;
+  }
+  
   document.querySelectorAll('.appnav').forEach(el => {
     el.classList.remove('active');
     el.classList.add('text-ink-700', 'hover:bg-ink-900/5');
@@ -703,6 +786,7 @@ function handleRouting() {
       agentNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
     }
     renderAgent();
+    agentPollInterval = setInterval(pollAgentData, 5000);
   } else if (hash === '#store') {
     const storeNav = document.getElementById('storeNavLink');
     if (storeNav) {
@@ -1266,14 +1350,7 @@ function renderAgent() {
   const agentStatus = U.agent_status || 'inactive';
   const isActive = U.is_agent_buyer && agentStatus === 'running';
   
-  let renewsStr = "—";
-  if (U.agent_buyer && U.agent_buyer.subscription_expires_at) {
-    renewsStr = new Date(U.agent_buyer.subscription_expires_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
-  } else if (U.is_agent_buyer) {
-    const future = new Date();
-    future.setMonth(future.getMonth() + 3);
-    renewsStr = future.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
-  }
+  let renewsStr = getRenewsStr();
 
   document.getElementById('appView').innerHTML = `
   <div class="slide-in">
@@ -1294,8 +1371,8 @@ function renderAgent() {
               ${(isActive ? 'ACTIVE' : agentStatus === 'paused' ? 'PAUSED' : 'INACTIVE')}
             </span>
           </div>
-          <p class="text-[12px] text-ink-700/60 mt-1">
-            3-month plan &middot; renews ${renewsStr} &middot; last run 6 mins ago
+          <p class="text-[12px] text-ink-700/60 mt-1" id="lastRunText">
+            3-month plan &middot; renews ${renewsStr} &middot; last run ${formatLastRunTime(U.last_activity_at)}
           </p>
         </div>
       </div>
@@ -1333,7 +1410,7 @@ function renderAgentTabContent() {
   if (activeAgentTab === 'overview') {
     const todayISO = new Date().toISOString().slice(0, 10);
     const todayApps = myApps.filter(a => (a.created_at || '').slice(0, 10) === todayISO).length;
-    const todayPercent = Math.min(100, Math.round((todayApps / 40) * 100));
+    const todayPercent = Math.min(100, Math.round((todayApps / 5) * 100));
 
     const last7DaysApps = myApps.filter(a => {
       const diff = new Date() - new Date(a.created_at);
@@ -1350,11 +1427,11 @@ function renderAgentTabContent() {
           <!-- Today Card -->
           <div class="sm-card p-5">
             <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 uppercase">Today</div>
-            <div class="font-display text-3xl font-bold mt-2">${todayApps} / 40</div>
+            <div class="font-display text-3xl font-bold mt-2" id="statsTodayVal">${todayApps} / 5</div>
             <div class="w-full bg-ink-900/5 h-2 rounded-full mt-3 overflow-hidden">
-              <div class="bg-brand-500 h-full rounded-full" style="width: ${todayPercent}%"></div>
+              <div class="bg-brand-500 h-full rounded-full" id="statsTodayBar" style="width: ${todayPercent}%"></div>
             </div>
-            <div class="mt-2 text-[11px] text-ink-700/60">Applications left: ${Math.max(0, 40 - todayApps)}</div>
+            <div class="mt-2 text-[11px] text-ink-700/60" id="statsTodayLeft">Applications left: ${Math.max(0, 5 - todayApps)}</div>
           </div>
           <!-- Replies Card -->
           <div class="sm-card p-5">
@@ -1890,12 +1967,20 @@ function renderAgentLogsFeed() {
         ? 'bg-rose-50 text-rose-700 border border-rose-100'
         : 'bg-brand-50 text-brand-700 border border-brand-100';
 
+      const logTitle = log.post_company 
+        ? `${log.step_name.replace(/_/g, ' ')} (${log.post_company})` 
+        : log.step_name.replace(/_/g, ' ');
+
+      const subText = log.post_title 
+        ? `${log.post_title} &middot; ${log.page_url || 'No URL'}` 
+        : (log.page_url || 'No page URL recorded');
+
       return `
         <div class="flex items-start gap-3">
           <div class="w-8 h-8 rounded-lg ${toneClass} grid place-items-center font-display font-bold text-[12px] shrink-0">${stepIcon}</div>
           <div class="flex-1 min-w-0">
-            <div class="text-[13px] font-semibold truncate capitalize">${log.step_name.replace(/_/g, ' ')}</div>
-            <div class="text-[11px] text-ink-700/60 truncate" title="${log.page_url || ''}">${log.page_url || 'No page URL recorded'}</div>
+            <div class="text-[13px] font-semibold truncate capitalize">${logTitle}</div>
+            <div class="text-[11px] text-ink-700/60 truncate" title="${log.page_url || ''}">${subText}</div>
           </div>
           <div class="text-[11px] text-ink-700/50 shrink-0">${time}</div>
         </div>
@@ -1934,10 +2019,15 @@ function renderAgentFullLogsTable() {
       const d = new Date(log.timestamp);
       const formattedDate = d.toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) + ', ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       const screenshotLink = log.screenshot_path ? `<a href="/api/applications/${log.application_id}/screenshot" target="_blank" class="text-brand-700 font-semibold hover:underline">Screenshot ↗</a>` : '<span class="text-ink-700/40">No Media</span>';
+      
+      const stepDisplay = log.post_company 
+        ? `<div class="font-semibold">${log.step_name}</div><div class="text-[10px] text-ink-700/50">${log.post_title || ''} @ ${log.post_company}</div>`
+        : `<div class="font-semibold">${log.step_name}</div>`;
+
       return `
         <tr class="hover:bg-ink-900/[.01] transition-colors">
           <td class="py-3.5 text-ink-700">${formattedDate}</td>
-          <td class="py-3.5"><div class="font-semibold">${log.step_name}</div></td>
+          <td class="py-3.5">${stepDisplay}</td>
           <td class="py-3.5 font-mono text-xs text-brand-700 truncate max-w-[250px]" title="${log.page_url || ''}">${log.page_url || '—'}</td>
           <td class="py-3.5">${screenshotLink}</td>
         </tr>
@@ -2110,7 +2200,7 @@ function renderAgentDetail() {
           <div class="mt-3 divide-y divide-ink-900/5">
             <details class="py-3 group" open>
               <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">How many applications per day?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
-              <p class="mt-2 text-[13px] text-ink-700/80">Up to 40/day depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.</p>
+              <p class="mt-2 text-[13px] text-ink-700/80">Up to 5/day (150 total for 1 month) depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.</p>
             </details>
             <details class="py-3 group">
               <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">Can I approve messages before they go out?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>

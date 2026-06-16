@@ -391,6 +391,11 @@ def _run_pipeline_async(user_id, dry_run=False, known_only=False, limit=5):
     finally:
         loop.close()
 
+    try:
+        db.update_user_activity(user_id)
+    except Exception as e:
+        print(f"[Agent] Failed to update user activity: {e}")
+
 
 @app.route("/api/apply", methods=["POST"])
 @login_required
@@ -497,7 +502,15 @@ def list_submission_logs():
     buyer_id = buyer["id"]
     with db._connect_jobs() as conn:
         rows = conn.execute(
-            "SELECT * FROM submission_logs WHERE application_id IN (SELECT id FROM applications WHERE buyer_id = ?) ORDER BY timestamp DESC LIMIT 50",
+            """
+            SELECT sl.*, a.portal_hostname, a.ats_type, p.title AS post_title, p.company AS post_company
+            FROM submission_logs sl
+            JOIN applications a ON sl.application_id = a.id
+            LEFT JOIN posts p ON a.post_id = p.id
+            WHERE a.buyer_id = ?
+            ORDER BY sl.timestamp DESC
+            LIMIT 50
+            """,
             (buyer_id,)
         ).fetchall()
     return jsonify([db._row_to_dict(r) for r in rows])
