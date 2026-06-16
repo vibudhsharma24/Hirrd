@@ -54,6 +54,9 @@ from portal_memory import (
     append_changelog,
     normalize_hostname,
 )
+from gmail_otp_retriever import handle_email_verification
+from linkedin_posts_scraper import scrape_linkedin_posts
+from connector import send_connection_requests
 
 
 # ── Config ─────────────────────────────────────────────────────────────────────
@@ -79,9 +82,8 @@ def should_skip_post(post: dict, buyer_id: int) -> tuple[bool, str]:
     title = (post.get("title") or "").lower()
     apply_link = (post.get("apply_link") or post.get("apply_url") or "").strip()
 
-    # No apply link
-    if not apply_link:
-        return True, "No apply_link available"
+    # Note: posts without apply_link are handled as connection requests,
+    # so we do NOT skip them here anymore.
 
     # Negative keywords in title
     for kw in NEGATIVE_KEYWORDS:
@@ -187,6 +189,18 @@ async def apply_to_post(
         notes=f"company={company}",
     )
     app_id = app_record["id"]
+
+    # Generate and store portal credential (password format: {Firstname}@123$, padded if needed)
+    try:
+        db.get_or_create_portal_credential(
+            buyer_id=buyer_id,
+            portal_hostname=hostname,
+            firstname=buyer.get("name", "User"),
+            email=buyer.get("email", ""),
+            required_length=10
+        )
+    except Exception as e:
+        print(f"Warning: could not generate/save portal credential: {e}")
 
     # Create browser session
     session = None
@@ -529,6 +543,154 @@ async def run_auto_apply(
         print(f"     View them: GET /api/failure-queue")
 
     print()
+
+
+# ── Full Pipeline ──────────────────────────────────────────────────────────────
+
+async def run_full_pipeline(
+    user_id: int,
+    dry_run: bool = False,
+    headed: bool = False,
+    known_only: bool = False,
+    limit: int = 5,
+):
+    """Run the complete Job Seeker Agent pipeline for a user.
+
+    Steps:
+      1. Scrape LinkedIn feed posts for jobs matching preferences
+      2. For posts WITH apply links  → auto-apply (with OTP support)
+      3. For posts WITHOUT apply links → send connection request to poster
+      4. Update dashboard / logs
+    """
+    import json
+    PROJECT_ROOT_LOCAL = str(Path(__file__).parent.parent)
+    if PROJECT_ROOT_LOCAL not in sys.path:
+        sys.path.insert(0, PROJECT_ROOT_LOCAL)
+    from core.database import get_user, get_user_detail
+
+    print("\n" + "=" * 60)
+    print("  IITIIMJobAssistant — Full Pipeline")
+    print("=" * 60)
+
+    # ── Load user & credentials ────────────────────────────────────
+    user = get_user(user_id)
+    if not user:
+        print(f"  ❌ User {user_id} not found")
+        return
+
+    user_detail = get_user_detail(user_id)
+    buyer = (user_detail or {}).get("agent_buyer")
+    if not buyer:
+        print(f"  ❌ No agent buyer record for user {user_id}")
+        return
+
+    li_user = user.get("linkedin_username", "")
+    li_pass = user.get("linkedin_password", "")
+    gmail_user = user.get("gmail_username", "")
+    gmail_pass = user.get("gmail_password", "")
+
+    prefs_str = user.get("job_preferences", "{}")
+    try:
+        prefs = json.loads(prefs_str) if isinstance(prefs_str, str) else prefs_str
+    except Exception:
+        prefs = {}
+
+    roles = prefs.get("roles", ["Software Engineer", "Product Manager"])
+    locations = prefs.get("locations", ["India"])
+
+    # ── Step 1: Scrape LinkedIn posts ──────────────────────────────
+    print("\n━━━ Step 1: Scrape LinkedIn Feed Posts ━━━")
+    new_posts = []
+    if li_user and li_pass:
+        try:
+            new_posts = await scrape_linkedin_posts(
+                user_id=user_id,
+                linkedin_username=li_user,
+                linkedin_password=li_pass,
+                roles=roles,
+                locations=locations,
+                headed=headed,
+            )
+            print(f"  Discovered {len(new_posts)} new posts")
+        except Exception as e:
+            print(f"  ⚠️ Scraper error: {e}")
+    else:
+        print("  ⚠️ No LinkedIn credentials — skipping scrape")
+
+    # ── Step 2 & 3: Process posts ─────────────────────────────────
+    all_posts = db.get_all_posts(status="new")
+    posts_with_links = [p for p in all_posts if (p.get("apply_link") or p.get("apply_url") or "").strip()]
+    posts_without_links = [p for p in all_posts if not (p.get("apply_link") or p.get("apply_url") or "").strip()]
+
+    print(f"\n  Total new posts: {len(all_posts)}")
+    print(f"  With apply links: {len(posts_with_links)}")
+    print(f"  Without apply links (connection requests): {len(posts_without_links)}")
+
+    # ── Step 2: Auto-apply to posts with links ────────────────────
+    if posts_with_links:
+        print("\n━━━ Step 2: Auto-Apply to Job Posts ━━━")
+        await run_auto_apply(
+            buyer_id=buyer["id"],
+            dry_run=dry_run,
+            headed=headed,
+            known_only=known_only,
+            limit=limit,
+        )
+
+    # ── Step 3: Send connection requests for posts without links ──
+    if posts_without_links and li_user and li_pass and not dry_run:
+        print("\n━━━ Step 3: Send Connection Requests ━━━")
+        poster_urls = []
+        poster_map = {}  # url → post
+        for p in posts_without_links[:limit]:
+            poster_url = (p.get("poster_url") or "").strip()
+            if poster_url and poster_url not in poster_map:
+                poster_urls.append(poster_url)
+                poster_map[poster_url] = p
+
+        if poster_urls:
+            buyer_name = f"{buyer.get('name', '')} {buyer.get('last_name', '')}".strip()
+            msg = f"Hi! I noticed your post about a job opportunity. I'd love to connect and learn more. – {buyer_name}"
+
+            try:
+                results = await send_connection_requests(
+                    linkedin_username=li_user,
+                    linkedin_password=li_pass,
+                    target_urls=poster_urls,
+                    message_template=msg,
+                    limit=min(len(poster_urls), 5),
+                )
+                for r in results:
+                    url = r.get("url", "")
+                    post = poster_map.get(url)
+                    if post and r.get("status") == "sent":
+                        db.update_post_status(post["id"], "pending")
+                        # Create an application record for tracking
+                        db.create_application(
+                            buyer_id=buyer["id"],
+                            post_id=post["id"],
+                            portal_hostname="linkedin.com",
+                            ats_type="connection_request",
+                            resume_used="",
+                            notes=f"Connection request sent to {post.get('poster_name', '')}",
+                        )
+                        db.update_application_status(
+                            db.get_all_applications(buyer_id=buyer["id"])[-1]["id"],
+                            "pending",
+                            notes="connection_request_sent",
+                        )
+                        poster_nm = post.get('poster_name', '') or url[:40]
+                        print(f"  ✅ Connection request sent → {poster_nm}")
+                    elif post:
+                        print(f"  ⏭  {r.get('status', 'error')}: {url[:50]}")
+            except Exception as e:
+                print(f"  ⚠️ Connection requests error: {e}")
+        else:
+            print("  No poster URLs to connect with")
+    elif posts_without_links and dry_run:
+        print(f"\n━━━ Step 3: [DRY RUN] Would send {len(posts_without_links)} connection requests ━━━")
+
+    print("\n━━━ Pipeline Complete ━━━\n")
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────────

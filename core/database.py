@@ -95,6 +95,14 @@ def init_db():
             )
         """)
 
+        # Migrate agent_buyers with password columns
+        for col in ["workday_password", "lever_password", "greenhouse_password", "ashby_password", "smartrecruiters_password", "other_passwords"]:
+            try:
+                conn.execute(f"ALTER TABLE agent_buyers ADD COLUMN {col} TEXT DEFAULT ''")
+                conn.commit()
+            except Exception:
+                pass
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1890,4 +1898,134 @@ def get_all_payments(status: str | None = None) -> list[dict]:
                 "SELECT * FROM payments ORDER BY created_at DESC"
             ).fetchall()
     return [_row_to_dict(r) for r in rows]
+
+
+# ── Portal Credentials (stored inside agent_buyers) ───────────────────────────
+
+def get_portal_credentials(buyer_id: int) -> list[dict]:
+    """Get all portal credentials for a given buyer.
+    Returns list of dicts with: portal_hostname, email, password
+    """
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM agent_buyers WHERE id = ?", (buyer_id,)).fetchone()
+        if not row:
+            return []
+        buyer = _row_to_dict(row)
+        
+    email = buyer.get("email", "")
+    creds = []
+    
+    # Check standard columns
+    if buyer.get("workday_password"):
+        creds.append({"portal_hostname": "workday.com", "email": email, "password": buyer["workday_password"]})
+    if buyer.get("lever_password"):
+        creds.append({"portal_hostname": "lever.co", "email": email, "password": buyer["lever_password"]})
+    if buyer.get("greenhouse_password"):
+        creds.append({"portal_hostname": "greenhouse.io", "email": email, "password": buyer["greenhouse_password"]})
+    if buyer.get("ashby_password"):
+        creds.append({"portal_hostname": "ashbyhq.com", "email": email, "password": buyer["ashby_password"]})
+    if buyer.get("smartrecruiters_password"):
+        creds.append({"portal_hostname": "smartrecruiters.com", "email": email, "password": buyer["smartrecruiters_password"]})
+        
+    # Check custom passwords (stored in other_passwords JSON column)
+    other_str = buyer.get("other_passwords") or "{}"
+    import json
+    try:
+        other_dict = json.loads(other_str)
+        for host, pwd in other_dict.items():
+            if pwd:
+                creds.append({"portal_hostname": host, "email": email, "password": pwd})
+    except Exception:
+        pass
+        
+    return creds
+
+
+def get_or_create_portal_credential(buyer_id: int, portal_hostname: str, firstname: str, email: str, required_length: int = 8) -> dict:
+    """Return existing portal credential, or generate and save a new one in the agent_buyers table."""
+    # Find which column matches this host/ats
+    ats_type = ""
+    host_lower = portal_hostname.lower()
+    if "workday" in host_lower:
+        ats_type = "workday"
+    elif "lever" in host_lower:
+        ats_type = "lever"
+    elif "greenhouse" in host_lower:
+        ats_type = "greenhouse"
+    elif "ashby" in host_lower:
+        ats_type = "ashby"
+    elif "smartrecruiters" in host_lower:
+        ats_type = "smartrecruiters"
+        
+    # Check if we already have it
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM agent_buyers WHERE id = ?", (buyer_id,)).fetchone()
+        if not row:
+            raise ValueError(f"Agent buyer with ID {buyer_id} not found")
+        buyer = _row_to_dict(row)
+        
+    # Check if password already exists
+    password = ""
+    if ats_type == "workday":
+        password = buyer.get("workday_password")
+    elif ats_type == "lever":
+        password = buyer.get("lever_password")
+    elif ats_type == "greenhouse":
+        password = buyer.get("greenhouse_password")
+    elif ats_type == "ashby":
+        password = buyer.get("ashby_password")
+    elif ats_type == "smartrecruiters":
+        password = buyer.get("smartrecruiters_password")
+    else:
+        # Check in other_passwords JSON
+        import json
+        try:
+            other_dict = json.loads(buyer.get("other_passwords") or "{}")
+            password = other_dict.get(portal_hostname, "")
+        except Exception:
+            pass
+            
+    if password:
+        return {"portal_hostname": portal_hostname, "email": email, "password": password}
+        
+    # Generate new password
+    # keep the password format as "{Firstname}@123$" where there is lenn amount of characters required
+    # and when there is more than that fill with randomnumbers and end with $
+    first_name = firstname.strip()
+    if not first_name:
+        first_name = "User"
+    first_name = first_name[0].upper() + first_name[1:]
+    
+    base = f"{first_name}@123$"
+    if len(base) >= required_length:
+        password = base
+    else:
+        import random
+        needed = required_length - len(base)
+        random_digits = "".join(str(random.randint(0, 9)) for _ in range(needed))
+        password = f"{first_name}@123{random_digits}$"
+        
+    # Save the generated password
+    with _connect() as conn:
+        if ats_type == "workday":
+            conn.execute("UPDATE agent_buyers SET workday_password = ? WHERE id = ?", (password, buyer_id))
+        elif ats_type == "lever":
+            conn.execute("UPDATE agent_buyers SET lever_password = ? WHERE id = ?", (password, buyer_id))
+        elif ats_type == "greenhouse":
+            conn.execute("UPDATE agent_buyers SET greenhouse_password = ? WHERE id = ?", (password, buyer_id))
+        elif ats_type == "ashby":
+            conn.execute("UPDATE agent_buyers SET ashby_password = ? WHERE id = ?", (password, buyer_id))
+        elif ats_type == "smartrecruiters":
+            conn.execute("UPDATE agent_buyers SET smartrecruiters_password = ? WHERE id = ?", (password, buyer_id))
+        else:
+            import json
+            try:
+                other_dict = json.loads(buyer.get("other_passwords") or "{}")
+            except Exception:
+                other_dict = {}
+            other_dict[portal_hostname] = password
+            conn.execute("UPDATE agent_buyers SET other_passwords = ? WHERE id = ?", (json.dumps(other_dict), buyer_id))
+        conn.commit()
+        
+    return {"portal_hostname": portal_hostname, "email": email, "password": password}
 

@@ -374,26 +374,41 @@ def _run_apply_async(buyer_id=None, post_id=None, dry_run=False, known_only=Fals
         loop.close()
 
 
+def _run_pipeline_async(user_id, dry_run=False, known_only=False, limit=5):
+    """Run the FULL pipeline (scrape → apply → connect) in a background thread."""
+    from job_seeker_agent.applier import run_full_pipeline
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(
+            run_full_pipeline(
+                user_id=user_id,
+                dry_run=dry_run,
+                known_only=known_only,
+                limit=limit,
+            )
+        )
+    finally:
+        loop.close()
+
+
 @app.route("/api/apply", methods=["POST"])
+@login_required
 def trigger_apply():
-    """Trigger auto-apply for all new posts (or filtered by buyer/post).
-    Body: { "buyer_id": 1, "dry_run": false, "known_only": false, "limit": 5 }"""
+    """Trigger the full pipeline for the current user.
+    Body: { "dry_run": false, "known_only": false, "limit": 5 }"""
     data = request.get_json(silent=True) or {}
-    buyer_id = data.get("buyer_id")
     dry_run = data.get("dry_run", False)
     known_only = data.get("known_only", False)
     limit = data.get("limit", 5)
 
-    # Validate buyer if specified
-    if buyer_id:
-        if not db.is_buyer_active(buyer_id):
-            return jsonify({"ok": False, "error": "Buyer not found or subscription inactive"}), 400
+    user_id = flask_current_user.id
 
     # Run in background thread
     t = threading.Thread(
-        target=_run_apply_async,
+        target=_run_pipeline_async,
         kwargs={
-            "buyer_id": buyer_id,
+            "user_id": user_id,
             "dry_run": dry_run,
             "known_only": known_only,
             "limit": limit,
@@ -404,9 +419,9 @@ def trigger_apply():
 
     return jsonify({
         "ok": True,
-        "message": "Auto-apply started in background",
+        "message": "Full pipeline started in background (scrape → apply → connect)",
         "params": {
-            "buyer_id": buyer_id,
+            "user_id": user_id,
             "dry_run": dry_run,
             "known_only": known_only,
             "limit": limit,
@@ -1101,6 +1116,17 @@ def my_applications():
     if not buyer:
         return jsonify([])
     return jsonify(db.get_all_applications(buyer_id=buyer["id"]))
+
+
+@app.route("/api/portal-credentials", methods=["GET"])
+@login_required
+def get_user_portal_credentials():
+    user_detail = db.get_user_detail(flask_current_user.id)
+    buyer = user_detail.get("agent_buyer")
+    if not buyer:
+        return jsonify([])
+    creds = db.get_portal_credentials(buyer["id"])
+    return jsonify(creds)
 
 
 # --------------------------------------------------------------------------- #

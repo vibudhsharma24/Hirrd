@@ -136,7 +136,7 @@ def _agent_loop(user_id: int, config: dict):
 
 
 def _run_cycle(user_id: int, daily_limit: int):
-    """Run one discovery + apply cycle."""
+    """Run one complete pipeline cycle: scrape → apply → connect."""
     from core.database import get_user, update_user_activity
 
     user = get_user(user_id)
@@ -145,30 +145,23 @@ def _run_cycle(user_id: int, daily_limit: int):
         stop_agent(user_id)
         return
 
-    # Step 1: Discover jobs via Linkup API
+    # Run the full pipeline (scrape LinkedIn → apply → connection requests)
     try:
-        from job_seeker_agent.scraper import discover_jobs
-        preferences = user.get("job_preferences", "{}")
-        import json
-        prefs = json.loads(preferences) if isinstance(preferences, str) else preferences
-        new_jobs = discover_jobs(prefs, limit=daily_limit * 2)
-        print(f"[Agent] Discovered {len(new_jobs)} jobs for user {user_id}")
-    except Exception as e:
-        print(f"[Agent] Discovery failed for user {user_id}: {e}")
-        new_jobs = []
-
-    # Step 2: Auto-apply (if there's an active buyer record)
-    if user.get("is_agent_buyer"):
-        try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            from job_seeker_agent.applier import run_auto_apply
-            loop.run_until_complete(
-                run_auto_apply(buyer_id=None, limit=daily_limit, dry_run=False)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        from job_seeker_agent.applier import run_full_pipeline
+        loop.run_until_complete(
+            run_full_pipeline(
+                user_id=user_id,
+                dry_run=False,
+                headed=False,
+                limit=daily_limit,
             )
-            loop.close()
-        except Exception as e:
-            print(f"[Agent] Auto-apply failed for user {user_id}: {e}")
+        )
+        loop.close()
+    except Exception as e:
+        print(f"[Agent] Full pipeline failed for user {user_id}: {e}")
 
     # Track activity
     update_user_activity(user_id)
+
