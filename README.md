@@ -103,13 +103,13 @@ Or use the convenience powershell script on Windows:
 ```powershell
 .\start_server.ps1
 ```
-The server will start at **`http://127.0.0.1:5000`**.
+The server will start at **`http://Localhost`**.
 
 ---
 
 ## 🔑 Default Credentials (Seed Data)
 On first run, the SQLite database is automatically generated and seeded with a default admin user:
-*   **Admin Route**: `http://127.0.0.1:5000/admin`
-*   **Email**: `admin@iitiim.ai`
-*   **Password**: `admin123`
+*   **Admin Route**: `http://Localhost/admin`
+*   **Email**: `Your_admin_email`
+*   **Password**: `Your_admin_password`
 *(Make sure to change or remove this seed credential before exposing the platform).*
