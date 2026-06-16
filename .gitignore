@@ -1,0 +1,50 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+config.js
+secrets/
+*.key
+*.pem
+
+# LinkedIn scraper — contains credentials & session tokens
+linkedin-config.yml
+linkedin-cookies.json
+
+# SQLite databases — local data only
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Uploaded resumes — user data, do not commit
+resumes/
+apply_history/
+
+# Python virtual environments & cache
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# Node dependency directory
+node_modules/
+
+# OS metadata
+.DS_Store
+Thumbs.db

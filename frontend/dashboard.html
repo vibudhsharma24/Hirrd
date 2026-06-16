@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard — IITIIMJobAssistant</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans:['Inter','ui-sans-serif','system-ui'], display:['Space Grotesk','Inter','sans-serif'] },
+      colors: {
+        brand:{50:'#EEF0FF',100:'#E0E4FF',200:'#C3CAFF',300:'#A3ACFF',400:'#7D87F5',500:'#5B66E8',600:'#4B52D1',700:'#3E42A8',800:'#2F3380',900:'#1E2055',950:'#0F1033'},
+        accent:{400:'#FFB978',500:'#FF9E50',600:'#F57C2B'},
+        ink:{900:'#0B0D1F',800:'#121534',700:'#1B1F44'}
+      },
+      boxShadow:{'soft':'0 10px 40px -12px rgba(17,24,39,0.12)', 'card':'0 1px 2px rgba(15,16,51,0.04), 0 4px 16px -4px rgba(15,16,51,0.06)'}
+    }}
+  }
+</script>
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;background:#FAFBFD;color:#0B0D1F}
+  .font-display{font-family:'Space Grotesk',Inter,sans-serif;letter-spacing:-0.02em}
+  .ring-gradient{background:conic-gradient(from 220deg,#5B66E8,#A3ACFF,#FFB978,#5B66E8)}
+  .sm-card{background:#fff;border:1px solid rgba(15,16,51,0.06);border-radius:20px}
+  .icon{width:18px;height:18px;stroke-width:1.8}
+  .pulse-dot{width:8px;height:8px;border-radius:999px;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  .slide-in{animation:slideIn .45s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes slideIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .card-glow:hover{box-shadow:0 20px 50px -20px rgba(91,102,232,0.35);transform:translateY(-2px);transition:.25s ease}
+  .appnav.active{background:rgba(11,13,31,0.05);font-weight:600}
+  .loader{width:18px;height:18px;border-radius:999px;border:2px solid rgba(91,102,232,0.25);border-top-color:#5B66E8;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .dashed-divider { background-image: linear-gradient(to right, #D9DEF0 50%, transparent 50%); background-size: 10px 1px; background-repeat: repeat-x; height: 1px; }
+  .plan-radio:checked + label { border-color:#0B0D1F; background:#0B0D1F; color:white; }
+  .plan-radio:checked + label .priceNum { color:#fff; }
+  .plan-radio:checked + label .priceSub { color:rgba(255,255,255,0.7); }
+  .plan-radio:checked + label .tagSave { background:#FF9E50; color:#0B0D1F; }
+  /* ── Setup Modal ───────────────────────────────────────────── */
+  .setup-backdrop{position:fixed;inset:0;background:rgba(11,13,31,0.55);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .35s ease}
+  .setup-backdrop.active{opacity:1;pointer-events:auto}
+  .setup-card{background:#fff;border-radius:24px;max-width:560px;width:94%;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 25px 80px -15px rgba(15,16,51,0.25);transform:translateY(30px) scale(.96);transition:transform .4s cubic-bezier(.2,.8,.2,1),opacity .35s;opacity:0}
+  .setup-backdrop.active .setup-card{transform:none;opacity:1}
+  .setup-section{border:1px solid rgba(15,16,51,0.06);border-radius:16px;overflow:hidden;transition:all .3s}
+  .setup-section-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;user-select:none}
+  .setup-section-header:hover{background:rgba(91,102,232,0.03)}
+  .setup-section-body{padding:0 20px 20px;display:none}
+  .setup-section.open .setup-section-body{display:block}
+  .setup-section .chevron{transition:transform .25s}
+  .setup-section.open .chevron{transform:rotate(180deg)}
+  .setup-check{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;font-size:13px;font-weight:700}
+  .setup-check.done{background:#ecfdf5;color:#059669;border:1px solid #a7f3d0}
+  .setup-check.pending{background:#fef3c7;color:#d97706;border:1px solid #fde68a}
+  .setup-input{width:100%;padding:10px 14px;border:1px solid rgba(15,16,51,0.1);border-radius:12px;font-size:13px;outline:none;background:#FAFBFD;transition:border-color .2s}
+  .setup-input:focus{border-color:#5B66E8}
+</style>
+</head>
+<body class="antialiased text-ink-900 min-h-screen">
+
+<!-- App Shell -->
+<div class="min-h-screen bg-[#FAFBFD]">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-ink-900/5 p-5 flex-col z-30 hidden md:flex">
+    <a href="/" class="flex items-center gap-2 mb-8">
+      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
+        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center"><span class="font-display text-white text-[13px] font-bold">I²</span></div>
+      </div>
+      <div class="font-display font-bold text-[16px]">IITIIMJobAssistant</div>
+    </a>
+    <nav class="flex-1 space-y-1 text-[14px]">
+      <a href="#" id="dashboardNavLink" onclick="window.location.hash = ''; return false;" class="appnav active flex items-center gap-2.5 px-3 py-2 rounded-lg">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12 12 4l9 8"/><path d="M5 10v10h14V10"/></svg>
+        My Dashboard
+      </a>
+      <a href="#store" id="storeNavLink" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 7Z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
+        Agent Store
+      </a>
+      <div class="mt-5 mb-2 text-[11px] font-semibold text-ink-700/60 px-3 tracking-widest">MY AGENTS</div>
+      <a href="#agent" id="agentNavLink" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+        Job Seeker Agent
+        <span id="agentBadge" class="ml-auto hidden items-center gap-1.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>LIVE
+        </span>
+      </a>
+      <div class="mt-5 mb-2 text-[11px] font-semibold text-ink-700/60 px-3 tracking-widest">ACCOUNT</div>
+      <a href="#settings" id="settingsNavLink" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Settings
+      </a>
+      <a href="#billing" id="billingNavLink" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Billing
+      </a>
+      <a href="#" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5" onclick="logout(); return false;">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Exit app
+      </a>
+    </nav>
+    <div id="sidebarUser" onclick="showUserAccountModal()" class="mt-4 p-3.5 rounded-xl bg-brand-50/60 border border-brand-100/50 cursor-pointer hover:bg-brand-100/40 transition">
+      <div class="flex items-center gap-2">
+        <div id="sidebarAvatar" class="w-8 h-8 rounded-full bg-brand-600 text-white grid place-items-center font-semibold">?</div>
+        <div class="min-w-0">
+          <div id="sidebarName" class="text-[13px] font-semibold truncate">Loading...</div>
+          <div id="sidebarSub" class="text-[11px] text-ink-700/70 truncate">Free plan</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="md:pl-64">
+    <header class="sticky top-0 z-20 bg-white/70 backdrop-blur border-b border-ink-900/5">
+      <div class="px-5 md:px-8 h-16 flex items-center gap-3">
+        <button class="md:hidden p-2 rounded-lg hover:bg-ink-900/5" onclick="document.getElementById('sidebar').classList.toggle('hidden')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="flex-1 max-w-md relative">
+          <svg class="icon absolute top-1/2 left-3 -translate-y-1/2 text-ink-700/50" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input placeholder="Search agents, roles, companies..." class="w-full pl-10 pr-3 py-2 text-[13px] bg-ink-900/[.04] rounded-lg border border-transparent focus:bg-white focus:border-brand-200 outline-none"/>
+        </div>
+        <button class="relative p-2 rounded-lg hover:bg-ink-900/5">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-500 rounded-full"></span>
+        </button>
+        <div id="headerAvatar" class="w-9 h-9 rounded-full bg-brand-600 text-white grid place-items-center font-semibold cursor-pointer">?</div>
+      </div>
+    </header>
+
+    <div id="appView" class="p-5 md:p-8">
+      <div class="flex items-center justify-center py-20 text-ink-700/50">
+        <div class="loader"></div>
+        <span class="ml-3">Loading dashboard...</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let U = null;
+let myApps = [];
+let subLogs = [];
+let activeStoreCategory = 'Most popular';
+let activeStoreStatus = 'All';
+let agentPrefs = {};
+let activeAgentTab = 'overview';
+
+async function loadDashboard() {
+  try {
+    const res = await fetch('/api/me');
+    if (!res.ok) { window.location.href = '/login'; return; }
+    const data = await res.json();
+    if (!data.ok) { window.location.href = '/login'; return; }
+    U = data.user;
+
+    // Fetch user's applications
+    try {
+      const appsRes = await fetch('/api/my-applications');
+      if (appsRes.ok) {
+        myApps = await appsRes.json();
+      }
+    } catch (e) {
+      console.error('Failed to load applications:', e);
+    }
+
+    // Fetch user's submission logs
+    try {
+      const logsRes = await fetch('/api/submission-logs');
+      if (logsRes.ok) {
+        subLogs = await logsRes.json();
+      }
+    } catch (e) {
+      console.error('Failed to load submission logs:', e);
+    }
+
+    // Fetch user's agent preferences
+    try {
+      const prefsRes = await fetch('/api/agent/preferences');
+      if (prefsRes.ok) {
+        const prefsData = await prefsRes.json();
+        if (prefsData.ok) {
+          agentPrefs = prefsData.preferences;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load agent preferences:', e);
+    }
+
+    renderSidebar();
+    handleRouting();
+  } catch { window.location.href = '/login'; }
+}
+
+function renderSidebar() {
+  const avatarText = U.avatar || (U.name ? U.name[0].toUpperCase() : 'U');
+  document.getElementById('headerAvatar').textContent = avatarText;
+  
+  const agentStatus = U.agent_status || 'inactive';
+  const isActive = U.is_agent_buyer && agentStatus === 'running';
+  
+  if (U.is_agent_buyer) {
+    document.getElementById('agentBadge').classList.replace('hidden', 'inline-flex');
+  } else {
+    document.getElementById('agentBadge').classList.replace('inline-flex', 'hidden');
+  }
+
+  let subtitleStr = "Free plan";
+  if (U.is_agent_buyer) {
+    subtitleStr = "Active subscriber";
+  }
+  if (U.email === 'vibudhsharma24@gmail.com') {
+    subtitleStr = "IIT Bombay '22";
+  } else if (U.email === 'aarav.kulkarni@iitb.ac.in') {
+    subtitleStr = "IIT Bombay '22";
+  }
+
+  let statusText = "Agent offline";
+  let statusDotColor = "bg-ink-700/40";
+  if (isActive) {
+    statusText = "Agent running · 3 hrs left today";
+    statusDotColor = "bg-emerald-500 animate-pulse";
+  } else if (U.is_agent_buyer && agentStatus === 'paused') {
+    statusText = "Agent paused";
+    statusDotColor = "bg-amber-500";
+  }
+
+  document.getElementById('sidebarUser').innerHTML = `
+    <div class="flex items-center gap-3">
+      <div id="sidebarAvatar" class="w-10 h-10 rounded-full bg-brand-600 text-white grid place-items-center font-bold text-sm shadow-soft">${avatarText}</div>
+      <div class="min-w-0 flex-1">
+        <div id="sidebarName" class="text-[13px] font-bold text-ink-900 truncate">${U.full_name || U.name}</div>
+        <div class="text-[11px] text-ink-700/60 truncate font-semibold mt-0.5">${subtitleStr}</div>
+      </div>
+    </div>
+    <div class="mt-3 pt-2.5 border-t border-ink-900/5 flex items-center gap-2 text-[11px] font-semibold text-ink-700/70">
+      <span class="w-2 h-2 rounded-full ${statusDotColor}"></span>
+      <span class="truncate">${statusText}</span>
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  const status = U.status || 'pending';
+  const statusColor = status === 'approved' ? 'emerald' : status === 'rejected' ? 'rose' : 'amber';
+  const agentStatus = U.agent_status || 'inactive';
+  const isActive = U.is_agent_buyer && agentStatus === 'running';
+
+  // 1. Calculate stats
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayApps = myApps.filter(a => (a.created_at || '').slice(0, 10) === todayISO).length;
+  
+  const totalApps = myApps.length;
+  const appliedCount = myApps.filter(a => a.status === 'applied').length;
+  const successRate = totalApps ? Math.round(100 * appliedCount / totalApps) : 0;
+
+  let daysLeft = 0;
+  if (U.agent_buyer && U.agent_buyer.subscription_expires_at) {
+    const diff = new Date(U.agent_buyer.subscription_expires_at) - new Date();
+    daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+
+  document.getElementById('appView').innerHTML = `
+  <div class="slide-in">
+    <div class="flex items-end justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-[12px] font-semibold tracking-widest text-brand-700">DASHBOARD</div>
+        <h1 class="font-display text-3xl font-bold mt-1">Welcome back, ${U.name} 👋</h1>
+        <p class="text-[13px] text-ink-700/70 mt-1">Here's your activity overview.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide bg-${statusColor}-50 text-${statusColor}-700 border border-${statusColor}-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-${statusColor}-500"></span>
+          ${status.toUpperCase()}
+        </span>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="sm-card p-5 card-glow">
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">APPLICATIONS TODAY</div>
+        <div class="font-display text-3xl font-bold mt-2">${todayApps}</div>
+        <div class="mt-1 text-[12px] text-ink-700/60">submitted</div>
+      </div>
+      <div class="sm-card p-5 card-glow">
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">APPLY SUCCESS RATE</div>
+        <div class="font-display text-3xl font-bold mt-2">${successRate}%</div>
+        <div class="mt-1 text-[12px] text-ink-700/60">applications succeeded</div>
+      </div>
+      <div class="sm-card p-5 card-glow">
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">TOTAL APPLICATIONS</div>
+        <div class="font-display text-3xl font-bold mt-2">${totalApps}</div>
+        <div class="mt-1 text-[12px] text-ink-700/60">lifetime submits</div>
+      </div>
+      <div class="sm-card p-5 card-glow">
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">AGENT SUBSCRIPTION</div>
+        <div class="font-display text-xl font-bold mt-2">${U.is_agent_buyer ? (daysLeft ? `${daysLeft} Days Left` : 'Active') : 'Free Tier'}</div>
+        <div class="mt-1 text-[12px] text-ink-700/60">${U.is_agent_buyer ? 'Pro Agent active' : 'Subscribe to start'}</div>
+      </div>
+    </div>
+
+    <!-- Two Column Dashboard Grid -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left side (2/3 width) -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Chart: Outreach Funnel -->
+        <div class="sm-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-[12px] font-semibold tracking-widest text-brand-700">OUTREACH FUNNEL</div>
+              <h3 class="font-display font-bold text-lg mt-0.5">Daily Progress</h3>
+            </div>
+            <div class="flex gap-3 text-[11px]">
+              <span class="inline-flex items-center gap-1.5 text-ink-700/70"><span class="w-2 h-2 rounded-full bg-[#5B66E8]"></span>Total</span>
+              <span class="inline-flex items-center gap-1.5 text-ink-700/70"><span class="w-2 h-2 rounded-full bg-[#10b981]"></span>Success</span>
+              <span class="inline-flex items-center gap-1.5 text-ink-700/70"><span class="w-2 h-2 rounded-full bg-[#ef4444]"></span>Failed</span>
+            </div>
+          </div>
+          <div class="h-64 mt-3">
+            <canvas id="chartFunnel"></canvas>
+          </div>
+        </div>
+
+        <!-- Table: Recent Applications -->
+        <div class="sm-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-[12px] font-semibold tracking-widest text-brand-700">APPLICATIONS</div>
+              <h3 class="font-display font-bold text-lg mt-0.5">Recent Applications</h3>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[13px]">
+              <thead>
+                <tr class="border-b border-ink-900/5 text-ink-700/50">
+                  <th class="pb-3 font-semibold">Company / Site</th>
+                  <th class="pb-3 font-semibold">ATS Type</th>
+                  <th class="pb-3 font-semibold">Status</th>
+                  <th class="pb-3 font-semibold">Applied At</th>
+                  <th class="pb-3 font-semibold text-right">Details</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-ink-900/5" id="appsTable">
+                <tr><td colspan="5" class="py-6 text-center text-ink-700/40">Loading applications...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Timeline: Live Activity Feed -->
+        <div class="sm-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-[12px] font-semibold tracking-widest text-brand-700">LIVE OUTBOUND ACTIVITY</div>
+              <h3 class="font-display font-bold text-lg mt-0.5">Agent Execution Logs</h3>
+            </div>
+            <span class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <span class="pulse-dot"></span>LIVE MONITOR
+            </span>
+          </div>
+          <div class="mt-4 space-y-4" id="activityFeed">
+            <div class="py-4 text-center text-ink-700/40 text-[13px]">Loading logs...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right side (1/3 width) -->
+      <div class="space-y-6">
+
+        <!-- Chart: Channel Distribution -->
+        <div class="sm-card p-6">
+          <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-2">CHANNEL MIX</div>
+          <div class="h-44 relative flex items-center justify-center">
+            <canvas id="chartChannels"></canvas>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px]">
+            <div class="p-2 rounded-xl bg-brand-50/50"><div class="font-semibold text-brand-700" id="cntLinkedIn">0</div><div class="text-ink-700/60 mt-0.5">LinkedIn</div></div>
+            <div class="p-2 rounded-xl bg-emerald-50/50"><div class="font-semibold text-emerald-700" id="cntPortals">0</div><div class="text-ink-700/60 mt-0.5">Portals</div></div>
+            <div class="p-2 rounded-xl bg-accent-500/10"><div class="font-semibold text-accent-600" id="cntEmail">0</div><div class="text-ink-700/60 mt-0.5">Emails</div></div>
+          </div>
+        </div>
+
+        <!-- Agent Control & Resume Upload -->
+        <div class="sm-card p-6">
+          <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-4">AGENT CONFIGURATION</div>
+          ${U.is_agent_buyer ? `
+            ${!U.agent_buyer ? `
+              <!-- Resume upload needed -->
+              <div class="text-center py-4">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center shadow-soft">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <h3 class="font-display font-bold text-base mt-3">Upload your resume</h3>
+                <p class="mt-1.5 text-[12px] text-ink-700/70">Agent subscription active! Upload your resume to start.</p>
+                <label class="mt-3 inline-flex px-4 py-2 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 transition text-[13px] cursor-pointer">
+                  <input type="file" accept=".pdf,.doc,.docx" class="hidden" onchange="uploadDashboardResume(event)"/>
+                  Choose Resume File
+                </label>
+                <div id="dashUploadStatus" class="mt-3 text-[12px] hidden"></div>
+              </div>
+            ` : `
+              <div class="flex items-center gap-3 p-3.5 rounded-xl ${isActive ? 'bg-emerald-50 border border-emerald-100' : 'bg-amber-50 border border-amber-100'}">
+                ${isActive ? '<span class="pulse-dot"></span>' : '<span class="w-2 h-2 rounded-full bg-amber-500"></span>'}
+                <div class="flex-1">
+                  <div class="font-semibold text-[13px]">${isActive ? 'Agent is running' : agentStatus === 'paused' ? 'Agent paused' : agentStatus === 'error' ? 'Agent error' : 'Agent inactive'}</div>
+                  <div class="text-[11px] text-ink-700/60">${isActive ? 'Auto-processing jobs' : 'Press Start to begin'}</div>
+                </div>
+                <button onclick="${isActive ? 'stopAgent()' : 'startAgent()'}" class="px-3.5 py-1.5 rounded-lg text-[12px] font-semibold ${isActive ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'} transition">
+                  ${isActive ? 'Stop' : 'Start'}
+                </button>
+              </div>
+              <div class="mt-4 p-3 rounded-xl bg-ink-900/[.03] text-[12px]">
+                <div class="font-medium text-ink-700/80">Active Resume</div>
+                <div class="flex items-center gap-1.5 mt-1.5 text-brand-700 font-semibold truncate">
+                  <svg class="icon w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span class="truncate" title="${U.agent_buyer.resume_path}">${U.agent_buyer.resume_path.split(/[\\\\/]/).pop()}</span>
+                </div>
+                <label class="mt-2.5 inline-flex text-xs text-brand-700 font-semibold hover:underline cursor-pointer">
+                  <input type="file" accept=".pdf,.doc,.docx" class="hidden" onchange="uploadDashboardResume(event)"/>
+                  Replace Resume
+                </label>
+                <div id="dashUploadStatus" class="mt-1 text-[11px] hidden"></div>
+              </div>
+            `}
+          ` : `
+            <div class="text-center py-4">
+              <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-ink-900 to-brand-700 text-white grid place-items-center shadow-soft">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+              </div>
+              <h3 class="font-display font-bold text-base mt-3">Activate Job Seeker Agent</h3>
+              <p class="mt-1.5 text-[12px] text-ink-700/70">Let AI auto-apply and reach out to hiring managers for you.</p>
+              <a href="/pay" class="mt-3.5 inline-flex px-4 py-2.5 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 transition text-[13px]">Subscribe — ₹2,000/mo</a>
+            </div>
+          `}
+        </div>
+
+        <!-- Profile Detail Card -->
+        <div class="sm-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-[12px] font-semibold tracking-widest text-brand-700">PROFILE DETAIL</div>
+            <span class="text-[11px] text-ink-700/50 capitalize">${U.auth_provider || 'email'}</span>
+          </div>
+          <div class="space-y-3">
+            <div class="flex justify-between text-[13px]"><span class="text-ink-700/60">Full name</span><span class="font-medium">${U.full_name || U.name}</span></div>
+            <div class="h-px bg-ink-900/5"></div>
+            <div class="flex justify-between text-[13px]"><span class="text-ink-700/60">Email</span><span class="font-medium truncate max-w-[150px]" title="${U.email}">${U.email}</span></div>
+            <div class="h-px bg-ink-900/5"></div>
+            <div class="flex justify-between text-[13px]"><span class="text-ink-700/60">Mobile</span><span class="font-medium">${U.mobile_number || '—'}</span></div>
+            <div class="h-px bg-ink-900/5"></div>
+            <div class="flex justify-between text-[13px]"><span class="text-ink-700/60">LinkedIn</span><span class="font-medium">${U.linkedin_url ? '<a href="'+U.linkedin_url+'" target="_blank" class="text-brand-700 hover:underline">View ↗</a>' : '—'}</span></div>
+            <div class="h-px bg-ink-900/5"></div>
+            <div class="flex justify-between text-[13px]"><span class="text-ink-700/60">Joined</span><span class="font-medium">${U.submitted_at ? new Date(U.submitted_at).toLocaleDateString() : '—'}</span></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function initDashboardCharts() {
+  // 1. Applications table
+  const tbody = document.getElementById('appsTable');
+  if (tbody) {
+    if (myApps.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-ink-700/40">No applications recorded yet</td></tr>`;
+    } else {
+      tbody.innerHTML = myApps.slice(0, 5).map(a => {
+        const logo = (a.portal_hostname || '?').charAt(0).toUpperCase();
+        const statusColors = {
+          'applied': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+          'failed': 'bg-rose-50 text-rose-700 border border-rose-100',
+          'pending': 'bg-amber-50 text-amber-700 border border-amber-100'
+        };
+        const color = statusColors[a.status] || 'bg-ink-900/5 text-ink-700 border border-ink-900/10';
+        const date = a.created_at ? new Date(a.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : '—';
+        return `
+          <tr class="hover:bg-ink-900/[.01] transition-colors">
+            <td class="py-3.5"><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg bg-gradient-to-br from-ink-800 to-brand-700 text-white grid place-items-center font-semibold text-xs">${logo}</div><div class="font-semibold">${a.portal_hostname || 'Direct Apply'}</div></div></td>
+            <td class="py-3.5 text-ink-700 font-mono text-xs">${a.ats_type || 'web'}</td>
+            <td class="py-3.5"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${color}">${a.status}</span></td>
+            <td class="py-3.5 text-ink-700">${date}</td>
+            <td class="py-3.5 text-right"><button onclick="viewApplicationDetail(${a.id})" class="text-[12px] text-brand-700 font-semibold hover:underline">View</button></td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // 2. Activity feed
+  const feed = document.getElementById('activityFeed');
+  if (feed) {
+    if (subLogs.length === 0) {
+      feed.innerHTML = `<div class="py-6 text-center text-ink-700/40 text-[13px]">No active execution logs. Starts automatically when agent runs.</div>`;
+    } else {
+      feed.innerHTML = subLogs.slice(0, 5).map(log => {
+        const d = new Date(log.timestamp);
+        const time = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        let stepIcon = '✓';
+        if (log.step_name.toLowerCase().includes('linkedin')) stepIcon = 'in';
+        else if (log.step_name.toLowerCase().includes('email')) stepIcon = '@';
+        else if (log.step_name.toLowerCase().includes('fail') || log.step_name.toLowerCase().includes('error')) stepIcon = '✕';
+
+        const toneClass = (log.step_name.toLowerCase().includes('fail') || log.step_name.toLowerCase().includes('error'))
+          ? 'bg-rose-50 text-rose-700 border border-rose-100'
+          : 'bg-brand-50 text-brand-700 border border-brand-100';
+
+        return `
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg ${toneClass} grid place-items-center font-display font-bold text-[12px] shrink-0">${stepIcon}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[13px] font-semibold truncate capitalize">${log.step_name.replace(/_/g, ' ')}</div>
+              <div class="text-[11px] text-ink-700/60 truncate" title="${log.page_url || ''}">${log.page_url || 'No page URL recorded'}</div>
+            </div>
+            <div class="text-[11px] text-ink-700/50 shrink-0">${time}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 3. Channels Doughnut Chart
+  let cntLinkedIn = 0;
+  let cntPortals = 0;
+  let cntEmail = 0;
+  myApps.forEach(a => {
+    const host = (a.portal_hostname || '').toLowerCase();
+    const ats = (a.ats_type || '').toLowerCase();
+    const notes = (a.notes || '').toLowerCase();
+    if (host.includes('linkedin') || host.includes('lnkd.in') || notes.includes('linkedin')) {
+      cntLinkedIn++;
+    } else if (ats.includes('email') || notes.includes('email')) {
+      cntEmail++;
+    } else {
+      cntPortals++;
+    }
+  });
+
+  document.getElementById('cntLinkedIn').textContent = cntLinkedIn;
+  document.getElementById('cntPortals').textContent = cntPortals;
+  document.getElementById('cntEmail').textContent = cntEmail;
+
+  const c = document.getElementById('chartChannels');
+  if (c) {
+    new Chart(c, {
+      type: 'doughnut',
+      data: {
+        labels: ['LinkedIn', 'Portals', 'Emails'],
+        datasets: [{
+          data: [cntLinkedIn || 1, cntPortals || 1, cntEmail || 1], // fallback so chart isn't blank
+          backgroundColor: ['#5B66E8', '#10b981', '#FF9E50'],
+          borderColor: '#fff',
+          borderWidth: 3,
+          cutout: '70%'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // 4. Outreach Funnel Line Chart
+  const dates = [];
+  const counts = [];
+  const successCounts = [];
+  const failCounts = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    dates.push(dateStr);
+
+    const dateISO = d.toISOString().slice(0, 10);
+    const dayApps = myApps.filter(a => (a.created_at || '').slice(0, 10) === dateISO);
+    counts.push(dayApps.length);
+    successCounts.push(dayApps.filter(a => a.status === 'applied').length);
+    failCounts.push(dayApps.filter(a => a.status === 'failed').length);
+  }
+
+  const f = document.getElementById('chartFunnel');
+  if (f) {
+    new Chart(f, {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [
+          { label: 'Total', data: counts, borderColor: '#5B66E8', backgroundColor: 'rgba(91,102,232,0.03)', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5 },
+          { label: 'Success', data: successCounts, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.01)', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5 },
+          { label: 'Failed', data: failCounts, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.01)', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#6b7280' } },
+          y: { grid: { color: '#eef0fa' }, ticks: { font: { size: 10 }, color: '#6b7280', precision: 0 } }
+        }
+      }
+    });
+  }
+}
+
+function viewApplicationDetail(appId) {
+  const app = myApps.find(a => a.id === appId);
+  if (!app) return;
+  alert(`Application Details\n---------------------------------\nCompany: ${app.portal_hostname}\nATS Type: ${app.ats_type}\nStatus: ${app.status}\nCreated: ${new Date(app.created_at).toLocaleString()}\nNotes/Logs: ${app.notes || 'None'}`);
+}
+
+async function logout() {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch {}
+  window.location.href = '/login';
+}
+
+async function startAgent() {
+  if (checkSetupRequired()) return;
+  try {
+    const res = await fetch('/api/agent/start', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) { loadDashboard(); }
+    else { alert(data.error || 'Could not start agent'); }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function stopAgent() {
+  try {
+    const res = await fetch('/api/agent/stop', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) { loadDashboard(); }
+    else { alert(data.error || 'Could not stop agent'); }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function uploadDashboardResume(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('dashUploadStatus');
+  statusEl.className = 'mt-3 text-[12px] text-brand-700';
+  statusEl.textContent = 'Uploading resume...';
+  statusEl.classList.remove('hidden');
+  try {
+    const formData = new FormData();
+    formData.append('name', U.name || '');
+    formData.append('last_name', U.last_name || '');
+    formData.append('email', U.email || '');
+    formData.append('resume', file);
+    const res = await fetch('/api/agent-buyers', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'mt-3 text-[12px] text-emerald-700';
+      statusEl.textContent = '✓ Resume uploaded! Reloading...';
+      setTimeout(() => loadDashboard(), 1000);
+    } else {
+      statusEl.className = 'mt-3 text-[12px] text-rose-700';
+      statusEl.textContent = (data.errors || ['Upload failed']).join(', ');
+    }
+  } catch (err) {
+    statusEl.className = 'mt-3 text-[12px] text-rose-700';
+    statusEl.textContent = 'Error: ' + err.message;
+  }
+}
+
+function handleRouting() {
+  const hash = window.location.hash;
+  document.querySelectorAll('.appnav').forEach(el => {
+    el.classList.remove('active');
+    el.classList.add('text-ink-700', 'hover:bg-ink-900/5');
+  });
+  
+  if (hash === '#agent') {
+    const agentNav = document.getElementById('agentNavLink');
+    if (agentNav) {
+      agentNav.classList.add('active');
+      agentNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+    }
+    renderAgent();
+  } else if (hash === '#store') {
+    const storeNav = document.getElementById('storeNavLink');
+    if (storeNav) {
+      storeNav.classList.add('active');
+      storeNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+    }
+    renderStore();
+  } else if (hash === '#agentDetail') {
+    renderAgentDetail();
+    setTimeout(initAgentDetailView, 50);
+  } else if (hash === '#settings') {
+    const settingsNav = document.getElementById('settingsNavLink');
+    if (settingsNav) {
+      settingsNav.classList.add('active');
+      settingsNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+    }
+    renderSettings();
+  } else if (hash === '#billing') {
+    const billingNav = document.getElementById('billingNavLink');
+    if (billingNav) {
+      billingNav.classList.add('active');
+      billingNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+    }
+    document.getElementById('appView').innerHTML = `
+      <div class="slide-in sm-card p-8 bg-white max-w-2xl">
+        <h2 class="font-display font-bold text-2xl text-ink-900">Billing & Subscription</h2>
+        <p class="text-xs text-ink-700/60 mt-1">Manage invoices, payments, and plan choices.</p>
+        <div class="mt-8 border-t border-ink-900/5 pt-6 text-sm text-ink-700/70 flex justify-between items-center">
+          <span>Current Plan: <strong class="text-brand-700">${U.is_agent_buyer ? 'Pro Agent Plan' : 'Free Plan'}</strong></span>
+          ${!U.is_agent_buyer ? `<a href="/pay" class="px-4 py-2 bg-ink-900 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition">Upgrade</a>` : ''}
+        </div>
+      </div>
+    `;
+  } else {
+    const dashNav = document.getElementById('dashboardNavLink');
+    if (dashNav) {
+      dashNav.classList.add('active');
+      dashNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+    }
+    renderDashboard();
+    setTimeout(initDashboardCharts, 50);
+  }
+}
+
+function renderStore() {
+  const agentStatus = U.agent_status || 'inactive';
+  const isActive = U.is_agent_buyer && agentStatus === 'running';
+
+  // Define our 4 agents
+  const agents = [
+    {
+      id: 'job_seeker',
+      name: 'Job Seeker Agent',
+      icon: `<div class="w-10 h-10 rounded-xl bg-ink-900 grid place-items-center shadow-soft shrink-0">
+               <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                 <rect x="4" y="5" width="16" height="14" rx="3"/>
+                 <path d="M9 10h.01M15 10h.01M9 15h6"/>
+               </svg>
+             </div>`,
+      live: true,
+      badge: U.is_agent_buyer ? (agentStatus === 'running' ? 'LIVE' : 'PAUSED') : 'LIVE',
+      badgeClass: U.is_agent_buyer ? (agentStatus === 'running' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200') : 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      subtitle: 'LinkedIn DMs · Email · Portal auto-apply',
+      desc: 'Finds roles matching your preferences and applies across 3 channels automatically.',
+      categories: ['Most popular', 'Outreach', 'Auto-apply'],
+      price: U.is_agent_buyer ? 'Active' : 'Starts at ₹2,000/mo',
+      btnText: U.is_agent_buyer ? 'View agent' : 'Subscribe',
+      btnAction: U.is_agent_buyer ? "window.location.hash = '#agent'" : "window.location.hash = '#agentDetail'"
+    },
+    {
+      id: 'naukri_ai',
+      name: 'Naukri AI Agent',
+      icon: `<div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 border border-brand-100/50 grid place-items-center font-display font-bold text-base shrink-0">N</div>`,
+      live: false,
+      badge: "Q3 '26",
+      badgeClass: 'bg-orange-50 text-orange-700 border border-orange-200',
+      subtitle: 'Naukri.com auto-search & apply',
+      desc: "Scans Naukri's massive listing pool and applies to high-match roles with tailored cover letters.",
+      categories: ['Auto-apply'],
+      price: 'Waitlist open',
+      btnText: 'Notify me',
+      btnAction: "notifyAgentWaitlist('naukri_ai')"
+    },
+    {
+      id: 'linkedin_jobs',
+      name: 'LinkedIn Jobs Agent',
+      icon: `<div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 border border-brand-100/50 grid place-items-center font-display font-bold text-base shrink-0">in</div>`,
+      live: false,
+      badge: "Q3 '26",
+      badgeClass: 'bg-orange-50 text-orange-700 border border-orange-200',
+      subtitle: 'Easy Apply + direct listings',
+      desc: 'Applies to roles directly on LinkedIn with tailored cover letters and smart throttling.',
+      categories: ['Auto-apply'],
+      price: 'Waitlist open',
+      btnText: 'Notify me',
+      btnAction: "notifyAgentWaitlist('linkedin_jobs')"
+    },
+    {
+      id: 'linkedin_growth',
+      name: 'LinkedIn Growth Agent',
+      icon: `<div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 border border-orange-100/50 grid place-items-center shrink-0">
+               <svg class="w-5 h-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+               </svg>
+             </div>`,
+      live: false,
+      badge: "Q4 '26",
+      badgeClass: 'bg-orange-50 text-orange-700 border border-orange-200',
+      subtitle: 'Content + network automation',
+      desc: 'Writes posts in your voice and grows your network without you lifting a finger.',
+      categories: ['Networking', 'Content'],
+      price: 'Waitlist open',
+      btnText: 'Notify me',
+      btnAction: "notifyAgentWaitlist('linkedin_growth')"
+    }
+  ];
+
+  // Filtering logic
+  let filtered = agents;
+  
+  // 1. Status Filter
+  if (activeStoreStatus === 'Live') {
+    filtered = filtered.filter(a => a.live);
+  } else if (activeStoreStatus === 'Coming soon') {
+    filtered = filtered.filter(a => !a.live);
+  }
+
+  // 2. Category Filter
+  if (activeStoreCategory !== 'Most popular') {
+    filtered = filtered.filter(a => a.categories.includes(activeStoreCategory));
+  }
+
+  document.getElementById('appView').innerHTML = `
+  <div class="slide-in">
+    <!-- Header Row -->
+    <div class="flex items-start justify-between flex-wrap gap-4 border-b border-ink-900/5 pb-6">
+      <div>
+        <div class="text-[12px] font-semibold tracking-widest text-brand-700 uppercase">Agent Store</div>
+        <h1 class="font-display text-3xl font-bold mt-1 text-ink-900">Choose your AI teammate</h1>
+        <p class="text-[13px] text-ink-700/70 mt-1">Every agent solves one part of your career journey. Subscribe to what you need — skip what you don't.</p>
+      </div>
+
+      <!-- Right Tab Filter -->
+      <div class="flex bg-ink-900/[0.04] p-1 rounded-xl text-xs font-semibold text-ink-700">
+        <button onclick="switchStoreStatus('All')" class="px-3.5 py-1.5 rounded-lg transition ${activeStoreStatus === 'All' ? 'bg-white shadow-soft text-ink-900' : 'hover:bg-ink-900/5'}">All &middot; 4</button>
+        <button onclick="switchStoreStatus('Live')" class="px-3.5 py-1.5 rounded-lg transition ${activeStoreStatus === 'Live' ? 'bg-white shadow-soft text-ink-900' : 'hover:bg-ink-900/5'}">Live</button>
+        <button onclick="switchStoreStatus('Coming soon')" class="px-3.5 py-1.5 rounded-lg transition ${activeStoreStatus === 'Coming soon' ? 'bg-white shadow-soft text-ink-900' : 'hover:bg-ink-900/5'}">Coming soon</button>
+      </div>
+    </div>
+
+    <!-- Category Filter Tags Row -->
+    <div class="flex flex-wrap gap-2 mt-6">
+      ${['Most popular', 'Outreach', 'Auto-apply', 'Networking', 'Content'].map(cat => `
+        <button onclick="switchStoreCategory('${cat}')" class="px-4 py-2 rounded-xl text-xs font-semibold transition ${activeStoreCategory === cat ? 'bg-ink-900 text-white shadow-soft' : 'bg-ink-900/[0.03] text-ink-700 hover:bg-ink-900/[0.06]' }">
+          ${cat}
+        </button>
+      `).join('')}
+    </div>
+
+    <!-- Grid of Agents -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+      ${filtered.map(agent => {
+        let actionBtnClass = 'bg-ink-900 text-white hover:bg-brand-700 shadow-sm';
+        if (agent.btnText === 'Notify me' || agent.btnText === 'View agent') {
+          actionBtnClass = 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white';
+        }
+        
+        let waitlistToggled = localStorage.getItem(`waitlist_${agent.id}`);
+        let btnLabel = agent.btnText;
+        if (agent.id !== 'job_seeker' && waitlistToggled) {
+          btnLabel = '✓ Subscribed';
+          actionBtnClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+        }
+
+        let priceTextHtml = `<div class="text-[11px] text-ink-700/60 font-semibold tracking-wide uppercase">${agent.price}</div>`;
+        if (agent.price === 'Starts at ₹2,000/mo') {
+          priceTextHtml = `
+            <div class="text-[11px] text-ink-700/60 leading-none">Starts at</div>
+            <div class="font-bold text-ink-900 mt-0.5 text-sm">₹2,000<span class="text-[10px] font-normal text-ink-700/60">/mo</span></div>
+          `;
+        } else if (agent.price === 'Active') {
+          priceTextHtml = `
+            <div class="inline-flex items-center gap-1 text-[11.5px] font-bold text-emerald-700 bg-emerald-50/80 px-2.5 py-0.5 rounded-full border border-emerald-100">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Active
+            </div>
+          `;
+        }
+
+        let statusBadgeHtml = '';
+        if (agent.badge) {
+          statusBadgeHtml = `
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${agent.badgeClass}">
+              <span class="w-1.5 h-1.5 rounded-full ${agent.badge === 'LIVE' || agent.badge === 'Active' ? 'bg-emerald-500' : 'bg-orange-500'}"></span>
+              ${agent.badge}
+            </span>
+          `;
+        }
+
+        return `
+          <div class="sm-card p-6 flex flex-col justify-between h-[300px] bg-white transition hover:shadow-soft relative border border-ink-900/5 rounded-2xl">
+            <div>
+              <div class="flex justify-between items-start">
+                ${agent.icon}
+                ${statusBadgeHtml}
+              </div>
+              
+              <h3 class="font-display font-bold text-lg mt-4 text-ink-900">${agent.name}</h3>
+              <p class="text-[11.5px] font-semibold text-ink-700/60 mt-1">${agent.subtitle}</p>
+              
+              <p class="text-xs text-ink-700/70 mt-3.5 leading-relaxed">${agent.desc}</p>
+            </div>
+            
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-ink-900/5">
+              <div class="min-w-0">
+                ${priceTextHtml}
+              </div>
+              
+              <button onclick="${agent.btnAction}" class="px-4 py-2 rounded-xl text-xs font-bold transition ${actionBtnClass}">
+                ${btnLabel}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function switchStoreCategory(cat) {
+  activeStoreCategory = cat;
+  renderStore();
+}
+
+function switchStoreStatus(status) {
+  activeStoreStatus = status;
+  renderStore();
+}
+
+function notifyAgentWaitlist(agentId) {
+  localStorage.setItem(`waitlist_${agentId}`, 'true');
+  renderStore();
+}
+
+function renderSettings() {
+  const avatarText = U.avatar || (U.name ? U.name[0].toUpperCase() : 'U');
+  
+  // verified badge
+  let isVerifiedIit = false;
+  if (U.email === 'vibudhsharma24@gmail.com' || U.email === 'aarav.kulkarni@iitb.ac.in') {
+    isVerifiedIit = true;
+  }
+  const verifiedText = isVerifiedIit ? "✓ Verified · IIT Bombay '22" : "✓ Verified Candidate";
+
+  document.getElementById('appView').innerHTML = `
+  <div class="slide-in">
+    <!-- Header Row -->
+    <div class="border-b border-ink-900/5 pb-6">
+      <h1 class="font-display text-3xl font-bold text-ink-900">Settings</h1>
+      <p class="text-[13px] text-ink-700/70 mt-1">Manage your profile, subscription, connected accounts, and preferences.</p>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="mt-8 flex flex-col lg:flex-row gap-8 items-start">
+      <!-- Settings Sub-Navigation Sidebar -->
+      <aside class="w-full lg:w-64 shrink-0 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0 gap-1 border-b lg:border-b-0 lg:border-r border-ink-900/5 pr-0 lg:pr-6">
+        <button onclick="scrollToSection('profileSection')" id="nav-profileSection" class="settings-tab-btn active w-full flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition text-left bg-ink-900 text-white shrink-0">
+          Profile
+        </button>
+        <button onclick="scrollToSection('subscriptionsSection')" id="nav-subscriptionsSection" class="settings-tab-btn w-full flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition text-left text-ink-700 hover:bg-ink-900/5 shrink-0">
+          Subscriptions
+        </button>
+        <button onclick="scrollToSection('connectedAccountsSection')" id="nav-connectedAccountsSection" class="settings-tab-btn w-full flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition text-left text-ink-700 hover:bg-ink-900/5 shrink-0">
+          Connected accounts
+        </button>
+        <button onclick="scrollToSection('preferencesSection')" id="nav-preferencesSection" class="settings-tab-btn w-full flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition text-left text-ink-700 hover:bg-ink-900/5 shrink-0">
+          Preferences
+        </button>
+        <button onclick="scrollToSection('notificationsSection')" id="nav-notificationsSection" class="settings-tab-btn w-full flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition text-left text-ink-700 hover:bg-ink-900/5 shrink-0">
+          Notifications
+        </button>
+      </aside>
+
+      <!-- Settings Content Scroll Pane -->
+      <div class="flex-1 w-full space-y-8 max-w-4xl pb-20">
+        
+        <!-- Profile Section -->
+        <section id="profileSection" class="sm-card p-6 bg-white border border-ink-900/5 rounded-2xl">
+          <div class="flex justify-between items-start flex-wrap gap-2 mb-6">
+            <div>
+              <h2 class="font-display font-bold text-lg text-ink-900">Profile</h2>
+              <p class="text-xs text-ink-700/60 mt-0.5">This is how others see you on the platform.</p>
+            </div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100">
+              ${verifiedText}
+            </div>
+          </div>
+          
+          <div class="flex flex-col md:flex-row gap-6 items-start">
+            <div class="w-14 h-14 rounded-full bg-brand-600/90 text-white grid place-items-center font-bold text-xl shadow-soft shrink-0">
+              ${avatarText}
+            </div>
+            
+            <form id="profileForm" onsubmit="saveProfileSettings(event)" class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+              <div>
+                <label class="block text-[10.5px] font-bold text-ink-700/60 mb-1.5 px-1 uppercase tracking-wider">Full name</label>
+                <input type="text" id="settingsFullName" value="${(U.full_name || (U.name + ' ' + (U.last_name || ''))).trim()}" class="w-full px-4 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white text-xs text-ink-900 font-bold transition">
+              </div>
+              
+              <div>
+                <label class="block text-[10.5px] font-bold text-ink-700/60 mb-1.5 px-1 uppercase tracking-wider">Display email</label>
+                <input type="email" id="settingsEmail" value="${U.email || ''}" class="w-full px-4 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white text-xs text-ink-900 font-bold transition">
+              </div>
+              
+              <div>
+                <label class="block text-[10.5px] font-bold text-ink-700/60 mb-1.5 px-1 uppercase tracking-wider">Institute</label>
+                <input type="text" id="settingsInstitute" value="${U.institute || ''}" placeholder="e.g. IIT Bombay - Batch of 2022" class="w-full px-4 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white text-xs text-ink-900 font-bold transition">
+              </div>
+              
+              <div>
+                <label class="block text-[10.5px] font-bold text-ink-700/60 mb-1.5 px-1 uppercase tracking-wider">Headline</label>
+                <input type="text" id="settingsHeadline" value="${U.headline || ''}" placeholder="e.g. Senior Product Manager - Fintech" class="w-full px-4 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white text-xs text-ink-900 font-bold transition">
+              </div>
+              
+              <div class="col-span-1 md:col-span-2 flex items-center justify-between border-t border-ink-900/5 pt-4 mt-2">
+                <div id="profileSaveStatus" class="text-xs font-semibold"></div>
+                <button type="submit" class="px-5 py-2.5 bg-ink-900 text-white font-bold text-xs rounded-xl hover:bg-brand-700 transition shadow-sm">
+                  Save Profile
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Subscriptions Section -->
+        <section id="subscriptionsSection" class="sm-card p-6 bg-white border border-ink-900/5 rounded-2xl">
+          <h2 class="font-display font-bold text-lg text-ink-900 mb-1">Subscriptions</h2>
+          <p class="text-xs text-ink-700/60 mb-6">Manage your payment plans and billing details.</p>
+          
+          <div class="flex items-center justify-between p-4 rounded-xl border border-ink-900/5 bg-brand-50/20">
+            <div>
+              <div class="text-[10px] font-bold text-brand-700 uppercase tracking-widest">Current Active Plan</div>
+              <div class="font-display font-bold text-lg text-ink-900 mt-1">${U.is_agent_buyer ? 'Pro Agent Subscription' : 'Free Trial Tier'}</div>
+              <p class="text-xs text-ink-700/60 mt-0.5">${U.is_agent_buyer ? 'All 3 automation channels unlocked with 10 submits daily' : 'Subscribe to unlock automated outreach, custom templates and portal submissions'}</p>
+            </div>
+            <a href="#billing" class="px-4 py-2 text-xs font-bold bg-white border border-ink-900/10 hover:bg-ink-900/5 rounded-xl transition">
+              View billing details
+            </a>
+          </div>
+        </section>
+
+        <!-- Connected Accounts Section -->
+        <section id="connectedAccountsSection" class="sm-card p-6 bg-white border border-ink-900/5 rounded-2xl">
+          <h2 class="font-display font-bold text-lg text-ink-900">Connected accounts</h2>
+          <p class="text-xs text-ink-700/60 mt-0.5">Your agent uses these to apply on your behalf.</p>
+          
+          <div class="mt-6 divide-y divide-ink-900/5">
+            <!-- LinkedIn account -->
+            <div class="py-4 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#0A66C2]/10 text-[#0A66C2] font-display font-bold text-base grid place-items-center shrink-0 font-sans">in</div>
+                <div>
+                  <div class="text-xs font-bold text-ink-900">LinkedIn - ${U.linkedin_username || (U.full_name ? U.full_name.toLowerCase().replace(' ', '-') : 'username')}</div>
+                  <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Connected 12 Apr &middot; DMs + Easy Apply enabled</div>
+                </div>
+              </div>
+              <button onclick="toggleConnectedAccount('linkedin')" class="px-4 py-2 text-xs font-bold rounded-xl transition ${U.linkedin_connected ? 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white' : 'bg-ink-900 text-white hover:bg-brand-700'}">
+                ${U.linkedin_connected ? 'Disconnect' : 'Connect'}
+              </button>
+            </div>
+
+            <!-- Gmail account -->
+            <div class="py-4 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 font-display font-bold text-sm grid place-items-center shrink-0">@</div>
+                <div>
+                  <div class="text-xs font-bold text-ink-900">Gmail - ${U.email || 'aarav.k@iitb.ac.in'}</div>
+                  <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Connected 12 Apr &middot; send + read replies</div>
+                </div>
+              </div>
+              <button onclick="toggleConnectedAccount('gmail')" class="px-4 py-2 text-xs font-bold rounded-xl transition ${U.gmail_connected ? 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white' : 'bg-ink-900 text-white hover:bg-brand-700'}">
+                ${U.gmail_connected ? 'Disconnect' : 'Connect'}
+              </button>
+            </div>
+
+            <!-- Calendly account -->
+            <div class="py-4 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-ink-900/5 text-ink-900 font-display font-bold text-base grid place-items-center shrink-0">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink-900">Calendly</div>
+                  <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Auto-book interviews when replies arrive</div>
+                </div>
+              </div>
+              <button onclick="toggleConnectedAccount('calendly')" class="px-4 py-2 text-xs font-bold rounded-xl transition ${U.calendly_connected ? 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white' : 'bg-ink-900 text-white hover:bg-brand-700'}">
+                ${U.calendly_connected ? 'Disconnect' : 'Connect'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Preferences Section -->
+        <section id="preferencesSection" class="sm-card p-6 bg-white border border-ink-900/5 rounded-2xl">
+          <h2 class="font-display font-bold text-lg text-ink-900">Preferences</h2>
+          <p class="text-xs text-ink-700/60 mt-0.5">Manage notifications, summaries and agent autonomy.</p>
+          
+          <div class="mt-6 space-y-4">
+            <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-ink-900/[0.02] cursor-pointer transition">
+              <input type="checkbox" onchange="toggleSettingPreference('email_summaries', this.checked)" ${U.email_summaries ? 'checked' : ''} class="mt-0.5 rounded text-brand-600 focus:ring-brand-500 border-ink-900/10 w-4 h-4">
+              <div>
+                <div class="text-xs font-bold text-ink-900">Email summaries</div>
+                <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Daily digest at 8 PM IST</div>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-ink-900/[0.02] cursor-pointer transition">
+              <input type="checkbox" onchange="toggleSettingPreference('weekly_report', this.checked)" ${U.weekly_report ? 'checked' : ''} class="mt-0.5 rounded text-brand-600 focus:ring-brand-500 border-ink-900/10 w-4 h-4">
+              <div>
+                <div class="text-xs font-bold text-ink-900">Weekly agent performance report</div>
+                <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">PDF delivered every Monday</div>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-ink-900/[0.02] cursor-pointer transition">
+              <input type="checkbox" onchange="toggleSettingPreference('human_in_loop', this.checked)" ${U.human_in_loop ? 'checked' : ''} class="mt-0.5 rounded text-brand-600 focus:ring-brand-500 border-ink-900/10 w-4 h-4">
+              <div>
+                <div class="text-xs font-bold text-ink-900">Human-in-the-loop approvals</div>
+                <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Approve outreach before sending</div>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <!-- Notifications Section -->
+        <section id="notificationsSection" class="sm-card p-6 bg-white border border-ink-900/5 rounded-2xl">
+          <h2 class="font-display font-bold text-lg text-ink-900">Notifications</h2>
+          <p class="text-xs text-ink-700/60 mt-0.5">Manage desktop and browser notification rules.</p>
+          
+          <div class="mt-6 p-4 rounded-xl border border-ink-900/5 bg-ink-900/[0.01] flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-ink-900">Browser push notifications</div>
+              <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Alert immediately when interview invites arrive</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-9 h-5 bg-ink-900/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-ink-900/10 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ink-900"></div>
+            </label>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>`;
+}
+
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+    btn.classList.remove('bg-ink-900', 'text-white');
+    btn.classList.add('text-ink-700', 'hover:bg-ink-900/5');
+  });
+  const activeBtn = document.getElementById('nav-' + id);
+  if (activeBtn) {
+    activeBtn.classList.add('bg-ink-900', 'text-white');
+    activeBtn.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+  }
+}
+
+async function saveProfileSettings(event) {
+  event.preventDefault();
+  const statusEl = document.getElementById('profileSaveStatus');
+  statusEl.className = 'text-xs font-semibold text-ink-700/50';
+  statusEl.textContent = 'Saving...';
+  
+  const fullName = document.getElementById('settingsFullName').value.trim();
+  const email = document.getElementById('settingsEmail').value.trim();
+  const institute = document.getElementById('settingsInstitute').value.trim();
+  const headline = document.getElementById('settingsHeadline').value.trim();
+  
+  // split full name into first name & last name
+  const nameParts = fullName.split(/\s+/);
+  const name = nameParts[0] || '';
+  const last_name = nameParts.slice(1).join(' ') || '';
+
+  try {
+    const res = await fetch('/api/user/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, last_name, email, institute, headline })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'text-xs font-semibold text-emerald-700';
+      statusEl.textContent = '✓ Profile saved!';
+      // update global user object
+      U.name = name;
+      U.last_name = last_name;
+      U.full_name = fullName;
+      U.email = email;
+      U.institute = institute;
+      U.headline = headline;
+      renderSidebar();
+    } else {
+      statusEl.className = 'text-xs font-semibold text-rose-700';
+      statusEl.textContent = 'Error: ' + data.error;
+    }
+  } catch (err) {
+    statusEl.className = 'text-xs font-semibold text-rose-700';
+    statusEl.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function toggleConnectedAccount(key) {
+  const field = key + '_connected';
+  const newVal = U[field] ? 0 : 1;
+  
+  try {
+    const res = await fetch('/api/user/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: newVal })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      U[field] = newVal;
+      renderSettings();
+    }
+  } catch (err) {
+    console.error('Failed to toggle connected account:', err);
+  }
+}
+
+async function toggleSettingPreference(key, checked) {
+  const newVal = checked ? 1 : 0;
+  try {
+    const res = await fetch('/api/user/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: newVal })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      U[key] = newVal;
+    }
+  } catch (err) {
+    console.error('Failed to save preference:', err);
+  }
+}
+
+function renderAgent() {
+  const status = U.status || 'pending';
+  const agentStatus = U.agent_status || 'inactive';
+  const isActive = U.is_agent_buyer && agentStatus === 'running';
+  
+  let renewsStr = "—";
+  if (U.agent_buyer && U.agent_buyer.subscription_expires_at) {
+    renewsStr = new Date(U.agent_buyer.subscription_expires_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+  } else if (U.is_agent_buyer) {
+    const future = new Date();
+    future.setMonth(future.getMonth() + 3);
+    renewsStr = future.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+  }
+
+  document.getElementById('appView').innerHTML = `
+  <div class="slide-in">
+    <!-- Header Row -->
+    <div class="flex items-start justify-between flex-wrap gap-4 border-b border-ink-900/5 pb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-ink-900 grid place-items-center shadow-soft shrink-0">
+          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="5" width="16" height="14" rx="3"/>
+            <path d="M9 10h.01M15 10h.01M9 15h6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-2xl font-bold">Job Seeker Agent</h1>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : agentStatus === 'paused' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-ink-900/5 text-ink-700'}">
+              <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : agentStatus === 'paused' ? 'bg-amber-500' : 'bg-ink-700'}"></span>
+              ${(isActive ? 'ACTIVE' : agentStatus === 'paused' ? 'PAUSED' : 'INACTIVE')}
+            </span>
+          </div>
+          <p class="text-[12px] text-ink-700/60 mt-1">
+            3-month plan &middot; renews ${renewsStr} &middot; last run 6 mins ago
+          </p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <button id="btnToggleAgent" onclick="${isActive ? 'stopAgent()' : 'startAgent()'}" class="px-4 py-2 rounded-xl border border-ink-900/10 text-[13px] font-semibold hover:bg-ink-900/5 transition bg-white">
+          ${isActive ? 'Pause agent' : 'Resume agent'}
+        </button>
+        <button id="btnRunNow" onclick="runAgentNow()" class="px-4 py-2 rounded-xl bg-ink-900 text-white text-[13px] font-semibold hover:bg-brand-700 transition flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Run now
+        </button>
+      </div>
+    </div>
+
+    <!-- Agent Tabs Row -->
+    <div class="flex gap-6 text-[13px] font-semibold text-ink-700/50 mt-6 border-b border-ink-900/5">
+      <button onclick="switchAgentTab('overview')" class="pb-3 border-b-2 ${activeAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
+      <button onclick="switchAgentTab('preferences')" class="pb-3 border-b-2 ${activeAgentTab === 'preferences' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Preferences</button>
+      <button onclick="switchAgentTab('logs')" class="pb-3 border-b-2 ${activeAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
+      <button onclick="switchAgentTab('subscription')" class="pb-3 border-b-2 ${activeAgentTab === 'subscription' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Subscription</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="agentTabContent" class="mt-6"></div>
+  </div>`;
+
+  renderAgentTabContent();
+}
+
+function renderAgentTabContent() {
+  const container = document.getElementById('agentTabContent');
+  if (!container) return;
+
+  if (activeAgentTab === 'overview') {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const todayApps = myApps.filter(a => (a.created_at || '').slice(0, 10) === todayISO).length;
+    const todayPercent = Math.min(100, Math.round((todayApps / 40) * 100));
+
+    const last7DaysApps = myApps.filter(a => {
+      const diff = new Date() - new Date(a.created_at);
+      return diff <= 7 * 24 * 60 * 60 * 1000;
+    });
+    const repliesCount = last7DaysApps.filter(a => a.status === 'applied').length;
+
+    container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left side (2/3 width) -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Today Card -->
+          <div class="sm-card p-5">
+            <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 uppercase">Today</div>
+            <div class="font-display text-3xl font-bold mt-2">${todayApps} / 40</div>
+            <div class="w-full bg-ink-900/5 h-2 rounded-full mt-3 overflow-hidden">
+              <div class="bg-brand-500 h-full rounded-full" style="width: ${todayPercent}%"></div>
+            </div>
+            <div class="mt-2 text-[11px] text-ink-700/60">Applications left: ${Math.max(0, 40 - todayApps)}</div>
+          </div>
+          <!-- Replies Card -->
+          <div class="sm-card p-5">
+            <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 uppercase">Replies - 7d</div>
+            <div class="font-display text-3xl font-bold mt-2">${repliesCount}</div>
+            <div class="mt-3 text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+              <span>▲ 36% vs last week</span>
+            </div>
+          </div>
+          <!-- Channels Card -->
+          <div class="sm-card p-5">
+            <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 uppercase">Channels active</div>
+            <div class="flex gap-2 mt-3.5">
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-brand-50 text-brand-700">LinkedIn</span>
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-accent-500/10 text-accent-600">Email</span>
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700">Portals</span>
+            </div>
+            <div class="mt-3 text-[11px] text-ink-700/60">All channels healthy &middot; no rate-limit warnings</div>
+          </div>
+          <!-- Next Run Card -->
+          <div class="sm-card p-5">
+            <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 uppercase">Next run</div>
+            <div class="font-display text-lg font-bold mt-3.5">Today &middot; 3:45 PM IST</div>
+            <div class="mt-2 text-[11px] text-ink-700/60">Runs every 4 hours &middot; 8 AM - 8 PM</div>
+          </div>
+        </div>
+
+        <!-- Live Activity timeline -->
+        <div class="sm-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-[12px] font-semibold tracking-widest text-brand-700">LIVE ACTIVITY</div>
+              <h3 class="font-display font-bold text-lg mt-0.5">Real-time Outreach Logs</h3>
+            </div>
+            <span class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <span class="pulse-dot"></span>streaming
+            </span>
+          </div>
+          <div class="mt-4 space-y-4" id="agentActivityFeed">
+            <!-- Renders dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side (1/3 width) - Mini Preferences Panel -->
+      <div class="space-y-6">
+        <div class="sm-card p-6">
+          <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-1">AGENT PREFERENCES</div>
+          <p class="text-[12px] text-ink-700/60 mb-4">Tune what your agent does on your behalf.</p>
+          
+          <div class="space-y-4">
+            <!-- Roles -->
+            <div>
+              <div class="text-[11px] font-semibold text-ink-700/60 uppercase">Roles</div>
+              <div class="flex flex-wrap gap-1.5 mt-2" id="prefRolesList"></div>
+            </div>
+            <!-- Locations -->
+            <div>
+              <div class="text-[11px] font-semibold text-ink-700/60 uppercase">Locations</div>
+              <div class="flex flex-wrap gap-1.5 mt-2" id="prefLocationsList"></div>
+            </div>
+            <!-- Experience -->
+            <div>
+              <div class="text-[11px] font-semibold text-ink-700/60 uppercase">Experience</div>
+              <div class="flex justify-between text-xs font-semibold mt-1">
+                <span>Min: <span id="lblMinExp">${agentPrefs.min_experience || 0}</span>y</span>
+                <span>Max: <span id="lblMaxExp">${agentPrefs.max_experience || 15}</span>y</span>
+              </div>
+              <div class="flex gap-2 mt-1.5">
+                <input type="range" min="0" max="15" value="${agentPrefs.min_experience || 3}" class="w-1/2 accent-brand-500" id="sliderMinExp" oninput="syncRangeVals()"/>
+                <input type="range" min="0" max="15" value="${agentPrefs.max_experience || 6}" class="w-1/2 accent-brand-500" id="sliderMaxExp" oninput="syncRangeVals()"/>
+              </div>
+            </div>
+            <!-- Salary -->
+            <div>
+              <div class="text-[11px] font-semibold text-ink-700/60 uppercase">Comp Expectation</div>
+              <div class="flex justify-between text-xs font-semibold mt-1">
+                <span>Min: ₹<span id="lblMinSal">${agentPrefs.min_salary || 0}</span>L</span>
+                <span>Max: ₹<span id="lblMaxSal">${agentPrefs.max_salary || 150}</span>L</span>
+              </div>
+              <div class="flex gap-2 mt-1.5">
+                <input type="range" min="0" max="150" step="5" value="${agentPrefs.min_salary || 35}" class="w-1/2 accent-brand-500" id="sliderMinSal" oninput="syncRangeVals()"/>
+                <input type="range" min="0" max="150" step="5" value="${agentPrefs.max_salary || 55}" class="w-1/2 accent-brand-500" id="sliderMaxSal" oninput="syncRangeVals()"/>
+              </div>
+            </div>
+            <!-- Checkboxes -->
+            <div class="space-y-2.5 pt-2 border-t border-ink-900/5">
+              <label class="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input type="checkbox" id="chkLinkedinDm" class="rounded border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.linkedin_dm !== false ? 'checked' : ''} onchange="syncPreferencesFromUI()"/>
+                LinkedIn DMs (up to 20/day)
+              </label>
+              <label class="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input type="checkbox" id="chkColdEmail" class="rounded border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.cold_email !== false ? 'checked' : ''} onchange="syncPreferencesFromUI()"/>
+                Recruiter cold emails
+              </label>
+              <label class="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input type="checkbox" id="chkPortalApply" class="rounded border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.portal_apply !== false ? 'checked' : ''} onchange="syncPreferencesFromUI()"/>
+                Company portal auto-apply
+              </label>
+              <label class="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input type="checkbox" id="chkPauseWeekends" class="rounded border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.pause_weekends ? 'checked' : ''} onchange="syncPreferencesFromUI()"/>
+                Pause on weekends
+              </label>
+            </div>
+          </div>
+          
+          <button onclick="saveAgentPrefsToServer()" id="btnSavePrefs" class="w-full mt-5 py-2 rounded-xl bg-ink-900 text-white font-semibold text-xs hover:bg-brand-700 transition">
+            Save Preferences
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+    renderMiniPrefsTags();
+    renderAgentLogsFeed();
+  }
+
+  else if (activeAgentTab === 'preferences') {
+    container.innerHTML = `
+    <div class="sm-card p-6 max-w-3xl">
+      <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-1">DETAILED PREFERENCES</div>
+      <h3 class="font-display font-bold text-xl mb-6">Configure Search & Application Criteria</h3>
+      
+      <div class="space-y-6">
+        <!-- Roles -->
+        <div>
+          <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide">Target Job Roles</label>
+          <p class="text-[12px] text-ink-700/50 mb-2">The agent looks for these titles on LinkedIn and jobs boards.</p>
+          <div class="flex flex-wrap gap-2 p-3 border border-ink-900/10 rounded-xl bg-white focus-within:border-brand-400">
+            <div id="fullPrefRoles" class="flex flex-wrap gap-2"></div>
+            <input type="text" id="addRoleFullInput" class="outline-none border-none text-[13px] min-w-[120px] flex-1 bg-transparent" placeholder="+ Add role and hit Enter..." onkeydown="handleTagInput(event, 'roles')"/>
+          </div>
+        </div>
+
+        <!-- Locations -->
+        <div>
+          <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide">Target Locations</label>
+          <p class="text-[12px] text-ink-700/50 mb-2">Filters applications to these specific geographies or Remote.</p>
+          <div class="flex flex-wrap gap-2 p-3 border border-ink-900/10 rounded-xl bg-white focus-within:border-brand-400">
+            <div id="fullPrefLocations" class="flex flex-wrap gap-2"></div>
+            <input type="text" id="addLocFullInput" class="outline-none border-none text-[13px] min-w-[120px] flex-1 bg-transparent" placeholder="+ Add location and hit Enter..." onkeydown="handleTagInput(event, 'locations')"/>
+          </div>
+        </div>
+
+        <!-- Experience & Comp Sliders -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-ink-900/5">
+          <div>
+            <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide">Work Experience Filter</label>
+            <div class="flex justify-between text-xs font-semibold mt-1">
+              <span>Min: <span id="lblFullMinExp">${agentPrefs.min_experience || 0}</span> years</span>
+              <span>Max: <span id="lblFullMaxExp">${agentPrefs.max_experience || 15}</span> years</span>
+            </div>
+            <div class="flex gap-2 mt-2">
+              <input type="range" min="0" max="15" value="${agentPrefs.min_experience || 3}" class="w-1/2 accent-brand-500" id="fullMinExp" oninput="syncFullRangeVals()"/>
+              <input type="range" min="0" max="15" value="${agentPrefs.max_experience || 6}" class="w-1/2 accent-brand-500" id="fullMaxExp" oninput="syncFullRangeVals()"/>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide">Compensation Expectation (CTC)</label>
+            <div class="flex justify-between text-xs font-semibold mt-1">
+              <span>Min: ₹<span id="lblFullMinSal">${agentPrefs.min_salary || 0}</span> L</span>
+              <span>Max: ₹<span id="lblFullMaxSal">${agentPrefs.max_salary || 150}</span> L</span>
+            </div>
+            <div class="flex gap-2 mt-2">
+              <input type="range" min="0" max="150" step="5" value="${agentPrefs.min_salary || 35}" class="w-1/2 accent-brand-500" id="fullMinSal" oninput="syncFullRangeVals()"/>
+              <input type="range" min="0" max="150" step="5" value="${agentPrefs.max_salary || 55}" class="w-1/2 accent-brand-500" id="fullMaxSal" oninput="syncFullRangeVals()"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggle Controls -->
+        <div class="pt-4 border-t border-ink-900/5">
+          <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide">Automation Channels</label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+            <div class="p-3.5 rounded-xl bg-brand-50/20 border border-brand-100/50 flex items-start gap-3">
+              <input type="checkbox" id="fullLinkedinDm" class="rounded mt-0.5 border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.linkedin_dm !== false ? 'checked' : ''}/>
+              <div>
+                <label for="fullLinkedinDm" class="text-[13px] font-bold block cursor-pointer">LinkedIn DMs</label>
+                <span class="text-[11px] text-ink-700/60">Auto-send personalized DMs to posters & managers. Limit: 20/day.</span>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-brand-50/20 border border-brand-100/50 flex items-start gap-3">
+              <input type="checkbox" id="fullColdEmail" class="rounded mt-0.5 border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.cold_email !== false ? 'checked' : ''}/>
+              <div>
+                <label for="fullColdEmail" class="text-[13px] font-bold block cursor-pointer">Recruiter Cold Emails</label>
+                <span class="text-[11px] text-ink-700/60">Generate and dispatch target cold outreach emails with resume attached.</span>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-brand-50/20 border border-brand-100/50 flex items-start gap-3">
+              <input type="checkbox" id="fullPortalApply" class="rounded mt-0.5 border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.portal_apply !== false ? 'checked' : ''}/>
+              <div>
+                <label for="fullPortalApply" class="text-[13px] font-bold block cursor-pointer">Portal Auto-Apply</label>
+                <span class="text-[11px] text-ink-700/60">Auto-fill Workday, Lever, Greenhouse application forms using LLM.</span>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-brand-50/20 border border-brand-100/50 flex items-start gap-3">
+              <input type="checkbox" id="fullPauseWeekends" class="rounded mt-0.5 border-ink-900/10 text-brand-600 focus:ring-brand-500" ${agentPrefs.pause_weekends ? 'checked' : ''}/>
+              <div>
+                <label for="fullPauseWeekends" class="text-[13px] font-bold block cursor-pointer">Pause on Weekends</label>
+                <span class="text-[11px] text-ink-700/60">Halt outbound outreach on Saturdays and Sundays to look natural.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="saveFullAgentPrefs()" id="btnSaveFullPrefs" class="px-6 py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition">
+          Save Preferences
+        </button>
+      </div>
+    </div>`;
+
+    renderFullPrefsTags();
+  }
+
+  else if (activeAgentTab === 'logs') {
+    container.innerHTML = `
+    <div class="sm-card p-6">
+      <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-1">AGENT EXECUTION LOGS</div>
+      <h3 class="font-display font-bold text-lg mb-4">Complete System Output Logs</h3>
+      <div class="overflow-x-auto mt-4">
+        <table class="w-full text-left border-collapse text-[13px]">
+          <thead>
+            <tr class="border-b border-ink-900/5 text-ink-700/50">
+              <th class="pb-3 font-semibold">Timestamp</th>
+              <th class="pb-3 font-semibold">Action / Step</th>
+              <th class="pb-3 font-semibold">Target URL</th>
+              <th class="pb-3 font-semibold">Screenshot / DOM</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-ink-900/5" id="agentFullLogsTable">
+            <tr><td colspan="4" class="py-6 text-center text-ink-700/40">Loading logs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+    renderAgentFullLogsTable();
+  }
+
+  else if (activeAgentTab === 'subscription') {
+    let priceStr = "₹2,000 / month";
+    let planName = U.is_agent_buyer ? "Pro Agent Plan" : "Free Plan";
+    let statusText = U.is_agent_buyer ? "Active" : "Inactive";
+    let expiresAt = "—";
+    if (U.agent_buyer && U.agent_buyer.subscription_expires_at) {
+      expiresAt = new Date(U.agent_buyer.subscription_expires_at).toLocaleDateString();
+    }
+
+    container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 space-y-6">
+        <div class="sm-card p-6">
+          <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-4">PLAN DETAILS</div>
+          <div class="space-y-4">
+            <div class="flex justify-between items-center text-sm"><span class="text-ink-700/60">Plan Name</span><span class="font-bold text-ink-900">${planName}</span></div>
+            <div class="h-px bg-ink-900/5"></div>
+            <div class="flex justify-between items-center text-sm"><span class="text-ink-700/60">Subscription Pricing</span><span class="font-semibold">${priceStr}</span></div>
+            <div class="h-px bg-ink-900/5"></div>
+            <div class="flex justify-between items-center text-sm"><span class="text-ink-700/60">Next Renewal Date</span><span class="font-semibold">${expiresAt}</span></div>
+            <div class="h-px bg-ink-900/5"></div>
+            <div class="flex justify-between items-center text-sm"><span class="text-ink-700/60">Payment Status</span><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${U.is_agent_buyer ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${statusText}</span></div>
+          </div>
+        </div>
+
+        <div class="sm-card p-6">
+          <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-4">INVOICE HISTORY</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[13px]">
+              <thead>
+                <tr class="border-b border-ink-900/5 text-ink-700/50">
+                  <th class="pb-3 font-semibold">Date</th>
+                  <th class="pb-3 font-semibold">Order ID</th>
+                  <th class="pb-3 font-semibold">Amount</th>
+                  <th class="pb-3 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-ink-900/5" id="invoicesTable">
+                <tr><td colspan="4" class="py-6 text-center text-ink-700/40">No payment history found</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div class="sm-card p-6 bg-brand-50 border border-brand-100">
+          <h4 class="font-display font-bold text-base text-brand-900">Need to update Billing?</h4>
+          <p class="text-xs text-brand-800/80 mt-2">Manage card details, view invoices, or change subscription settings easily.</p>
+          <a href="/pay" class="mt-4 block text-center py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-xs hover:bg-brand-700 transition">Go to Billing Portal</a>
+        </div>
+      </div>
+    </div>`;
+
+    renderInvoicesTable();
+  }
+}
+
+function switchAgentTab(tab) {
+  activeAgentTab = tab;
+  renderAgent();
+}
+
+function renderMiniPrefsTags() {
+  const rolesContainer = document.getElementById('prefRolesList');
+  if (rolesContainer) {
+    const roles = agentPrefs.roles || [];
+    rolesContainer.innerHTML = roles.map((r, i) => `
+      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-brand-50 text-brand-700 border border-brand-100 animate-fade-in">
+        ${r}
+        <button class="hover:text-rose-600 font-bold ml-0.5 text-xs" onclick="deleteTag('roles', ${i}); event.stopPropagation();">&times;</button>
+      </span>
+    `).join('') + `
+      <input type="text" placeholder="+ Add" class="outline-none border border-ink-900/10 px-2 py-0.5 rounded-full text-[11px] max-w-[65px] bg-transparent" onkeydown="handleMiniTagInput(event, 'roles')"/>
+    `;
+  }
+
+  const locsContainer = document.getElementById('prefLocationsList');
+  if (locsContainer) {
+    const locs = agentPrefs.locations || [];
+    locsContainer.innerHTML = locs.map((l, i) => `
+      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 animate-fade-in">
+        ${l}
+        <button class="hover:text-rose-600 font-bold ml-0.5 text-xs" onclick="deleteTag('locations', ${i}); event.stopPropagation();">&times;</button>
+      </span>
+    `).join('') + `
+      <input type="text" placeholder="+ Add" class="outline-none border border-ink-900/10 px-2 py-0.5 rounded-full text-[11px] max-w-[65px] bg-transparent" onkeydown="handleMiniTagInput(event, 'locations')"/>
+    `;
+  }
+}
+
+function renderFullPrefsTags() {
+  const rolesContainer = document.getElementById('fullPrefRoles');
+  if (rolesContainer) {
+    const roles = agentPrefs.roles || [];
+    rolesContainer.innerHTML = roles.map((r, i) => `
+      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-100">
+        ${r}
+        <button class="hover:text-rose-600 font-bold ml-1 text-xs" onclick="deleteTag('roles', ${i})">&times;</button>
+      </span>
+    `).join('');
+  }
+
+  const locsContainer = document.getElementById('fullPrefLocations');
+  if (locsContainer) {
+    const locs = agentPrefs.locations || [];
+    locsContainer.innerHTML = locs.map((l, i) => `
+      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+        ${l}
+        <button class="hover:text-rose-600 font-bold ml-1 text-xs" onclick="deleteTag('locations', ${i})">&times;</button>
+      </span>
+    `).join('');
+  }
+}
+
+function handleMiniTagInput(event, field) {
+  if (event.key === 'Enter') {
+    const val = event.target.value.trim();
+    if (val) {
+      if (!agentPrefs[field]) agentPrefs[field] = [];
+      agentPrefs[field].push(val);
+      renderMiniPrefsTags();
+    }
+    event.target.value = '';
+    event.preventDefault();
+  }
+}
+
+function handleTagInput(event, field) {
+  if (event.key === 'Enter') {
+    const val = event.target.value.trim();
+    if (val) {
+      if (!agentPrefs[field]) agentPrefs[field] = [];
+      agentPrefs[field].push(val);
+      renderFullPrefsTags();
+    }
+    event.target.value = '';
+    event.preventDefault();
+  }
+}
+
+function deleteTag(field, index) {
+  if (agentPrefs[field] && agentPrefs[field][index] !== undefined) {
+    agentPrefs[field].splice(index, 1);
+    if (activeAgentTab === 'overview') {
+      renderMiniPrefsTags();
+    } else {
+      renderFullPrefsTags();
+    }
+  }
+}
+
+function syncRangeVals() {
+  const minExp = document.getElementById('sliderMinExp').value;
+  const maxExp = document.getElementById('sliderMaxExp').value;
+  const minSal = document.getElementById('sliderMinSal').value;
+  const maxSal = document.getElementById('sliderMaxSal').value;
+
+  document.getElementById('lblMinExp').textContent = minExp;
+  document.getElementById('lblMaxExp').textContent = maxExp;
+  document.getElementById('lblMinSal').textContent = minSal;
+  document.getElementById('lblMaxSal').textContent = maxSal;
+
+  agentPrefs.min_experience = parseInt(minExp);
+  agentPrefs.max_experience = parseInt(maxExp);
+  agentPrefs.min_salary = parseInt(minSal);
+  agentPrefs.max_salary = parseInt(maxSal);
+}
+
+function syncFullRangeVals() {
+  const minExp = document.getElementById('fullMinExp').value;
+  const maxExp = document.getElementById('fullMaxExp').value;
+  const minSal = document.getElementById('fullMinSal').value;
+  const maxSal = document.getElementById('fullMaxSal').value;
+
+  document.getElementById('lblFullMinExp').textContent = minExp;
+  document.getElementById('lblFullMaxExp').textContent = maxExp;
+  document.getElementById('lblFullMinSal').textContent = minSal;
+  document.getElementById('lblFullMaxSal').textContent = maxSal;
+
+  agentPrefs.min_experience = parseInt(minExp);
+  agentPrefs.max_experience = parseInt(maxExp);
+  agentPrefs.min_salary = parseInt(minSal);
+  agentPrefs.max_salary = parseInt(maxSal);
+}
+
+function syncPreferencesFromUI() {
+  agentPrefs.linkedin_dm = document.getElementById('chkLinkedinDm').checked;
+  agentPrefs.cold_email = document.getElementById('chkColdEmail').checked;
+  agentPrefs.portal_apply = document.getElementById('chkPortalApply').checked;
+  agentPrefs.pause_weekends = document.getElementById('chkPauseWeekends').checked;
+}
+
+async function saveAgentPrefsToServer() {
+  const btn = document.getElementById('btnSavePrefs');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  
+  syncPreferencesFromUI();
+
+  try {
+    const res = await fetch('/api/agent/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(agentPrefs)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert('Preferences saved successfully!');
+    } else {
+      alert('Failed: ' + (data.error || 'unknown error'));
+    }
+  } catch (e) {
+    alert('Error saving preferences: ' + e.message);
+  } finally {
+    btn.textContent = 'Save Preferences';
+    btn.disabled = false;
+  }
+}
+
+async function saveFullAgentPrefs() {
+  const btn = document.getElementById('btnSaveFullPrefs');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+
+  agentPrefs.linkedin_dm = document.getElementById('fullLinkedinDm').checked;
+  agentPrefs.cold_email = document.getElementById('fullColdEmail').checked;
+  agentPrefs.portal_apply = document.getElementById('fullPortalApply').checked;
+  agentPrefs.pause_weekends = document.getElementById('fullPauseWeekends').checked;
+
+  try {
+    const res = await fetch('/api/agent/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(agentPrefs)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert('Preferences saved successfully!');
+    } else {
+      alert('Failed: ' + (data.error || 'unknown error'));
+    }
+  } catch (e) {
+    alert('Error saving preferences: ' + e.message);
+  } finally {
+    btn.textContent = 'Save Preferences';
+    btn.disabled = false;
+  }
+}
+
+function renderAgentLogsFeed() {
+  const feed = document.getElementById('agentActivityFeed');
+  if (!feed) return;
+
+  if (subLogs.length === 0) {
+    feed.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 border border-brand-100 grid place-items-center font-display font-bold text-[12px] shrink-0">in</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate capitalize">Sent LinkedIn DM to Priya R. @ Stripe — Sr. PM Payments</div>
+          <div class="text-[11px] text-ink-700/60 truncate">"Hi Priya — I'm Aarav, IIT-B '22 PM at Razorpay. Saw your post on async checkout flows..."</div>
+        </div>
+        <div class="text-[11px] text-ink-700/50 shrink-0">11:42 AM</div>
+      </div>
+      <div class="flex items-start gap-3 mt-3">
+        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 border border-brand-100 grid place-items-center font-display font-bold text-[12px] shrink-0">@</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate capitalize">Cold email to Rohan S. @ Razorpay</div>
+          <div class="text-[11px] text-ink-700/60 truncate">Drafted and sent custom cold email pitch and resume.</div>
+        </div>
+        <div class="text-[11px] text-ink-700/50 shrink-0">11:28 AM</div>
+      </div>
+      <div class="flex items-start gap-3 mt-3">
+        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 border border-brand-100 grid place-items-center font-display font-bold text-[12px] shrink-0">✓</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate capitalize">Auto-applied on careers.rippling.com — PM, Compensation</div>
+          <div class="text-[11px] text-ink-700/60 truncate">Form filled successfully with ATS details. Confirmation: #RP8832</div>
+        </div>
+        <div class="text-[11px] text-ink-700/50 shrink-0">11:03 AM</div>
+      </div>
+    `;
+  } else {
+    feed.innerHTML = subLogs.slice(0, 5).map(log => {
+      const d = new Date(log.timestamp);
+      const time = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      let stepIcon = '✓';
+      if (log.step_name.toLowerCase().includes('linkedin')) stepIcon = 'in';
+      else if (log.step_name.toLowerCase().includes('email')) stepIcon = '@';
+      else if (log.step_name.toLowerCase().includes('fail') || log.step_name.toLowerCase().includes('error')) stepIcon = '✕';
+
+      const toneClass = (log.step_name.toLowerCase().includes('fail') || log.step_name.toLowerCase().includes('error'))
+        ? 'bg-rose-50 text-rose-700 border border-rose-100'
+        : 'bg-brand-50 text-brand-700 border border-brand-100';
+
+      return `
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg ${toneClass} grid place-items-center font-display font-bold text-[12px] shrink-0">${stepIcon}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate capitalize">${log.step_name.replace(/_/g, ' ')}</div>
+            <div class="text-[11px] text-ink-700/60 truncate" title="${log.page_url || ''}">${log.page_url || 'No page URL recorded'}</div>
+          </div>
+          <div class="text-[11px] text-ink-700/50 shrink-0">${time}</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function renderAgentFullLogsTable() {
+  const tbody = document.getElementById('agentFullLogsTable');
+  if (!tbody) return;
+
+  if (subLogs.length === 0) {
+    tbody.innerHTML = `
+      <tr class="hover:bg-ink-900/[.01] transition-colors">
+        <td class="py-3.5 text-ink-700">Today, 11:42 AM</td>
+        <td class="py-3.5"><div class="font-semibold">linkedin_dm_sent</div></td>
+        <td class="py-3.5 font-mono text-xs text-brand-700">https://www.linkedin.com/jobs/view/382902</td>
+        <td class="py-3.5"><span class="text-ink-700/40">No Media</span></td>
+      </tr>
+      <tr class="hover:bg-ink-900/[.01] transition-colors">
+        <td class="py-3.5 text-ink-700">Today, 11:28 AM</td>
+        <td class="py-3.5"><div class="font-semibold">cold_email_dispatched</div></td>
+        <td class="py-3.5 font-mono text-xs text-brand-700">mailto:rohan@razorpay.com</td>
+        <td class="py-3.5"><span class="text-ink-700/40">No Media</span></td>
+      </tr>
+      <tr class="hover:bg-ink-900/[.01] transition-colors">
+        <td class="py-3.5 text-ink-700">Today, 11:03 AM</td>
+        <td class="py-3.5"><div class="font-semibold">portal_apply_success</div></td>
+        <td class="py-3.5 font-mono text-xs text-brand-700">https://careers.rippling.com/jobs/pm</td>
+        <td class="py-3.5"><span class="text-ink-700/40">No Media</span></td>
+      </tr>
+    `;
+  } else {
+    tbody.innerHTML = subLogs.map(log => {
+      const d = new Date(log.timestamp);
+      const formattedDate = d.toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) + ', ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const screenshotLink = log.screenshot_path ? `<a href="/api/applications/${log.application_id}/screenshot" target="_blank" class="text-brand-700 font-semibold hover:underline">Screenshot ↗</a>` : '<span class="text-ink-700/40">No Media</span>';
+      return `
+        <tr class="hover:bg-ink-900/[.01] transition-colors">
+          <td class="py-3.5 text-ink-700">${formattedDate}</td>
+          <td class="py-3.5"><div class="font-semibold">${log.step_name}</div></td>
+          <td class="py-3.5 font-mono text-xs text-brand-700 truncate max-w-[250px]" title="${log.page_url || ''}">${log.page_url || '—'}</td>
+          <td class="py-3.5">${screenshotLink}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+async function renderInvoicesTable() {
+  const tbody = document.getElementById('invoicesTable');
+  if (!tbody) return;
+
+  if (U.is_agent_buyer) {
+    tbody.innerHTML = `
+      <tr class="hover:bg-ink-900/[.01] transition-colors">
+        <td class="py-3.5 text-ink-700">${new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}</td>
+        <td class="py-3.5 font-mono text-xs text-ink-800">order_rzp_test_9921a</td>
+        <td class="py-3.5 font-semibold">₹2,000</td>
+        <td class="py-3.5"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Paid</span></td>
+      </tr>
+    `;
+  } else {
+    tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-ink-700/40">No invoices recorded yet</td></tr>`;
+  }
+}
+
+async function runAgentNow() {
+  if (checkSetupRequired()) return;
+  const btn = document.getElementById('btnRunNow');
+  const oldHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="loader border-white shrink-0 w-3.5 h-3.5 animate-spin"></span> Running...`;
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ buyer_id: U.agent_buyer ? U.agent_buyer.id : null, limit: 1 })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert('Agent run successfully triggered in the background!');
+      setTimeout(async () => {
+        try {
+          const logsRes = await fetch('/api/submission-logs');
+          if (logsRes.ok) {
+            subLogs = await logsRes.json();
+            if (activeAgentTab === 'overview') {
+              renderAgentLogsFeed();
+            } else if (activeAgentTab === 'logs') {
+              renderAgentFullLogsTable();
+            }
+          }
+        } catch (e) {}
+      }, 2000);
+    } else {
+      alert('Error: ' + (data.error || 'Failed to trigger agent run'));
+    }
+  } catch (e) {
+    alert('Error running agent: ' + e.message);
+  } finally {
+    btn.innerHTML = oldHtml;
+    btn.disabled = false;
+  }
+}
+
+function renderAgentDetail() {
+  document.getElementById('appView').innerHTML = `
+  <div class="slide-in max-w-5xl mx-auto">
+    <button onclick="window.location.hash = '#store'" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-4">
+      <svg class="icon w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7"/></svg> Back to Agent Store
+    </button>
+
+    <!-- Hero card -->
+    <div class="sm-card p-6 md:p-8 bg-gradient-to-br from-ink-900 to-brand-800 text-white overflow-hidden relative">
+      <div class="absolute -right-10 -top-10 w-72 h-72 rounded-full bg-brand-500/30 blur-3xl"></div>
+      <div class="absolute -left-10 -bottom-10 w-72 h-72 rounded-full bg-accent-500/20 blur-3xl"></div>
+      <div class="relative flex items-start gap-5 flex-wrap">
+        <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 grid place-items-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+        </div>
+        <div class="flex-1 min-w-[220px]">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-bold tracking-widest">
+              <span class="pulse-dot"></span>LIVE · PHASE 1
+            </div>
+            <div class="text-[11px] text-white/60">v1.4</div>
+          </div>
+          <h1 class="font-display text-3xl md:text-4xl font-bold mt-2">Job Seeker Agent</h1>
+          <p class="mt-2 text-white/70 max-w-xl">Automates role discovery and outreach across LinkedIn DMs, recruiter emails, and company portals — 24/7.</p>
+        </div>
+        <div class="flex flex-col items-start md:items-end gap-1">
+          <div class="text-[11px] text-white/60">SUBSCRIBERS</div>
+          <div class="font-display text-2xl font-bold">1,284</div>
+          <div class="flex items-center gap-1.5 text-[11px] text-emerald-300"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l5-5 4 4 5-5"/></svg> +142 this month</div>
+        </div>
+      </div>
+
+      <!-- Stat strip -->
+      <div class="relative mt-7 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div class="text-[11px] text-white/60">Avg applications / day</div>
+          <div class="font-display text-2xl font-bold mt-1">32</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div class="text-[11px] text-white/60">Reply rate</div>
+          <div class="font-display text-2xl font-bold mt-1">17.4%</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div class="text-[11px] text-white/60">Interviews / mo (median)</div>
+          <div class="font-display text-2xl font-bold mt-1">8</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div class="text-[11px] text-white/60">Time saved / week</div>
+          <div class="font-display text-2xl font-bold mt-1">11 hrs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content two-col -->
+    <div class="mt-6 grid lg:grid-cols-3 gap-6">
+      <!-- Left: info -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="sm-card p-6 bg-white">
+          <div class="font-display text-lg font-bold">What this agent does</div>
+          <ul class="mt-4 grid sm:grid-cols-2 gap-3 text-[14px]">
+            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Sends LinkedIn DMs to relevant recruiters & hiring managers</li>
+            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Drafts & sends cold emails with your resume + personalized pitch</li>
+            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Auto-fills application forms on company career pages</li>
+            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Matches roles to your preferences (role, location, comp)</li>
+            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Tracks replies and auto-schedules follow-ups</li>
+            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Respects LinkedIn & email rate limits with smart throttling</li>
+          </ul>
+        </div>
+
+        <!-- Performance preview chart -->
+        <div class="sm-card p-6 bg-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-display text-lg font-bold">Typical subscriber performance</div>
+              <div class="text-[12px] text-ink-700/60">Last 90 days · anonymized average</div>
+            </div>
+            <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">+184% ↑ applications</span>
+          </div>
+          <div class="h-44 mt-3"><canvas id="agentPerfChart"></canvas></div>
+        </div>
+
+        <!-- Channels -->
+        <div class="sm-card p-6 bg-white">
+          <div class="font-display text-lg font-bold">Channel mix</div>
+          <div class="mt-3 grid grid-cols-3 gap-3 text-[13px]">
+            <div class="p-3 rounded-xl bg-brand-50 border border-brand-100">
+              <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>LinkedIn DMs</b></div>
+              <div class="mt-1 text-ink-700/70">48% of daily outreach</div>
+            </div>
+            <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+              <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Cold emails</b></div>
+              <div class="mt-1 text-ink-700/70">31% of daily outreach</div>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>Company portals</b></div>
+              <div class="mt-1 text-ink-700/70">21% of daily outreach</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="sm-card p-6 bg-white">
+          <div class="font-display text-lg font-bold">Frequently asked</div>
+          <div class="mt-3 divide-y divide-ink-900/5">
+            <details class="py-3 group" open>
+              <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">How many applications per day?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+              <p class="mt-2 text-[13px] text-ink-700/80">Up to 40/day depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.</p>
+            </details>
+            <details class="py-3 group">
+              <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">Can I approve messages before they go out?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+              <p class="mt-2 text-[13px] text-ink-700/80">Yes — toggle "human-in-the-loop" in Settings. You'll get a mobile push to approve every outreach.</p>
+            </details>
+            <details class="py-3 group">
+              <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">Do I get a refund if I cancel early?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+              <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: pricing sticky -->
+      <aside class="lg:sticky lg:top-24 h-fit">
+        <div class="sm-card p-6 bg-white">
+          <div class="text-[12px] font-semibold tracking-widest text-brand-700">SUBSCRIPTION</div>
+          <div class="font-display font-bold text-xl mt-1">Pick a duration</div>
+          <p class="text-[12px] text-ink-700/60 mt-0.5">Longer the plan, lower the monthly cost. Cancel anytime.</p>
+
+          <div class="mt-5 space-y-3" id="planOptions">
+            <input type="radio" name="plan" id="plan1" class="plan-radio hidden" value="1" data-total="3000" data-months="1">
+            <label for="plan1" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="font-semibold">1 Month</div>
+                  <div class="text-[11px] text-ink-700/60 priceSub">₹3,000 / month</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-display font-bold text-lg priceNum">₹3,000</div>
+                </div>
+              </div>
+            </label>
+
+            <input type="radio" name="plan" id="plan3" class="plan-radio hidden" value="3" data-total="7500" data-months="3" checked>
+            <label for="plan3" class="block p-4 rounded-2xl border-2 border-ink-900 bg-ink-900 text-white cursor-pointer transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="font-semibold flex items-center gap-2">
+                    3 Months
+                    <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500 text-ink-900 px-1.5 py-0.5 rounded-full">SAVE ₹1,500</span>
+                  </div>
+                  <div class="text-[11px] priceSub text-white/70">₹2,500 / month</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-display font-bold text-lg priceNum text-white">₹7,500</div>
+                </div>
+              </div>
+            </label>
+
+            <input type="radio" name="plan" id="plan6" class="plan-radio hidden" value="6" data-total="12000" data-months="6">
+            <label for="plan6" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="font-semibold flex items-center gap-2">
+                    6 Months
+                    <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500/15 text-accent-600 px-1.5 py-0.5 rounded-full">BEST VALUE</span>
+                  </div>
+                  <div class="text-[11px] priceSub text-ink-700/60">₹2,000 / month · save ₹6,000</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-display font-bold text-lg priceNum">₹12,000</div>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div class="mt-5 text-[12px] text-ink-700/70 space-y-2">
+            <div class="flex justify-between"><span>Selected</span><span id="selDuration" class="font-semibold text-ink-900">3 Months</span></div>
+            <div class="flex justify-between"><span>Monthly rate</span><span id="selPerMonth" class="font-semibold text-ink-900">₹2,500</span></div>
+            <div class="flex justify-between"><span>GST (18%)</span><span id="selGst" class="font-semibold text-ink-900">₹1,350</span></div>
+            <div class="dashed-divider"></div>
+            <div class="flex justify-between font-display text-base font-bold text-ink-900"><span>Due today</span><span id="selTotal">₹8,850</span></div>
+          </div>
+
+          <button onclick="redirectToPayment()" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Subscribe & activate</button>
+          <div class="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-ink-700/60">
+            <svg class="icon text-emerald-600 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+            Secure payment · Cancel anytime
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>`;
+}
+
+function initAgentDetailView() {
+  const radios = document.querySelectorAll('.plan-radio');
+  radios.forEach(r => r.addEventListener('change', updateAgentDetailPlanSummary));
+  updateAgentDetailPlanSummary();
+
+  const pc = document.getElementById('agentPerfChart');
+  if (pc) {
+    new Chart(pc, {
+      type: 'line',
+      data: {
+        labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+        datasets: [
+          { label:'Subscribers', data:[22,40,55,68,80,98,115,130,152,180,210,240], borderColor:'#5B66E8', backgroundColor:'rgba(91,102,232,0.08)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 },
+          { label:'Replies/week', data:[2,5,8,10,14,18,22,26,30,38,45,52], borderColor:'#FF9E50', backgroundColor:'rgba(255,158,80,0.06)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 }
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{size:11}}}}, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#6b7280'}}, y:{ grid:{color:'#eef0fa'}, ticks:{font:{size:10},color:'#6b7280'}}}}
+    });
+  }
+}
+
+function updateAgentDetailPlanSummary() {
+  const checked = document.querySelector('.plan-radio:checked');
+  if (!checked) return;
+  
+  // Normalize labels
+  document.querySelectorAll('#planOptions label').forEach(l => {
+    l.classList.remove('border-ink-900','bg-ink-900','text-white');
+    l.classList.add('border-ink-900/10');
+    const sub = l.querySelector('.priceSub');
+    const num = l.querySelector('.priceNum');
+    if (sub) sub.classList.remove('text-white/70'), sub.classList.add('text-ink-700/60');
+    if (num) num.classList.remove('text-white');
+  });
+  
+  const label = document.querySelector('label[for="' + checked.id + '"]');
+  if (label) {
+    label.classList.add('border-ink-900','bg-ink-900','text-white');
+    label.classList.remove('border-ink-900/10');
+    const sub = label.querySelector('.priceSub');
+    const num = label.querySelector('.priceNum');
+    if (sub) sub.classList.remove('text-ink-700/60'), sub.classList.add('text-white/70');
+    if (num) num.classList.add('text-white');
+  }
+
+  const months = parseInt(checked.dataset.months, 10);
+  const total = parseInt(checked.dataset.total, 10);
+  const perMonth = total / months;
+  const gst = Math.round(total * 0.18);
+  const due = total + gst;
+
+  const map = {1:'1 Month', 3:'3 Months', 6:'6 Months'};
+  const selDuration = document.getElementById('selDuration');
+  const selPerMonth = document.getElementById('selPerMonth');
+  const selGst = document.getElementById('selGst');
+  const selTotal = document.getElementById('selTotal');
+
+  if (selDuration) selDuration.textContent = map[months];
+  if (selPerMonth) selPerMonth.textContent = '₹' + perMonth.toLocaleString('en-IN');
+  if (selGst) selGst.textContent = '₹' + gst.toLocaleString('en-IN');
+  if (selTotal) selTotal.textContent = '₹' + due.toLocaleString('en-IN');
+}
+
+function redirectToPayment() {
+  const checked = document.querySelector('.plan-radio:checked');
+  if (!checked) return;
+  const months = parseInt(checked.dataset.months, 10);
+  const total = parseInt(checked.dataset.total, 10);
+  const gst = Math.round(total * 0.18);
+  const due = total + gst;
+  window.location.href = `/pay?amount=${due}&months=${months}`;
+}
+
+window.addEventListener('hashchange', handleRouting);
+
+// Modal details and handlers
+document.body.insertAdjacentHTML('beforeend', `
+  <!-- Account Details Modal -->
+  <div id="accountModal" class="fixed inset-0 bg-ink-900/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden" onclick="closeUserAccountModal(event)">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-ink-900/5 overflow-hidden slide-in" onclick="event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="px-6 py-5 border-b border-ink-900/5 flex items-center justify-between">
+        <div>
+          <h3 class="font-display font-bold text-base text-ink-900">Account Details</h3>
+          <p class="text-[11px] text-ink-700/60 mt-0.5">Your registered information and assets.</p>
+        </div>
+        <button onclick="closeUserAccountModal()" class="w-8 h-8 rounded-full border border-ink-900/10 hover:bg-ink-900/5 grid place-items-center text-ink-700 transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 text-xs">
+        <div class="flex items-center gap-3 p-3.5 rounded-xl bg-brand-50/50 border border-brand-100/50">
+          <div class="w-10 h-10 rounded-full bg-brand-600 text-white grid place-items-center font-bold text-base shadow-soft" id="modalAvatar">A</div>
+          <div>
+            <div class="font-bold text-ink-900 text-sm" id="modalProfileName">Aarav Kulkarni</div>
+            <div class="text-[10px] font-bold text-brand-700 uppercase tracking-widest mt-0.5" id="modalPlanBadge">Pro Agent Subscriber</div>
+          </div>
+        </div>
+
+        <div class="space-y-3.5 pt-2">
+          <div>
+            <span class="block text-[10px] font-bold text-ink-700/50 uppercase tracking-wider mb-1">Display Email</span>
+            <div class="px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/5 rounded-xl font-semibold text-ink-900" id="modalEmail">aarav.k@iitb.ac.in</div>
+          </div>
+
+          <div>
+            <span class="block text-[10px] font-bold text-ink-700/50 uppercase tracking-wider mb-1">Institute & degree</span>
+            <div class="px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/5 rounded-xl font-semibold text-ink-900" id="modalInstitute">IIT Bombay - Batch of 2022</div>
+          </div>
+
+          <div>
+            <span class="block text-[10px] font-bold text-ink-700/50 uppercase tracking-wider mb-1">Professional Headline</span>
+            <div class="px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/5 rounded-xl font-semibold text-ink-900" id="modalHeadline">Senior Product Manager - Fintech</div>
+          </div>
+
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <span class="block text-[10px] font-bold text-ink-700/50 uppercase tracking-wider mb-1">LinkedIn Account</span>
+              <div class="px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/5 rounded-xl font-semibold text-ink-900 truncate" id="modalLinkedin">LinkedIn - aarav-kulkarni</div>
+            </div>
+            <div class="w-24">
+              <span class="block text-[10px] font-bold text-ink-700/50 uppercase tracking-wider mb-1">Status</span>
+              <div class="px-3.5 py-2.5 bg-emerald-50 border border-emerald-100/50 rounded-xl font-bold text-emerald-700 text-center" id="modalLinkedinStatus">Connected</div>
+            </div>
+          </div>
+
+          <!-- Resume Section -->
+          <div class="border-t border-ink-900/5 pt-4 mt-2">
+            <span class="block text-[10px] font-bold text-ink-700/50 uppercase tracking-wider mb-1">Active Resume File</span>
+            <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-ink-900/5 bg-ink-900/[0.01]">
+              <div class="flex items-center gap-2 min-w-0">
+                <svg class="w-4 h-4 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <span id="modalResumeName" class="font-bold text-ink-900 truncate" title="No resume uploaded">No resume uploaded</span>
+              </div>
+              <button onclick="triggerModalResumeUpload()" class="px-3 py-2 border border-ink-900/10 text-ink-900 bg-white hover:bg-ink-900/5 font-bold rounded-xl transition shrink-0 flex items-center gap-1">
+                <svg class="w-3 h-3 text-ink-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Change resume
+              </button>
+            </div>
+            <input type="file" id="modalResumeInput" accept=".pdf,.doc,.docx" class="hidden" onchange="uploadModalResume(this)">
+            <div id="modalResumeUploadStatus" class="text-[10px] font-semibold text-center mt-1.5 hidden"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`);
+
+function showUserAccountModal() {
+  const modal = document.getElementById('accountModal');
+  if (!modal) return;
+  
+  const avatarText = U.avatar || (U.name ? U.name[0].toUpperCase() : 'U');
+  document.getElementById('modalAvatar').textContent = avatarText;
+  document.getElementById('modalProfileName').textContent = U.full_name || (U.name + ' ' + (U.last_name || ''));
+  document.getElementById('modalPlanBadge').textContent = U.is_agent_buyer ? 'Pro Agent Subscriber' : 'Free Trial Tier';
+  document.getElementById('modalEmail').textContent = U.email || '—';
+  document.getElementById('modalInstitute').textContent = U.institute || 'No institute listed';
+  document.getElementById('modalHeadline').textContent = U.headline || 'No professional headline listed';
+  document.getElementById('modalLinkedin').textContent = 'LinkedIn - ' + (U.linkedin_username || 'username');
+  document.getElementById('modalLinkedinStatus').textContent = U.linkedin_connected ? 'Connected' : 'Disconnected';
+  document.getElementById('modalLinkedinStatus').className = U.linkedin_connected 
+    ? 'px-3 py-2 bg-emerald-50 border border-emerald-100/50 rounded-xl font-bold text-emerald-700 text-center'
+    : 'px-3 py-2 bg-ink-900/5 border border-ink-900/10 rounded-xl font-bold text-ink-700/60 text-center';
+
+  // Resume Name
+  const resumeNameEl = document.getElementById('modalResumeName');
+  if (U.agent_buyer && U.agent_buyer.resume_path) {
+    const parts = U.agent_buyer.resume_path.split(/[/\\]/);
+    resumeNameEl.textContent = parts[parts.length - 1];
+    resumeNameEl.title = parts[parts.length - 1];
+  } else {
+    resumeNameEl.textContent = 'No resume uploaded';
+    resumeNameEl.title = 'No resume uploaded';
+  }
+
+  // Hide upload status
+  document.getElementById('modalResumeUploadStatus').classList.add('hidden');
+
+  // Show modal
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeUserAccountModal(event) {
+  const modal = document.getElementById('accountModal');
+  if (modal) {
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+}
+
+function triggerModalResumeUpload() {
+  const input = document.getElementById('modalResumeInput');
+  if (input) input.click();
+}
+
+async function uploadModalResume(input) {
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  
+  const statusEl = document.getElementById('modalResumeUploadStatus');
+  statusEl.classList.remove('hidden', 'text-emerald-700', 'text-rose-700');
+  statusEl.classList.add('text-ink-700/50');
+  statusEl.textContent = 'Uploading resume...';
+
+  const formData = new FormData();
+  formData.append('resume', file);
+
+  try {
+    const res = await fetch('/api/user/resume', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.classList.replace('text-ink-700/50', 'text-emerald-700');
+      statusEl.textContent = '✓ Resume updated successfully!';
+      
+      // Update global user object
+      if (!U.agent_buyer) {
+        U.agent_buyer = { resume_path: data.filename };
+      } else {
+        U.agent_buyer.resume_path = data.filename;
+      }
+      
+      // Update displayed name
+      document.getElementById('modalResumeName').textContent = data.filename;
+      document.getElementById('modalResumeName').title = data.filename;
+
+      // Reload any other tabs if active
+      if (window.location.hash === '#settings') {
+        renderSettings();
+      }
+    } else {
+      statusEl.classList.replace('text-ink-700/50', 'text-rose-700');
+      statusEl.textContent = 'Upload failed: ' + (data.error || 'Unknown error');
+    }
+  } catch (err) {
+    statusEl.classList.replace('text-ink-700/50', 'text-rose-700');
+    statusEl.textContent = 'Upload error: ' + err.message;
+  }
+}
+
+loadDashboard();
+</script>
+
+<!-- ── Setup / Credentials Modal ────────────────────────────────────────── -->
+<div id="setupModal" class="setup-backdrop" onclick="if(event.target===this)closeSetupModal()">
+  <div class="setup-card">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center shadow-lg">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm10-10V7a4 4 0 0 0-8 0v4h8z"/></svg>
+      </div>
+      <h2 class="font-display text-xl font-bold mt-3">Complete Agent Setup</h2>
+      <p class="text-[13px] text-ink-700/70 mt-1">The agent needs the following to start applying on your behalf.</p>
+    </div>
+
+    <div class="space-y-3" id="setupSections">
+
+      <!-- 1. Resume -->
+      <div class="setup-section" id="setupResume">
+        <div class="setup-section-header" onclick="toggleSetupSection('setupResume')">
+          <div class="setup-check" id="checkResume">1</div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">Upload Resume</div>
+            <div class="text-[11px] text-ink-700/60">PDF or DOC · used for all applications</div>
+          </div>
+          <svg class="chevron w-4 h-4 text-ink-700/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="setup-section-body">
+          <div id="setupResumeContent">
+            <label class="block w-full p-5 border-2 border-dashed border-brand-200 rounded-xl text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition">
+              <input type="file" accept=".pdf,.doc,.docx" class="hidden" onchange="handleSetupResume(event)"/>
+              <svg class="mx-auto mb-2 text-brand-400" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div class="text-[13px] font-semibold">Click to choose a file</div>
+              <div class="text-[11px] text-ink-700/50 mt-0.5">PDF or DOC · Max 5 MB</div>
+            </label>
+            <div id="setupResumeStatus" class="mt-2 text-[12px] hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. LinkedIn -->
+      <div class="setup-section" id="setupLinkedin">
+        <div class="setup-section-header" onclick="toggleSetupSection('setupLinkedin')">
+          <div class="setup-check" id="checkLinkedin">2</div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">Connect LinkedIn</div>
+            <div class="text-[11px] text-ink-700/60">For DM outreach and job discovery</div>
+          </div>
+          <svg class="chevron w-4 h-4 text-ink-700/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="setup-section-body">
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">LinkedIn Email / Username</label>
+              <input type="text" id="setupLiUser" class="setup-input" placeholder="your@email.com" autocomplete="username"/>
+            </div>
+            <div class="relative">
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">LinkedIn Password</label>
+              <input type="password" id="setupLiPass" class="setup-input pr-10" placeholder="••••••••" autocomplete="current-password"/>
+              <button type="button" onclick="togglePasswordVisibility('setupLiPass', this)" class="absolute right-3 top-[30px] text-ink-700/40 hover:text-ink-700">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="p-3 rounded-xl bg-brand-50/50 border border-brand-100 text-[11px] text-brand-800">
+              <span class="font-semibold">🔒 Secure:</span> Your password is encrypted with AES-256-GCM before storage. We never store plaintext credentials.
+            </div>
+            <button onclick="saveSetupLinkedin()" id="btnSetupLinkedin" class="w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition">Connect LinkedIn</button>
+            <div id="setupLinkedinStatus" class="text-[12px] hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Email -->
+      <div class="setup-section" id="setupEmail">
+        <div class="setup-section-header" onclick="toggleSetupSection('setupEmail')">
+          <div class="setup-check" id="checkEmail">3</div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">Connect Email</div>
+            <div class="text-[11px] text-ink-700/60">For cold email outreach to recruiters</div>
+          </div>
+          <svg class="chevron w-4 h-4 text-ink-700/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="setup-section-body">
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Gmail Address</label>
+              <input type="email" id="setupEmailAddr" class="setup-input" placeholder="your@gmail.com"/>
+            </div>
+            <div class="relative">
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Google App Password</label>
+              <input type="password" id="setupEmailPass" class="setup-input pr-10" placeholder="16-digit app password"/>
+              <button type="button" onclick="togglePasswordVisibility('setupEmailPass', this)" class="absolute right-3 top-[30px] text-ink-700/40 hover:text-ink-700">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <!-- How to generate app password -->
+            <details class="group">
+              <summary class="text-[12px] font-semibold text-brand-700 cursor-pointer hover:underline">How to generate a Google App Password ↓</summary>
+              <div class="mt-2 p-3.5 rounded-xl bg-ink-900/[.02] border border-ink-900/5 text-[12px] text-ink-700/80 space-y-2">
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">1.</span><span>Open your <a href="https://myaccount.google.com/security" target="_blank" class="text-brand-700 underline">Google Account Security</a> page.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">2.</span><span>Enable <strong>2-Step Verification</strong> (under "Signing in to Google"). Skip if already on.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">3.</span><span>Click on <strong>2-Step Verification</strong>, scroll to the bottom, and select <strong>App passwords</strong>.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">4.</span><span>Type a custom name (e.g. "Job Agent") and click <strong>Create</strong>.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">5.</span><span>Copy the <strong>16-digit passcode</strong> (without spaces) and paste it above.</span></div>
+              </div>
+            </details>
+            <div class="p-3 rounded-xl bg-brand-50/50 border border-brand-100 text-[11px] text-brand-800">
+              <span class="font-semibold">🔒 Secure:</span> Your app password is encrypted with AES-256-GCM before storage. We never store plaintext credentials.
+            </div>
+            <button onclick="saveSetupEmail()" id="btnSetupEmail" class="w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition">Connect Email</button>
+            <div id="setupEmailStatus" class="text-[12px] hidden"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-5 flex gap-3">
+      <button onclick="closeSetupModal()" class="flex-1 py-2.5 rounded-xl border border-ink-900/10 text-[13px] font-semibold hover:bg-ink-900/5 transition">I'll do this later</button>
+      <button onclick="closeSetupModal(); checkSetupRequired() || startAgent()" class="flex-1 py-2.5 rounded-xl bg-ink-900 text-white text-[13px] font-semibold hover:bg-brand-700 transition">Done — Start Agent</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Setup Modal Logic ─────────────────────────────────────────────────────────
+
+function checkSetupRequired() {
+  const hasResume = !!(U.agent_buyer && U.agent_buyer.resume_path);
+  const hasLinkedin = !!U.has_linkedin_creds;
+  const hasEmail = !!U.has_gmail_creds;
+
+  if (!hasResume || !hasLinkedin || !hasEmail) {
+    showSetupModal(hasResume, hasLinkedin, hasEmail);
+    return true; // setup IS required
+  }
+  return false; // all good
+}
+
+function showSetupModal(hasResume, hasLinkedin, hasEmail) {
+  // Update check icons
+  updateCheckIcon('checkResume', hasResume);
+  updateCheckIcon('checkLinkedin', hasLinkedin);
+  updateCheckIcon('checkEmail', hasEmail);
+
+  // Pre-fill username fields if available
+  if (U.linkedin_username) document.getElementById('setupLiUser').value = U.linkedin_username;
+  if (U.gmail_username) document.getElementById('setupEmailAddr').value = U.gmail_username;
+  else if (U.email) document.getElementById('setupEmailAddr').value = U.email;
+
+  // Auto-open the first incomplete section
+  document.querySelectorAll('.setup-section').forEach(s => s.classList.remove('open'));
+  if (!hasResume) document.getElementById('setupResume').classList.add('open');
+  else if (!hasLinkedin) document.getElementById('setupLinkedin').classList.add('open');
+  else if (!hasEmail) document.getElementById('setupEmail').classList.add('open');
+
+  document.getElementById('setupModal').classList.add('active');
+}
+
+function closeSetupModal() {
+  document.getElementById('setupModal').classList.remove('active');
+}
+
+function updateCheckIcon(id, done) {
+  const el = document.getElementById(id);
+  if (done) {
+    el.className = 'setup-check done';
+    el.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>';
+  } else {
+    el.className = 'setup-check pending';
+    el.textContent = el.textContent.trim() || '?';
+  }
+}
+
+function toggleSetupSection(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+}
+
+async function handleSetupResume(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('setupResumeStatus');
+  statusEl.className = 'mt-2 text-[12px] text-brand-700 font-medium';
+  statusEl.textContent = 'Uploading...';
+  statusEl.classList.remove('hidden');
+
+  try {
+    const formData = new FormData();
+    formData.append('name', U.name || '');
+    formData.append('last_name', U.last_name || '');
+    formData.append('email', U.email || '');
+    formData.append('resume', file);
+    const res = await fetch('/api/agent-buyers', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'mt-2 text-[12px] text-emerald-700 font-medium';
+      statusEl.textContent = '✓ Resume uploaded: ' + file.name;
+      updateCheckIcon('checkResume', true);
+      // Refresh user data
+      const meRes = await fetch('/api/me');
+      const meData = await meRes.json();
+      if (meData.ok) U = meData.user;
+    } else {
+      statusEl.className = 'mt-2 text-[12px] text-rose-700 font-medium';
+      statusEl.textContent = 'Error: ' + ((data.errors || ['Upload failed']).join(', '));
+    }
+  } catch (err) {
+    statusEl.className = 'mt-2 text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Upload error: ' + err.message;
+  }
+}
+
+async function saveSetupLinkedin() {
+  const username = document.getElementById('setupLiUser').value.trim();
+  const password = document.getElementById('setupLiPass').value.trim();
+  const statusEl = document.getElementById('setupLinkedinStatus');
+  const btn = document.getElementById('btnSetupLinkedin');
+
+  if (!username || !password) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Both fields are required.';
+    statusEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/user/linkedin-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'text-[12px] text-emerald-700 font-medium';
+      statusEl.textContent = '✓ LinkedIn connected securely!';
+      statusEl.classList.remove('hidden');
+      updateCheckIcon('checkLinkedin', true);
+      U.has_linkedin_creds = true;
+      btn.textContent = '✓ Connected';
+      btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+    } else {
+      statusEl.className = 'text-[12px] text-rose-700 font-medium';
+      statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+      statusEl.classList.remove('hidden');
+      btn.textContent = 'Connect LinkedIn';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.classList.remove('hidden');
+    btn.textContent = 'Connect LinkedIn';
+    btn.disabled = false;
+  }
+}
+
+async function saveSetupEmail() {
+  const email = document.getElementById('setupEmailAddr').value.trim();
+  const appPassword = document.getElementById('setupEmailPass').value.trim();
+  const statusEl = document.getElementById('setupEmailStatus');
+  const btn = document.getElementById('btnSetupEmail');
+
+  if (!email || !appPassword) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Both fields are required.';
+    statusEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/user/email-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, app_password: appPassword })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'text-[12px] text-emerald-700 font-medium';
+      statusEl.textContent = '✓ Email connected securely!';
+      statusEl.classList.remove('hidden');
+      updateCheckIcon('checkEmail', true);
+      U.has_gmail_creds = true;
+      btn.textContent = '✓ Connected';
+      btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+    } else {
+      statusEl.className = 'text-[12px] text-rose-700 font-medium';
+      statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+      statusEl.classList.remove('hidden');
+      btn.textContent = 'Connect Email';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.classList.remove('hidden');
+    btn.textContent = 'Connect Email';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Checkout — IITIIMJobAssistant</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans:['Inter','ui-sans-serif','system-ui'], display:['Space Grotesk','Inter','sans-serif'] },
+      colors: {
+        brand:{50:'#EEF0FF',100:'#E0E4FF',200:'#C3CAFF',300:'#A3ACFF',400:'#7D87F5',500:'#5B66E8',600:'#4B52D1',700:'#3E42A8',800:'#2F3380',900:'#1E2055',950:'#0F1033'},
+        accent:{400:'#FFB978',500:'#FF9E50',600:'#F57C2B'},
+        ink:{900:'#0B0D1F',800:'#121534',700:'#1B1F44'}
+      },
+      boxShadow:{'soft':'0 10px 40px -12px rgba(17,24,39,0.12)'}
+    }}
+  }
+</script>
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;background:#FAFBFD;color:#0B0D1F}
+  .font-display{font-family:'Space Grotesk',Inter,sans-serif;letter-spacing:-0.02em}
+  .ring-gradient{background:conic-gradient(from 220deg,#5B66E8,#A3ACFF,#FFB978,#5B66E8)}
+  .sm-card{background:#fff;border:1px solid rgba(15,16,51,0.06);border-radius:20px}
+  .hero-gradient { background: radial-gradient(1000px 500px at 10% -10%,rgba(91,102,232,0.25),transparent 60%), radial-gradient(800px 400px at 90% 10%,rgba(255,158,80,0.22),transparent 60%), radial-gradient(700px 500px at 50% 110%,rgba(163,172,255,0.2),transparent 60%), linear-gradient(180deg,#FFFFFF 0%,#F5F6FD 100%); }
+  .loader{width:18px;height:18px;border-radius:999px;border:2px solid rgba(91,102,232,0.25);border-top-color:#5B66E8;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .dashed-divider { background-image: linear-gradient(to right, #D9DEF0 50%, transparent 50%); background-size: 10px 1px; background-repeat: repeat-x; height: 1px; }
+  .icon { width: 18px; height: 18px; stroke-width: 1.8; }
+
+  /* ── Modal styles ─────────────────────────────────────────────────── */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(11,13,31,0.55);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .35s ease}
+  .modal-backdrop.active{opacity:1;pointer-events:auto}
+  .modal-card{background:#fff;border-radius:24px;max-width:480px;width:92%;padding:2.5rem;box-shadow:0 25px 80px -15px rgba(15,16,51,0.25);transform:translateY(30px) scale(.96);transition:transform .4s cubic-bezier(.2,.8,.2,1),opacity .35s;opacity:0}
+  .modal-backdrop.active .modal-card{transform:none;opacity:1}
+  .upload-zone{border:2px dashed rgba(91,102,232,0.35);border-radius:16px;padding:2rem;text-align:center;cursor:pointer;transition:all .25s}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:#5B66E8;background:rgba(91,102,232,0.04)}
+  .upload-zone.has-file{border-color:#22c55e;background:rgba(34,197,94,0.04)}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:200}
+  .confetti span{position:absolute;width:8px;height:8px;border-radius:2px;animation:confetti-fall 2.5s ease-out forwards;opacity:0}
+  @keyframes confetti-fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body class="antialiased text-ink-900">
+<div class="absolute inset-0 hero-gradient opacity-60 pointer-events-none"></div>
+
+<div class="relative max-w-5xl mx-auto px-5 py-14 min-h-screen flex flex-col justify-between">
+  <div>
+    <!-- Logo / Brand Header -->
+    <a href="/dashboard" class="flex items-center justify-center gap-2 mb-10">
+      <div class="w-9 h-9 rounded-lg ring-gradient p-[1.5px]">
+        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center text-white text-[14px] font-bold">I²</div>
+      </div>
+      <span class="font-display font-bold text-lg">IITIIMJobAssistant</span>
+    </a>
+
+    <!-- Main Payment Flow Grid (Two Columns) -->
+    <div class="grid md:grid-cols-5 gap-6">
+      
+      <!-- Left Column: Checkout Card / Payment Details -->
+      <div class="md:col-span-3 sm-card p-7 bg-white shadow-soft">
+        <button onclick="window.location.href='/dashboard#store'" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-6">
+          <svg class="icon w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7"/></svg> Back to agent store
+        </button>
+
+        <h1 class="font-display text-2xl font-bold">Complete your subscription</h1>
+        <p id="paymentPlanHeader" class="text-[13px] text-ink-700/70 mt-1">Job Seeker Agent · 3-month plan</p>
+
+        <!-- Supported Payment Methods -->
+        <div class="mt-6">
+          <div class="text-[12px] font-semibold text-ink-700/60 uppercase tracking-wider mb-3">Accepted payment methods</div>
+          <div class="grid grid-cols-3 gap-3">
+            <!-- UPI -->
+            <div class="p-4 rounded-xl border border-ink-900/8 bg-gradient-to-br from-white to-ink-900/[.02] text-center group hover:border-brand-300 hover:shadow-sm transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-emerald-50 text-emerald-600 grid place-items-center mb-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4m0 12v4M2 12h4m12 0h4M7.8 7.8 5 5m14 14-2.8-2.8M16.2 7.8 19 5M5 19l2.8-2.8"/></svg>
+              </div>
+              <div class="text-[13px] font-semibold">UPI</div>
+              <div class="text-[11px] text-ink-700/50 mt-0.5">GPay · PhonePe · QR</div>
+            </div>
+            <!-- Card -->
+            <div class="p-4 rounded-xl border border-ink-900/8 bg-gradient-to-br from-white to-ink-900/[.02] text-center group hover:border-brand-300 hover:shadow-sm transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-brand-50 text-brand-600 grid place-items-center mb-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+              </div>
+              <div class="text-[13px] font-semibold">Card</div>
+              <div class="text-[11px] text-ink-700/50 mt-0.5">Visa · Mastercard · Rupay</div>
+            </div>
+            <!-- Netbanking -->
+            <div class="p-4 rounded-xl border border-ink-900/8 bg-gradient-to-br from-white to-ink-900/[.02] text-center group hover:border-brand-300 hover:shadow-sm transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-accent-500/10 text-accent-600 grid place-items-center mb-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+              </div>
+              <div class="text-[13px] font-semibold">Netbanking</div>
+              <div class="text-[11px] text-ink-700/50 mt-0.5">All major banks</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- How it works -->
+        <div class="mt-5 p-4 rounded-xl bg-brand-50/50 border border-brand-100">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 grid place-items-center flex-shrink-0 mt-0.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </div>
+            <div>
+              <div class="text-[13px] font-semibold text-brand-800">Secure Razorpay Checkout</div>
+              <div class="text-[12px] text-brand-700/70 mt-0.5">Click the button below to open a secure payment window. You can choose UPI (scan QR / enter UPI ID), debit/credit card, or netbanking — all handled safely by Razorpay.</div>
+            </div>
+          </div>
+        </div>
+
+        <label class="mt-4 flex items-start gap-2 text-[13px] cursor-pointer">
+          <input type="checkbox" checked class="accent-brand-600 mt-0.5"/>
+          <span class="text-ink-700/80">Auto-renew when the plan ends (recommended). Cancel anytime.</span>
+        </label>
+
+        <!-- Status & Messages -->
+        <div id="status" class="hidden p-3 rounded-xl mt-4 text-[13px] text-center font-medium"></div>
+
+        <!-- Pay Button -->
+        <button onclick="startPayment()" id="payBtn" class="mt-6 w-full py-3.5 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 flex items-center justify-center gap-2 transition text-[15px]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+          <span id="payLabel">Pay ₹8,850 · Activate agent</span>
+        </button>
+
+        <div class="mt-4 flex items-center justify-center gap-2 text-[11px] text-ink-700/60">
+          <svg class="icon text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+          Secure payment by Razorpay · 256-bit SSL
+        </div>
+      </div>
+
+      <!-- Right Column: Order Summary Card -->
+      <div class="md:col-span-2 sm-card p-7 bg-gradient-to-br from-brand-50 to-white border-brand-100 shadow-soft">
+        <div class="text-[12px] font-semibold tracking-widest text-brand-700">ORDER SUMMARY</div>
+        <div class="mt-3 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-ink-900 text-white grid place-items-center font-display font-bold">A</div>
+          <div>
+            <div class="font-semibold">Job Seeker Agent</div>
+            <div id="summaryPlanText" class="text-[12px] text-ink-700/70">3-month plan · ₹2,500/mo</div>
+          </div>
+        </div>
+        <div class="mt-5 dashed-divider"></div>
+        <div class="mt-5 space-y-2 text-[13px]">
+          <div class="flex justify-between"><span class="text-ink-700/70">Subtotal</span><span id="summarySubtotal">₹7,500.00</span></div>
+          <div class="flex justify-between"><span class="text-ink-700/70">GST (18%)</span><span id="summaryGst">₹1,350.00</span></div>
+          <div class="flex justify-between text-emerald-700"><span>First-time credit</span><span>–₹0.00</span></div>
+          <div id="discountRow" class="hidden flex justify-between text-emerald-700"><span>Discount (IIT99)</span><span id="summaryDiscount">–₹0.00</span></div>
+        </div>
+        <div class="mt-4 dashed-divider"></div>
+        
+        <!-- Promo Code Section -->
+        <div class="mt-4">
+          <label class="block text-[11px] font-semibold text-ink-700/60 uppercase tracking-wider">Promo Code</label>
+          <div class="mt-1 flex gap-2">
+            <input type="text" id="couponInput" placeholder="Enter coupon code" class="flex-1 px-3 py-1.5 rounded-lg border border-ink-900/10 text-[13px] outline-none uppercase focus:border-brand-400"/>
+            <button onclick="applyCoupon()" class="px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold hover:bg-brand-700 transition">Apply</button>
+          </div>
+          <div id="couponStatus" class="hidden mt-1 text-[11px] font-medium"></div>
+        </div>
+
+        <div class="mt-4 dashed-divider"></div>
+        <div class="mt-3 flex justify-between font-display font-bold text-lg">
+          <span>Due today</span>
+          <span id="summaryTotal">₹8,850.00</span>
+        </div>
+        <div id="summaryEndsText" class="mt-4 text-[12px] text-ink-700/70">Plan ends in 3 months. Auto-renews monthly unless cancelled.</div>
+
+        <div id="summarySavings" class="mt-5 p-3 rounded-xl bg-emerald-50 text-emerald-800 text-[12px] flex items-start gap-2">
+          <svg class="icon mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>You're saving <b id="savingsAmountText">₹1,500</b> vs. paying month-to-month.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="mt-8 text-center text-[11px] text-ink-700/50 flex items-center justify-center gap-1.5">
+    <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+    Secure payment by Razorpay · 256-bit SSL
+  </div>
+</div>
+
+<!-- ── Post-Payment Setup Modal (shown after successful payment) ── -->
+<div id="resumeModal" class="modal-backdrop">
+  <div class="modal-card" style="max-width:560px">
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center shadow-lg">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h2 class="font-display text-2xl font-bold mt-4">Payment Successful! 🎉</h2>
+      <p class="text-[13px] text-ink-700/70 mt-2">Your Pro Agent plan is now active. Complete these steps so the agent can start working for you.</p>
+    </div>
+
+    <div class="space-y-3">
+
+      <!-- 1. Resume Upload -->
+      <div class="border border-ink-900/6 rounded-2xl overflow-hidden" id="paySetupResume">
+        <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-ink-900/[.02] transition" onclick="togglePaySection('paySetupResume')">
+          <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 grid place-items-center text-[12px] font-bold shrink-0" id="payCheckResume">1</div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">Upload Resume</div>
+            <div class="text-[11px] text-ink-700/60">PDF or DOC · used for all applications</div>
+          </div>
+          <svg class="pay-chevron w-4 h-4 text-ink-700/40 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="pay-section-body px-4 pb-4" style="display:none">
+          <div id="uploadZone" class="upload-zone" onclick="document.getElementById('resumeInput').click()">
+            <input type="file" id="resumeInput" accept=".pdf,.doc,.docx" class="hidden" onchange="handleFileSelect(event)"/>
+            <div id="uploadIcon">
+              <svg class="mx-auto mb-3 text-brand-400" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div id="uploadLabel" class="text-[14px] font-semibold text-ink-800">Drop your resume here or click to browse</div>
+            <div id="uploadHint" class="text-[12px] text-ink-700/50 mt-1">PDF or DOC only · Max 5 MB</div>
+          </div>
+          <div id="uploadError" class="hidden mt-3 p-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-[13px] text-center"></div>
+          <button id="uploadBtn" onclick="uploadResume()" disabled class="mt-4 w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold opacity-50 cursor-not-allowed transition flex items-center justify-center gap-2 text-[13px]">
+            Upload Resume
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Connect LinkedIn -->
+      <div class="border border-ink-900/6 rounded-2xl overflow-hidden" id="paySetupLinkedin">
+        <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-ink-900/[.02] transition" onclick="togglePaySection('paySetupLinkedin')">
+          <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 grid place-items-center text-[12px] font-bold shrink-0" id="payCheckLinkedin">2</div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">Connect LinkedIn</div>
+            <div class="text-[11px] text-ink-700/60">For DM outreach and job discovery</div>
+          </div>
+          <svg class="pay-chevron w-4 h-4 text-ink-700/40 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="pay-section-body px-4 pb-4" style="display:none">
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">LinkedIn Email / Username</label>
+              <input type="text" id="payLiUser" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400" placeholder="your@email.com" autocomplete="username"/>
+            </div>
+            <div class="relative">
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">LinkedIn Password</label>
+              <input type="password" id="payLiPass" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400 pr-10" placeholder="••••••••" autocomplete="current-password"/>
+              <button type="button" onclick="togglePayPw('payLiPass', this)" class="absolute right-3 top-[30px] text-ink-700/40 hover:text-ink-700">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="p-3 rounded-xl bg-brand-50/50 border border-brand-100 text-[11px] text-brand-800">
+              <span class="font-semibold">🔒 Secure:</span> Your password is encrypted with AES-256-GCM. We never store plaintext credentials.
+            </div>
+            <button onclick="savePayLinkedin()" id="btnPayLinkedin" class="w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition">Connect</button>
+            <div id="payLiStatus" class="text-[12px] hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Connect Email -->
+      <div class="border border-ink-900/6 rounded-2xl overflow-hidden" id="paySetupEmail">
+        <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-ink-900/[.02] transition" onclick="togglePaySection('paySetupEmail')">
+          <div class="w-7 h-7 rounded-lg bg-accent-500/10 text-accent-600 border border-accent-400/30 grid place-items-center text-[12px] font-bold shrink-0" id="payCheckEmail">3</div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">Connect Email</div>
+            <div class="text-[11px] text-ink-700/60">For cold email outreach to recruiters</div>
+          </div>
+          <svg class="pay-chevron w-4 h-4 text-ink-700/40 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="pay-section-body px-4 pb-4" style="display:none">
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Gmail Address</label>
+              <input type="email" id="payEmailAddr" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400" placeholder="your@gmail.com"/>
+            </div>
+            <div class="relative">
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Google App Password</label>
+              <input type="password" id="payEmailPass" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400 pr-10" placeholder="16-digit app password"/>
+              <button type="button" onclick="togglePayPw('payEmailPass', this)" class="absolute right-3 top-[30px] text-ink-700/40 hover:text-ink-700">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <!-- How to generate app password -->
+            <details class="group">
+              <summary class="text-[12px] font-semibold text-brand-700 cursor-pointer hover:underline">How to generate a Google App Password ↓</summary>
+              <div class="mt-2 p-3.5 rounded-xl bg-ink-900/[.02] border border-ink-900/5 text-[12px] text-ink-700/80 space-y-2">
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">1.</span><span>Open your <a href="https://myaccount.google.com/security" target="_blank" class="text-brand-700 underline">Google Account Security</a> page.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">2.</span><span>Enable <strong>2-Step Verification</strong> (under "Signing in to Google"). Skip if already on.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">3.</span><span>Click on <strong>2-Step Verification</strong>, scroll to the bottom, and select <strong>App passwords</strong>.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">4.</span><span>Type a custom name (e.g. "Job Agent") and click <strong>Create</strong>.</span></div>
+                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">5.</span><span>Copy the <strong>16-digit passcode</strong> (without spaces) and paste it above.</span></div>
+              </div>
+            </details>
+            <div class="p-3 rounded-xl bg-brand-50/50 border border-brand-100 text-[11px] text-brand-800">
+              <span class="font-semibold">🔒 Secure:</span> Your app password is encrypted with AES-256-GCM. We never store plaintext credentials.
+            </div>
+            <button onclick="savePayEmail()" id="btnPayEmail" class="w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition">Connect</button>
+            <div id="payEmailStatus" class="text-[12px] hidden"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <button onclick="skipUpload()" class="mt-5 w-full py-2.5 text-center text-[13px] text-ink-700/60 hover:text-ink-800 transition">
+      I'll do this later →
+    </button>
+  </div>
+</div>
+
+<div id="confettiContainer" class="confetti"></div>
+
+<script>
+// Dynamic pricing parameters parsing
+const urlParams = new URLSearchParams(window.location.search);
+const queryAmount = parseFloat(urlParams.get('amount'));
+const queryMonths = parseInt(urlParams.get('months'), 10) || 3;
+
+// Default values if parameters are missing
+let totalAmount = 8850; // default 3-months plan
+let totalMonths = 3;
+
+if (!isNaN(queryAmount)) {
+  totalAmount = queryAmount;
+}
+if (!isNaN(queryMonths)) {
+  totalMonths = queryMonths;
+}
+
+// Calculate breakdown details
+const subtotal = Math.round(totalAmount / 1.18);
+const gst = totalAmount - subtotal;
+const perMonth = Math.round(subtotal / totalMonths);
+
+let isCouponApplied = false;
+
+function applyCoupon() {
+  const input = document.getElementById('couponInput');
+  const status = document.getElementById('couponStatus');
+  const discountRow = document.getElementById('discountRow');
+  const discountAmountEl = document.getElementById('summaryDiscount');
+  const totalEl = document.getElementById('summaryTotal');
+  const labelEl = document.getElementById('payLabel');
+  
+  const code = (input.value || '').trim().toUpperCase();
+  if (code === 'IIT99') {
+    isCouponApplied = true;
+    discountRow.classList.remove('hidden');
+    const discountAmount = totalAmount - 1;
+    discountAmountEl.textContent = `–₹${discountAmount.toLocaleString('en-IN')}.00`;
+    totalEl.textContent = '₹1.00';
+    if (labelEl) {
+      labelEl.textContent = 'Pay ₹1 · Activate agent';
+    }
+    status.textContent = 'Coupon applied successfully! 100% discount applied.';
+    status.className = 'mt-1 text-[11px] font-medium text-emerald-600';
+    status.classList.remove('hidden');
+  } else if (code === '') {
+    isCouponApplied = false;
+    discountRow.classList.add('hidden');
+    totalEl.textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
+    if (labelEl) {
+      labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
+    }
+    status.classList.add('hidden');
+  } else {
+    isCouponApplied = false;
+    discountRow.classList.add('hidden');
+    totalEl.textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
+    if (labelEl) {
+      labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
+    }
+    status.textContent = 'Invalid coupon code.';
+    status.className = 'mt-1 text-[11px] font-medium text-rose-600';
+    status.classList.remove('hidden');
+  }
+}
+
+// Update UI elements dynamically on load
+document.addEventListener('DOMContentLoaded', async () => {
+  // Update header descriptions
+  document.getElementById('paymentPlanHeader').textContent = `Job Seeker Agent · ${totalMonths}-month plan`;
+  
+  // Update order summary card
+  document.getElementById('summaryPlanText').textContent = `${totalMonths}-month plan · ₹${perMonth.toLocaleString('en-IN')}/mo`;
+  document.getElementById('summarySubtotal').textContent = `₹${subtotal.toLocaleString('en-IN')}.00`;
+  document.getElementById('summaryGst').textContent = `₹${gst.toLocaleString('en-IN')}.00`;
+  document.getElementById('summaryTotal').textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
+  
+  const labelEl = document.getElementById('payLabel');
+  if (labelEl) {
+    labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
+  }
+
+  // Update savings badge
+  const summarySavings = document.getElementById('summarySavings');
+  const savingsAmountText = document.getElementById('savingsAmountText');
+  if (summarySavings) {
+    if (totalMonths === 1) {
+      summarySavings.classList.add('hidden');
+    } else {
+      summarySavings.classList.remove('hidden');
+      const standardCost = 3000 * totalMonths;
+      const savings = standardCost - subtotal;
+      if (savings > 0 && savingsAmountText) {
+        savingsAmountText.textContent = `₹${savings.toLocaleString('en-IN')}`;
+      } else {
+        summarySavings.classList.add('hidden');
+      }
+    }
+  }
+
+  // Update ends date
+  const endsText = document.getElementById('summaryEndsText');
+  if (endsText) {
+    const endsDate = new Date();
+    endsDate.setMonth(endsDate.getMonth() + totalMonths);
+    const endsStr = endsDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    endsText.textContent = `Plan ends ${endsStr}. Auto-renews monthly unless cancelled.`;
+  }
+});
+
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('payBtn');
+let selectedFile = null;
+
+function showStatus(msg, type) {
+  statusEl.textContent = msg;
+  statusEl.className = `p-3 rounded-xl mb-4 text-[13px] text-center font-medium ${
+    type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+    type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+    'bg-brand-50 text-brand-700 border border-brand-200'
+  }`;
+  statusEl.classList.remove('hidden');
+}
+
+async function startPayment() {
+  btn.disabled = true;
+  const labelEl = document.getElementById('payLabel');
+  labelEl.innerHTML = '<span class="loader"></span><span class="ml-2">Processing...</span>';
+  statusEl.classList.add('hidden');
+
+  try {
+    // Always fetch the Razorpay Key ID
+    const keyRes = await fetch('/api/razorpay-key');
+    const keyData = await keyRes.json();
+    if (!keyData.ok) throw new Error(keyData.error || 'Could not fetch Razorpay key');
+
+    // Convert amount dynamically to paise
+    const amountPaise = isCouponApplied ? 100 : Math.round(totalAmount * 100);
+
+    const orderRes = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: amountPaise, currency: 'INR', coupon: isCouponApplied ? 'IIT99' : '' }),
+    });
+    const orderData = await orderRes.json();
+    if (!orderData.ok) throw new Error(orderData.error || 'Order creation failed');
+
+    const options = {
+      key: keyData.key_id,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      order_id: orderData.order_id,
+      name: 'IITIIMJobAssistant',
+      description: `Pro Agent Plan — ${totalMonths}-Month Subscription`,
+      theme: { color: '#5B66E8' },
+      handler: async function (response) {
+        btn.disabled = true;
+        labelEl.innerHTML = '<span class="loader"></span><span class="ml-2">Verifying...</span>';
+        showStatus('Verifying payment signature...', 'info');
+
+        try {
+          const verifyRes = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.ok) {
+            showStatus('✓ Payment successful! Your subscription is active.', 'success');
+            labelEl.textContent = 'Payment Complete ✓';
+            btn.disabled = true;
+            setTimeout(() => {
+              showResumeModal();
+            }, 800);
+          } else {
+            showStatus('Verification failed: ' + (verifyData.error || 'Unknown error'), 'error');
+            resetBtn();
+          }
+        } catch (err) {
+          showStatus('Could not verify payment: ' + err.message, 'error');
+          resetBtn();
+        }
+      },
+      modal: {
+        ondismiss: function () {
+          resetBtn();
+          showStatus('Payment cancelled.', 'info');
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+  } catch (err) {
+    showStatus(err.message, 'error');
+    resetBtn();
+  }
+}
+
+function resetBtn() {
+  btn.disabled = false;
+  const labelEl = document.getElementById('payLabel');
+  if (labelEl) {
+    labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
+  }
+}
+
+// ── Resume Upload Modal ──────────────────────────────────────────────────────
+function showResumeModal() {
+  document.getElementById('resumeModal').classList.add('active');
+  spawnConfetti();
+}
+
+function skipUpload() {
+  document.getElementById('resumeModal').classList.remove('active');
+  window.location.href = '/dashboard';
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['pdf', 'doc', 'docx'].includes(ext)) {
+    showUploadError('Only PDF and DOC files are accepted.');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showUploadError('File is too large. Maximum 5 MB.');
+    return;
+  }
+
+  selectedFile = file;
+  const zone = document.getElementById('uploadZone');
+  zone.classList.add('has-file');
+  document.getElementById('uploadIcon').innerHTML = `
+    <svg class="mx-auto mb-3 text-emerald-500" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+  document.getElementById('uploadLabel').textContent = file.name;
+  document.getElementById('uploadHint').textContent = `${(file.size / 1024).toFixed(0)} KB · Ready to upload`;
+  document.getElementById('uploadError').classList.add('hidden');
+
+  const uploadBtn = document.getElementById('uploadBtn');
+  uploadBtn.disabled = false;
+  uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+}
+
+function showUploadError(msg) {
+  const el = document.getElementById('uploadError');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function uploadResume() {
+  if (!selectedFile) return;
+
+  const uploadBtn = document.getElementById('uploadBtn');
+  uploadBtn.disabled = true;
+  uploadBtn.innerHTML = '<div class="loader"></div> Uploading...';
+
+  try {
+    const meRes = await fetch('/api/me');
+    const meData = await meRes.json();
+    if (!meData.ok) throw new Error('Could not fetch user profile');
+
+    const user = meData.user;
+    const formData = new FormData();
+    formData.append('name', user.name || '');
+    formData.append('last_name', user.last_name || '');
+    formData.append('email', user.email || '');
+    formData.append('resume', selectedFile);
+
+    const res = await fetch('/api/agent-buyers', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.ok) {
+      uploadBtn.innerHTML = '✓ Resume Uploaded';
+      uploadBtn.classList.add('bg-emerald-600');
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
+    } else {
+      showUploadError((data.errors || ['Upload failed']).join(', '));
+      uploadBtn.disabled = false;
+      uploadBtn.innerHTML = 'Upload Resume';
+    }
+  } catch (err) {
+    showUploadError('Upload error: ' + err.message);
+    uploadBtn.disabled = false;
+    uploadBtn.innerHTML = 'Upload Resume';
+  }
+}
+
+// ── Confetti effect ──────────────────────────────────────────────────────────
+function spawnConfetti() {
+  const container = document.getElementById('confettiContainer');
+  const colors = ['#5B66E8', '#A3ACFF', '#FFB978', '#FF9E50', '#22c55e', '#f43f5e', '#a855f7'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('span');
+    el.style.left = Math.random() * 100 + '%';
+    el.style.top = '-10px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = Math.random() * 1.5 + 's';
+    el.style.width = (4 + Math.random() * 8) + 'px';
+    el.style.height = (4 + Math.random() * 8) + 'px';
+    container.appendChild(el);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 4000);
+}
+
+// ── Drag-and-drop on the upload zone ─────────────────────────────────────────
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => { zone.classList.remove('drag-over'); });
+zone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) {
+    document.getElementById('resumeInput').files = e.dataTransfer.files;
+    handleFileSelect({ target: { files: e.dataTransfer.files } });
+  }
+});
+
+// ── Pay Modal: Section toggles & credential saving ──────────────────────────────
+
+function togglePaySection(id) {
+  const el = document.getElementById(id);
+  const body = el.querySelector('.pay-section-body');
+  const chevron = el.querySelector('.pay-chevron');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function togglePayPw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+}
+
+function updatePayCheck(id, done) {
+  const el = document.getElementById(id);
+  if (done) {
+    el.className = 'w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 grid place-items-center shrink-0';
+    el.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>';
+  }
+}
+
+async function savePayLinkedin() {
+  const username = document.getElementById('payLiUser').value.trim();
+  const password = document.getElementById('payLiPass').value.trim();
+  const statusEl = document.getElementById('payLiStatus');
+  const btn = document.getElementById('btnPayLinkedin');
+
+  if (!username || !password) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Both fields are required.';
+    statusEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/user/linkedin-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'text-[12px] text-emerald-700 font-medium';
+      statusEl.textContent = '✓ LinkedIn connected securely!';
+      statusEl.classList.remove('hidden');
+      updatePayCheck('payCheckLinkedin', true);
+      btn.textContent = '✓ Connected';
+      btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+    } else {
+      statusEl.className = 'text-[12px] text-rose-700 font-medium';
+      statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+      statusEl.classList.remove('hidden');
+      btn.textContent = 'Connect';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.classList.remove('hidden');
+    btn.textContent = 'Connect';
+    btn.disabled = false;
+  }
+}
+
+async function savePayEmail() {
+  const email = document.getElementById('payEmailAddr').value.trim();
+  const appPassword = document.getElementById('payEmailPass').value.trim();
+  const statusEl = document.getElementById('payEmailStatus');
+  const btn = document.getElementById('btnPayEmail');
+
+  if (!email || !appPassword) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Both fields are required.';
+    statusEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/user/email-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, app_password: appPassword })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'text-[12px] text-emerald-700 font-medium';
+      statusEl.textContent = '✓ Email connected securely!';
+      statusEl.classList.remove('hidden');
+      updatePayCheck('payCheckEmail', true);
+      btn.textContent = '✓ Connected';
+      btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+    } else {
+      statusEl.className = 'text-[12px] text-rose-700 font-medium';
+      statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+      statusEl.classList.remove('hidden');
+      btn.textContent = 'Connect';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.classList.remove('hidden');
+    btn.textContent = 'Connect';
+    btn.disabled = false;
+  }
+}
+
+// Auto-open the first section on modal show
+const _origShowResumeModal = showResumeModal;
+showResumeModal = function() {
+  _origShowResumeModal();
+  // Open the resume upload section by default
+  togglePaySection('paySetupResume');
+};
+</script>
+</body>
+</html>

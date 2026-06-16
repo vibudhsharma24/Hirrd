@@ -1,0 +1,38 @@
+{
+  "name": "iitiim-job-assistant",
+  "version": "1.0.0",
+  "description": "LinkedIn job & post scraper for IITIIMJobAssistant",
+  "type": "module",
+  "scripts": {
+    "linkedin":         "node --experimental-sqlite linkedin-scan.mjs",
+    "linkedin:dry":     "node --experimental-sqlite linkedin-scan.mjs --dry-run",
+    "linkedin:headed":  "node --experimental-sqlite linkedin-scan.mjs --headed",
+    "linkedin:role":    "node --experimental-sqlite linkedin-scan.mjs --role",
+
+    "posts":            "node --experimental-sqlite linkedin-posts.mjs",
+    "posts:dry":        "node --experimental-sqlite linkedin-posts.mjs --dry-run",
+    "posts:headed":     "node --experimental-sqlite linkedin-posts.mjs --headed",
+    "posts:kw":         "node --experimental-sqlite linkedin-posts.mjs --kw",
+
+    "connect":          "node --experimental-sqlite linkedin-connect.mjs",
+    "connect:dry":      "node --experimental-sqlite linkedin-connect.mjs --dry-run",
+    "connect:headed":   "node --experimental-sqlite linkedin-connect.mjs --headed",
+    "connect:limit":    "node --experimental-sqlite linkedin-connect.mjs --limit",
+
+    "followup":         "python linkedin_followup.py",
+    "followup:dry":     "python linkedin_followup.py --dry-run",
+    "followup:headed":  "python linkedin_followup.py --headed"
+  },
+  "keywords": [
+    "job-search",
+    "linkedin",
+    "scraper",
+    "playwright",
+    "iitiim"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.1.1",
+    "playwright": "^1.58.1"
+  }
+}

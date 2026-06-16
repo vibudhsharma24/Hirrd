@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In — IITIIMJobAssistant</title>
+<meta name="description" content="Sign in to IITIIMJobAssistant. AI-powered job automation for IIT/IIM alumni.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'], display: ['Space Grotesk','Inter','sans-serif'] },
+        colors: {
+          brand: { 50:'#EEF0FF',100:'#E0E4FF',200:'#C3CAFF',300:'#A3ACFF',400:'#7D87F5',500:'#5B66E8',600:'#4B52D1',700:'#3E42A8',800:'#2F3380',900:'#1E2055',950:'#0F1033' },
+          accent: { 400:'#FFB978',500:'#FF9E50',600:'#F57C2B' },
+          ink: { 900:'#0B0D1F',800:'#121534',700:'#1B1F44' }
+        },
+        boxShadow: { 'soft':'0 10px 40px -12px rgba(17,24,39,0.12)' }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family:'Inter',system-ui,sans-serif; background:#FAFBFD; color:#0B0D1F; }
+  .font-display { font-family:'Space Grotesk',Inter,sans-serif; letter-spacing:-0.02em; }
+  .hero-gradient { background: radial-gradient(1000px 500px at 10% -10%,rgba(91,102,232,0.25),transparent 60%), radial-gradient(800px 400px at 90% 10%,rgba(255,158,80,0.22),transparent 60%), radial-gradient(700px 500px at 50% 110%,rgba(163,172,255,0.2),transparent 60%), linear-gradient(180deg,#FFFFFF 0%,#F5F6FD 100%); }
+  .ring-gradient { background: conic-gradient(from 220deg,#5B66E8,#A3ACFF,#FFB978,#5B66E8); }
+  .sm-card { background:#fff; border:1px solid rgba(15,16,51,0.06); border-radius:20px; }
+  .fade-in { animation: fadeIn .45s ease both; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
+  .loader { width:18px;height:18px;border-radius:999px;border:2px solid rgba(91,102,232,0.25);border-top-color:#5B66E8;animation:spin 0.8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg);} }
+</style>
+</head>
+<body class="antialiased text-ink-900">
+
+<div class="absolute inset-0 hero-gradient opacity-60 pointer-events-none"></div>
+<div class="relative max-w-md mx-auto px-5 py-14 min-h-screen">
+  <a href="/" class="flex items-center justify-center gap-2 mb-10">
+    <div class="w-9 h-9 rounded-lg ring-gradient p-[1.5px]">
+      <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center text-white text-[14px] font-bold">I²</div>
+    </div>
+    <span class="font-display font-bold text-lg">IITIIMJobAssistant</span>
+  </a>
+
+  <div class="sm-card shadow-soft p-7 fade-in">
+    <h1 class="font-display text-2xl font-bold">Sign in to your agent</h1>
+    <p class="mt-1 text-[13px] text-ink-700/70">Continue to your dashboard and activity feed.</p>
+
+    <div id="errorMsg" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[13px]"></div>
+
+    <button onclick="startGoogleOAuth()" class="mt-6 w-full py-3 rounded-xl border border-ink-900/10 font-semibold flex items-center justify-center gap-2.5 hover:bg-ink-900/5 transition">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H24v8.1h11.3c-1 5.2-5.5 8.5-11.3 8.5-6.8 0-12.3-5.5-12.3-12.4S17.2 11.9 24 11.9c3.1 0 5.9 1.2 8 3.1l5.8-5.8C34 5.9 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11.6 0 19.6-8.2 19.6-19.7 0-1.4-.1-2.7-.4-4.2z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8c1.8-3.6 5.6-6 10.1-6 2.7 0 5.2 1 7 2.6l5.7-5.7C31.9 6.9 28.1 5 24 5 17 5 10.9 8.7 7.3 14.2l-1 .5z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.9 13.7-5.2l-6.3-5.2c-2 1.4-4.6 2.3-7.4 2.3-5.8 0-10.3-3.4-11.3-8.5H6.2v5.3C9.7 39.7 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H24v8.1h11.3c-.5 2.4-1.8 4.4-3.6 5.7l.1.1 6.3 5.2c-.4.3 6.8-4.9 6.8-15-.1-1.4-.2-2.7-.4-4.1z"/></svg>
+      Continue with Google
+    </button>
+
+    <div class="my-5 flex items-center gap-3 text-[12px] text-ink-700/50">
+      <div class="flex-1 h-px bg-ink-900/10"></div> or email <div class="flex-1 h-px bg-ink-900/10"></div>
+    </div>
+
+    <form id="loginForm" onsubmit="return signIn(event)">
+      <label class="text-[13px] font-medium">Email</label>
+      <input id="loginEmail" type="email" placeholder="you@iitb.ac.in" required class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none" autocomplete="email"/>
+      <label class="text-[13px] font-medium mt-4 block">Password</label>
+      <input id="loginPassword" type="password" placeholder="••••••••" required class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none" autocomplete="current-password"/>
+      <div class="flex items-center justify-between mt-3 text-[12px]">
+        <label class="flex items-center gap-2"><input type="checkbox" class="accent-brand-600"/> Remember me</label>
+        <a class="text-brand-700 font-semibold cursor-pointer">Forgot password?</a>
+      </div>
+      <button type="submit" id="loginBtn" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 transition flex items-center justify-center gap-2">Sign in</button>
+    </form>
+  </div>
+
+  <div class="mt-6 text-center text-[13px] text-ink-700/70">
+    New here? <a href="/signup" class="text-brand-700 font-semibold">Apply for access</a>
+  </div>
+  <div class="mt-8 text-center text-[11px] text-ink-700/50 flex items-center justify-center gap-1.5">
+    <svg class="w-[18px] h-[18px] text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+    Bank-grade encryption · SOC 2 in progress
+  </div>
+</div>
+
+<script>
+const errorEl = document.getElementById('errorMsg');
+
+async function signIn(e) {
+  e.preventDefault();
+  errorEl.classList.add('hidden');
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader"></div> Signing in...';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value,
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      if (data.needs_password) {
+        window.location.href = '/signup?set_password=1';
+      } else {
+        window.location.href = '/dashboard';
+      }
+    } else {
+      errorEl.textContent = data.error || 'Invalid email or password';
+      errorEl.classList.remove('hidden');
+    }
+  } catch (err) {
+    errorEl.textContent = 'Network error — please try again';
+    errorEl.classList.remove('hidden');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Sign in';
+  return false;
+}
+
+async function startGoogleOAuth() {
+  try {
+    const res = await fetch('/api/google-client-id');
+    const data = await res.json();
+    if (!data.ok || !data.client_id) {
+      errorEl.textContent = 'Google OAuth not configured yet';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    const clientId = data.client_id;
+    const redirectUri = encodeURIComponent(window.location.origin + '/auth/google/callback');
+    const scope = encodeURIComponent('openid email profile');
+    const state = Math.random().toString(36).substring(2);
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}&prompt=select_account`;
+  } catch (err) {
+    errorEl.textContent = 'Failed to start Google login. Please try again.';
+    errorEl.classList.remove('hidden');
+  }
+}
+
+// Check URL params for errors
+const params = new URLSearchParams(window.location.search);
+if (params.get('oauth_error')) {
+  errorEl.textContent = 'Google sign-in failed. Please try again.';
+  errorEl.classList.remove('hidden');
+}
+</script>
+</body>
+</html>

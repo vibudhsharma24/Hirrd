@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign Up — IITIIMJobAssistant</title>
+<meta name="description" content="Apply for access to IITIIMJobAssistant. Exclusive AI career agents for IIT & IIM alumni.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans:['Inter','ui-sans-serif','system-ui'], display:['Space Grotesk','Inter','sans-serif'] },
+      colors: {
+        brand:{50:'#EEF0FF',100:'#E0E4FF',200:'#C3CAFF',300:'#A3ACFF',400:'#7D87F5',500:'#5B66E8',600:'#4B52D1',700:'#3E42A8',800:'#2F3380',900:'#1E2055',950:'#0F1033'},
+        accent:{400:'#FFB978',500:'#FF9E50',600:'#F57C2B'},
+        ink:{900:'#0B0D1F',800:'#121534',700:'#1B1F44'}
+      },
+      boxShadow:{'soft':'0 10px 40px -12px rgba(17,24,39,0.12)'}
+    }}
+  }
+</script>
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;background:#FAFBFD;color:#0B0D1F}
+  .font-display{font-family:'Space Grotesk',Inter,sans-serif;letter-spacing:-0.02em}
+  .ring-gradient{background:conic-gradient(from 220deg,#5B66E8,#A3ACFF,#FFB978,#5B66E8)}
+  .sm-card{background:#fff;border:1px solid rgba(15,16,51,0.06);border-radius:20px}
+  .fade-in{animation:fadeIn .45s ease both}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .loader{width:18px;height:18px;border-radius:999px;border:2px solid rgba(91,102,232,0.25);border-top-color:#5B66E8;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body class="antialiased text-ink-900">
+<div class="max-w-3xl mx-auto px-5 md:px-8 py-10 min-h-screen">
+  <div class="flex items-center justify-between mb-10">
+    <a href="/" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
+        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center text-white text-[13px] font-bold">I²</div>
+      </div>
+      <span class="font-display font-bold">IITIIMJobAssistant</span>
+    </a>
+    <div class="text-[13px] text-ink-700/70">Already a member? <a href="/login" class="text-brand-700 font-semibold">Sign in</a></div>
+  </div>
+
+  <!-- Stepper -->
+  <div class="max-w-xl mx-auto">
+    <div class="flex items-center gap-2 mb-8">
+      <div class="flex items-center gap-2" id="stp1">
+        <div class="w-7 h-7 rounded-full bg-ink-900 text-white grid place-items-center text-[12px] font-bold">1</div>
+        <span class="text-[12px] font-semibold">Account</span>
+      </div>
+      <div class="flex-1 h-[2px] bg-ink-900/10 stepline"></div>
+      <div class="flex items-center gap-2 opacity-60" id="stp2">
+        <div class="w-7 h-7 rounded-full bg-white border border-ink-900/15 grid place-items-center text-[12px] font-bold">2</div>
+        <span class="text-[12px]">Verify</span>
+      </div>
+      <div class="flex-1 h-[2px] bg-ink-900/10 stepline"></div>
+      <div class="flex items-center gap-2 opacity-60" id="stp3">
+        <div class="w-7 h-7 rounded-full bg-white border border-ink-900/15 grid place-items-center text-[12px] font-bold">3</div>
+        <span class="text-[12px]">Done</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Account -->
+  <div id="signupStep1" class="max-w-xl mx-auto sm-card shadow-soft p-8 fade-in">
+    <h1 class="font-display text-2xl font-bold">Create your account</h1>
+    <p class="mt-1 text-[14px] text-ink-700/70">Exclusive to verified IIT & IIM students and alumni.</p>
+
+    <div id="errorMsg" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[13px]"></div>
+
+    <button onclick="startGoogleOAuth()" class="mt-6 w-full py-3 rounded-xl border border-ink-900/10 font-semibold flex items-center justify-center gap-2.5 hover:bg-ink-900/5 transition">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H24v8.1h11.3c-1 5.2-5.5 8.5-11.3 8.5-6.8 0-12.3-5.5-12.3-12.4S17.2 11.9 24 11.9c3.1 0 5.9 1.2 8 3.1l5.8-5.8C34 5.9 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11.6 0 19.6-8.2 19.6-19.7 0-1.4-.1-2.7-.4-4.2z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8c1.8-3.6 5.6-6 10.1-6 2.7 0 5.2 1 7 2.6l5.7-5.7C31.9 6.9 28.1 5 24 5 17 5 10.9 8.7 7.3 14.2l-1 .5z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.9 13.7-5.2l-6.3-5.2c-2 1.4-4.6 2.3-7.4 2.3-5.8 0-10.3-3.4-11.3-8.5H6.2v5.3C9.7 39.7 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H24v8.1h11.3c-.5 2.4-1.8 4.4-3.6 5.7l.1.1 6.3 5.2c-.4.3 6.8-4.9 6.8-15-.1-1.4-.2-2.7-.4-4.1z"/></svg>
+      Continue with Google
+    </button>
+
+    <div class="my-5 flex items-center gap-3 text-[12px] text-ink-700/50">
+      <div class="flex-1 h-px bg-ink-900/10"></div> or email sign up <div class="flex-1 h-px bg-ink-900/10"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="text-[13px] font-medium">First name</label><input id="signupFirst" placeholder="Aarav" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/></div>
+      <div><label class="text-[13px] font-medium">Last name</label><input id="signupLast" placeholder="Kulkarni" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/></div>
+    </div>
+    <label class="text-[13px] font-medium mt-3 block">Email</label>
+    <input id="signupEmail" type="email" placeholder="you@iitb.ac.in" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+    <label class="text-[13px] font-medium mt-3 block">Password</label>
+    <input id="signupPassword" type="password" placeholder="Minimum 6 characters" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+    <label class="text-[13px] font-medium mt-3 block">Mobile number</label>
+    <input id="signupMobile" type="tel" placeholder="+91 9876543210" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+
+    <button onclick="showStep2()" id="step1Btn" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 flex items-center justify-center gap-2">Continue</button>
+    <p class="mt-4 text-[12px] text-ink-700/60 text-center">By continuing you agree to our Terms & Privacy Policy.</p>
+  </div>
+
+  <!-- Step 2: LinkedIn Verify -->
+  <div id="signupStep2" class="hidden max-w-xl mx-auto sm-card shadow-soft p-8 fade-in">
+    <h1 class="font-display text-2xl font-bold">Verify your IIT / IIM status</h1>
+    <p class="mt-1 text-[14px] text-ink-700/70">Paste your LinkedIn profile URL below. Our team will manually review your education and approve or reject your application.</p>
+
+    <div id="errorMsg2" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[13px]"></div>
+
+    <label class="text-[13px] font-medium mt-6 block">LinkedIn profile URL <span class="text-rose-500">*</span></label>
+    <div class="mt-1 flex items-center gap-2">
+      <input id="liUrl" placeholder="https://www.linkedin.com/in/your-handle" class="flex-1 px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      <button onclick="submitForReview()" id="submitBtn" class="px-4 py-2.5 rounded-xl bg-ink-900 text-white font-semibold whitespace-nowrap flex items-center gap-2">Submit</button>
+    </div>
+    <p class="mt-2 text-[12px] text-ink-700/50">Make sure your LinkedIn education section is visible to the public.</p>
+
+    <div id="reviewPending" class="hidden mt-6 p-5 rounded-2xl fade-in" style="background:#FFF7ED;border:1.5px solid #fed7aa;">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style="background:#FFEDD5;border:1px solid #fed7aa;">
+          <svg width="16" height="16" fill="none" stroke="#c2410c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div>
+          <div class="font-semibold text-[15px]" style="color:#9a3412;">Application submitted — pending review</div>
+          <p class="text-[13px] mt-1" style="color:#c2410c;">Our team will review your LinkedIn profile and verify your IIT/IIM status. You'll receive an email once a decision is made.</p>
+        </div>
+      </div>
+      <button onclick="showStep3()" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Got it</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Done -->
+  <div id="signupStep3" class="hidden max-w-xl mx-auto sm-card shadow-soft p-8 text-center fade-in">
+    <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center" style="background:#FFF7ED;border:1.5px solid #fed7aa;">
+      <svg width="28" height="28" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    </div>
+    <h1 class="font-display text-2xl font-bold mt-4">Application submitted!</h1>
+    <p class="mt-2 text-ink-700/70 text-[14px]">We've received your LinkedIn profile URL. Our team will manually verify your IIT/IIM status and send you an email once approved.</p>
+
+    <div class="mt-6 text-left p-5 rounded-2xl" style="background:#F7F8FD;border:1px solid rgba(15,16,51,0.08);">
+      <div class="text-[11px] font-semibold tracking-widest text-ink-700/50 mb-3">WHAT HAPPENS NEXT</div>
+      <div class="space-y-3">
+        <div class="flex items-start gap-3">
+          <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-[11px] flex-shrink-0 mt-0.5">1</div>
+          <div class="text-[13px] text-ink-800/80">Our team opens your LinkedIn profile and checks your education section for IIT or IIM.</div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-[11px] flex-shrink-0 mt-0.5">2</div>
+          <div class="text-[13px] text-ink-800/80">If verified, your account is activated and you'll get an email with a sign-in link.</div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-[11px] flex-shrink-0 mt-0.5">3</div>
+          <div class="text-[13px] text-ink-800/80">If we can't confirm IIT/IIM, you'll receive an email explaining why and how to appeal.</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-5 text-[12px] text-ink-700/50">Typical review time: a few hours. Check your inbox (and spam folder).</p>
+    <a href="/login" class="mt-5 w-full py-3 rounded-xl border border-ink-900/10 font-semibold text-ink-800 hover:bg-ink-900/5 inline-block text-center">Sign in</a>
+  </div>
+
+  <!-- Set Password (for Google OAuth users) -->
+  <div id="setPasswordSection" class="hidden max-w-xl mx-auto sm-card shadow-soft p-8 fade-in">
+    <h1 class="font-display text-2xl font-bold">Set a password</h1>
+    <p class="mt-1 text-[14px] text-ink-700/70">You signed up via Google. Please set a password for email login.</p>
+    <label class="text-[13px] font-medium mt-6 block">New password</label>
+    <input id="newPassword" type="password" placeholder="Minimum 6 characters" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+    <label class="text-[13px] font-medium mt-3 block">Confirm password</label>
+    <input id="confirmPassword" type="password" placeholder="Re-enter password" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+    <div id="pwdError" class="hidden mt-3 text-rose-600 text-[13px]"></div>
+    <button onclick="setPassword()" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Set password & continue</button>
+  </div>
+</div>
+
+<script>
+const errorEl = document.getElementById('errorMsg');
+const params = new URLSearchParams(window.location.search);
+
+// Set Password mode
+if (params.get('set_password') === '1') {
+  document.getElementById('signupStep1').classList.add('hidden');
+  document.getElementById('setPasswordSection').classList.remove('hidden');
+}
+
+function showError(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+
+function activateStep(n) {
+  ['stp1','stp2','stp3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (i < n) { el.classList.remove('opacity-60'); el.querySelector('div').className = 'w-7 h-7 rounded-full bg-ink-900 text-white grid place-items-center text-[12px] font-bold'; }
+    else { el.classList.add('opacity-60'); }
+  });
+}
+
+function showStep2() {
+  const first = document.getElementById('signupFirst').value.trim();
+  const last = document.getElementById('signupLast').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pw = document.getElementById('signupPassword').value;
+  const mobile = document.getElementById('signupMobile').value.trim();
+
+  if (!first || !last || !email || !pw || !mobile) {
+    showError(errorEl, 'Please fill in all fields');
+    return;
+  }
+  if (pw.length < 6) { showError(errorEl, 'Password must be at least 6 characters'); return; }
+
+  // Store for step 2 submission
+  window._signupData = { name: first, last_name: last, email, password: pw, mobile_number: mobile };
+  document.getElementById('signupStep1').classList.add('hidden');
+  document.getElementById('signupStep2').classList.remove('hidden');
+  activateStep(1);
+}
+
+async function submitForReview() {
+  const liUrl = document.getElementById('liUrl').value.trim();
+  const errEl = document.getElementById('errorMsg2');
+  if (!liUrl) { showError(errEl, 'LinkedIn URL is required'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader"></div> Submitting...';
+
+  try {
+    const payload = { ...window._signupData, linkedin_url: liUrl };
+    const res = await fetch('/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Auto-login
+      await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: payload.email, password: payload.password }),
+      });
+      document.getElementById('reviewPending').classList.remove('hidden');
+      btn.classList.add('hidden');
+    } else {
+      showError(errEl, (data.errors || [data.error]).join(', '));
+    }
+  } catch {
+    showError(errEl, 'Network error — please try again');
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Submit';
+}
+
+function showStep3() {
+  document.getElementById('signupStep2').classList.add('hidden');
+  document.getElementById('signupStep3').classList.remove('hidden');
+  activateStep(2);
+}
+
+async function setPassword() {
+  const pw = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const errEl = document.getElementById('pwdError');
+  if (pw.length < 6) { showError(errEl, 'Password must be at least 6 characters'); return; }
+  if (pw !== confirm) { showError(errEl, 'Passwords do not match'); return; }
+  try {
+    const res = await fetch('/api/set-password', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pw}) });
+    const data = await res.json();
+    if (data.ok) { window.location.href = '/dashboard'; }
+    else { showError(errEl, data.error); }
+  } catch { showError(errEl, 'Network error'); }
+}
+
+async function startGoogleOAuth() {
+  try {
+    const res = await fetch('/api/google-client-id');
+    const data = await res.json();
+    if (!data.ok || !data.client_id) {
+      showError(errorEl, 'Google OAuth not configured yet');
+      return;
+    }
+    const clientId = data.client_id;
+    const redirectUri = encodeURIComponent(window.location.origin + '/auth/google/callback');
+    const scope = encodeURIComponent('openid email profile');
+    const state = Math.random().toString(36).substring(2);
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}&prompt=select_account`;
+  } catch (err) {
+    showError(errorEl, 'Failed to start Google login. Please try again.');
+  }
+}
+</script>
+</body>
+</html>

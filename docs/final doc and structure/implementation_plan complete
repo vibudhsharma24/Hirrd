@@ -1,0 +1,316 @@
+# IITIIMJobAssistant — Final Implementation Plan
+
+> All open questions resolved. Ready for execution on approval.
+
+---
+
+## Resolved Decisions
+
+### 1. Linkup API (Recommended) over .mjs Scrapers
+
+**Decision: Use Linkup API for job discovery. Keep Playwright only for LinkedIn actions.**
+
+Why Linkup API wins for your use case:
+
+| Factor | Linkup API | .mjs Scrapers (Playwright) |
+|--------|-----------|---------------------------|
+| **Speed** | ~1-2 sec per query (REST API) | 15-30 sec per page (browser) |
+| **Reliability** | 99.9% uptime, structured JSON | LinkedIn blocks bots, DOM changes break selectors |
+| **Bot detection** | None (legitimate API) | High risk — CAPTCHAs, IP bans, account locks |
+| **Multi-user** | One API key serves all users | One Playwright browser PER user = heavy RAM |
+| **Data quality** | Clean, normalized JSON | Regex-parsed from messy DOM text |
+| **Maintenance** | Zero — API is stable | Constant selector updates needed |
+
+**What this means for the project:**
+- `runner.py` will call Linkup API to discover jobs → store in DB
+- Playwright is kept ONLY for: sending connection requests, checking acceptance, sending DMs, auto-applying to ATS portals
+- The 3 `.mjs` files become **optional legacy tools** (moved to `extras/legacy/` for reference, not deleted)
+
+### 2. Node.js Files → Archived to extras/legacy/
+
+The `.mjs` scrapers will be archived (not deleted) since their LinkedIn scraping logic is being replaced by Linkup API. The connection/follow-up/apply logic will be reimplemented in Python inside `job_seeker_agent/`.
+
+### 3. Auth: Email/Password + Google OAuth (both)
+
+- After Google OAuth signup, the user **must set a password** before proceeding
+- Flask-Login handles sessions
+- Both login methods produce the same session
+
+### 4. AES-256-GCM with ENCRYPTION_KEY from .env
+
+- Will document how it works in a comment block within the code
+- Master key stored as `ENCRYPTION_KEY` in `.env`
+
+### 5. Template Directory → Deleted
+
+Archived v2 HTML files in `template/` will be deleted.
+
+---
+
+## Final Project Structure
+
+```
+/IITIIMJobAssistant
+│
+├── /frontend/                           ← All HTML, CSS, JS
+│   ├── login.html                       ← localhost:5000/login
+│   ├── signup.html                      ← localhost:5000/signup
+│   ├── dashboard.html                   ← localhost:5000/dashboard (protected)
+│   ├── admin.html                       ← localhost:5000/admin
+│   ├── admin.css
+│   ├── admin.js
+│   ├── pay.html                         ← localhost:5000/pay
+│   ├── config.js
+│   └── dashboard.css                    ← NEW: dashboard styles
+│
+├── /job_seeker_agent/                   ← All agent/automation code
+│   ├── __init__.py
+│   ├── runner.py                        ← NEW: per-user agent entry point
+│   ├── scraper.py                       ← NEW: Linkup API job discovery
+│   ├── connector.py                     ← NEW: LinkedIn connection requests (Python)
+│   ├── messenger.py                     ← NEW: LinkedIn DM follow-up (Python)
+│   ├── applier.py                       ← Refactored from apply_orchestrator.py
+│   ├── agent.py                         ← Google Forms auto-fill
+│   ├── ats_detector.py                  ← ATS detection
+│   ├── browser_manager.py              ← Browser session management
+│   ├── portal_memory.py                ← Portal knowledge base
+│   ├── resume_generator.py             ← Resume handler
+│   ├── encryption.py                    ← NEW: AES-256-GCM encrypt/decrypt
+│   └── /adapters/                       ← ATS adapters (moved as-is)
+│       ├── __init__.py
+│       ├── base_adapter.py
+│       ├── greenhouse_adapter.py
+│       ├── lever_adapter.py
+│       ├── workday_adapter.py
+│       ├── ashby_adapter.py
+│       ├── smartrecruiters_adapter.py
+│       ├── google_forms_adapter.py
+│       └── custom_adapter.py
+│
+├── /core/                               ← Flask app, auth, DB
+│   ├── __init__.py
+│   ├── app.py                           ← Flask app (routes, API endpoints)
+│   ├── database.py                      ← DB layer (all SQL operations)
+│   └── auth.py                          ← NEW: Flask-Login + JWT admin auth
+│
+├── /extras/                             ← Reference/legacy files
+│   └── /legacy/                         ← Archived .mjs scrapers
+│       ├── linkedin-scan.mjs
+│       ├── linkedin-posts.mjs
+│       └── linkedin-connect.mjs
+│
+├── /docs/                               ← Documentation (stays)
+├── /apply_history/                      ← Portal memory files
+├── /resumes/                            ← Uploaded resumes
+├── /screenshots/                        ← Automation screenshots
+│
+├── .env                                 ← Environment variables
+├── .env.example                         ← Example template
+├── .gitignore
+├── requirements.txt                     ← Updated Python deps
+├── package.json                         ← Updated (optional legacy scripts)
+├── linkedin-config.yml                  ← LinkedIn credentials config
+├── run.py                               ← NEW: single entry point
+└── start_server.ps1                     ← Updated
+```
+
+---
+
+## Frontend Pages & Routes
+
+### Route Map
+
+| URL | Page | Auth Required | Description |
+|-----|------|:---:|-------------|
+| `/` | Redirect | No | → `/login` if not logged in, → `/dashboard` if logged in |
+| `/login` | login.html | No | Email/password login + Google OAuth button |
+| `/signup` | signup.html | No | Registration form + Google OAuth |
+| `/dashboard` | dashboard.html | ✅ | User's personal dashboard |
+| `/admin` | admin.html | ✅ (admin JWT) | Admin panel |
+| `/pay` | pay.html | ✅ | Razorpay checkout |
+
+### Dashboard (Dynamic, Per-User)
+
+The dashboard pulls data from the API using the logged-in user's session. It shows:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Welcome back, [User Name]!                         │
+│  Email: [user@email.com]  Status: [Approved/Pending]│
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  ┌─── Agent Cards ──────────────────────────────┐   │
+│  │                                               │   │
+│  │  🤖 Job Seeker Agent          [ACTIVE]        │   │
+│  │  Auto-applies to matching jobs daily          │   │
+│  │  ₹499/month                                   │   │
+│  │                                               │   │
+│  │  [Buy Agent] or [Agent Running ● | View Logs] │   │
+│  │                                               │   │
+│  ├───────────────────────────────────────────────┤   │
+│  │  📊 Interview Prep Agent     [Coming Soon]    │   │
+│  │  🔍 Resume Optimizer Agent   [Coming Soon]    │   │
+│  │  💼 Salary Negotiator Agent  [Coming Soon]    │   │
+│  └───────────────────────────────────────────────┘   │
+│                                                     │
+│  ┌─── Your Stats ───────────────────────────────┐   │
+│  │  Jobs Discovered: 42  |  Applied: 12         │   │
+│  │  Connections Sent: 28 |  Messages Sent: 8    │   │
+│  │  Agent Status: Running | Last Run: 2h ago    │   │
+│  └───────────────────────────────────────────────┘   │
+│                                                     │
+│  ┌─── Recent Activity Log ──────────────────────┐   │
+│  │  [Live feed of agent actions for this user]  │   │
+│  └───────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
+**API endpoints the dashboard calls:**
+- `GET /api/me` → current user's profile data
+- `GET /api/agent-status/<user_id>` → agent status + stats
+- `GET /api/my-applications` → user's job applications
+- `GET /api/my-activity` → user's recent agent activity log
+
+---
+
+## Execution Phases
+
+### Phase 1: Delete & Archive
+- Delete `template/` directory (v2 archived HTML)
+- Move 3 `.mjs` files → `extras/legacy/`
+- Delete `__pycache__/`
+
+### Phase 2: Create Folder Structure
+- Create `/frontend/`, `/core/`, `/job_seeker_agent/`, `/extras/legacy/`
+- Create `__init__.py` files
+
+### Phase 3: Move Files
+- Move frontend files → `/frontend/`
+- Move `app.py`, `database.py` → `/core/`
+- Move agent files → `/job_seeker_agent/`
+- Move `adapters/` → `/job_seeker_agent/adapters/`
+
+### Phase 4: Fix All Import Paths
+- Update every `import` and `from ... import` across all Python files
+- Update `sys.path`, `os.path.dirname(__file__)` references
+- Update `DB_PATH`, `RESUMES_DIR`, `SCREENSHOTS_DIR` to use project root
+- Update `package.json` scripts for legacy .mjs paths
+
+### Phase 5: Create `/core/auth.py`
+- Extract JWT/RBAC code from current app.py
+- Add Flask-Login integration
+- `User` model class with `UserMixin`
+- Login/logout endpoints
+- Google OAuth callback → force password set
+- AES-256-GCM encryption for LinkedIn credentials
+
+### Phase 6: Update `/core/app.py`
+- Flask app factory pattern
+- Serve frontend files from `/frontend/`
+- Route: `/` → redirect
+- Route: `/login`, `/signup`, `/dashboard`, `/admin`, `/pay`
+- New APIs: `/api/me`, `/api/login`, `/api/logout`, `/api/set-password`
+- New APIs: `/api/agent-status/<user_id>`, `/api/my-applications`, `/api/my-activity`
+- Razorpay webhook: `/api/razorpay-webhook`
+
+### Phase 7: Update `/core/database.py`
+- Add new columns: `is_agent_buyer`, `agent_status`, `linkedin_username`, `linkedin_password`, `job_preferences`
+- Add CRUD for new fields
+- Login verification function
+- Agent status tracking functions
+
+### Phase 8: Build Frontend Pages
+- `login.html` — email/password + Google OAuth, dark theme, premium design
+- `signup.html` — registration form + Google OAuth, LinkedIn URL validation
+- `dashboard.html` — dynamic dashboard with API-connected data display
+- `dashboard.css` — dashboard-specific styles
+- Update `pay.html` — wire to logged-in user session
+
+### Phase 9: Build Agent Runner
+- `job_seeker_agent/runner.py` — per-user agent entry point
+- `job_seeker_agent/scraper.py` — Linkup API integration
+- `job_seeker_agent/connector.py` — LinkedIn connection requests (Python/Playwright)
+- `job_seeker_agent/messenger.py` — LinkedIn DM follow-up (Python/Playwright)
+- `job_seeker_agent/encryption.py` — AES-256-GCM helpers
+
+### Phase 10: Create `run.py` & Update Config
+- `run.py` at project root — boots Flask + initializes DB
+- Update `.env` with all required keys
+- Update `requirements.txt` with new deps (`flask-login`, `cryptography`, `linkup-sdk`, `apscheduler`)
+- Update `start_server.ps1`
+
+---
+
+## Updated `.env`
+
+```env
+# Core
+SECRET_KEY=
+ENCRYPTION_KEY=
+
+# Linkup API (Job Discovery)
+LINKUP_API_KEY=
+
+# Razorpay (Test Mode)
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+
+# Claude AI (Optional — for cover letters & form filling)
+ANTHROPIC_API_KEY=
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:5000/auth/google/callback
+```
+
+---
+
+## Updated `requirements.txt`
+
+```
+Flask==3.1.0
+flask-cors==5.0.0
+flask-login>=0.6.3
+playwright>=1.40.0
+anthropic>=0.45.0
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+pdfplumber>=0.10.0
+python-docx>=1.0.0
+PyJWT>=2.8.0
+razorpay>=2.0.0
+cryptography>=42.0.0
+apscheduler>=3.10.0
+requests>=2.31.0
+```
+
+---
+
+## Verification Plan
+
+### Automated Tests
+1. `python run.py` boots without errors
+2. `python -m job_seeker_agent.runner --user_id=1` starts agent for user 1
+3. All API endpoints respond correctly:
+   - `POST /api/signup` → creates user
+   - `POST /api/login` → returns session
+   - `GET /api/me` → returns logged-in user data
+   - `POST /api/create-order` → creates Razorpay order
+   - `POST /api/verify-payment` → verifies + sets is_agent_buyer
+   - `GET /api/agent-status/1` → returns status
+4. No `ModuleNotFoundError` on any import
+
+### Browser Tests
+1. `localhost:5000/` → redirects to `/login`
+2. `/signup` → register → sets password → redirects to `/login`
+3. `/login` → login → redirects to `/dashboard`
+4. Dashboard shows user's real data from DB
+5. "Buy Agent" → Razorpay modal → test payment → dashboard updates to show "Agent Running"
+6. `/admin` → admin login → admin dashboard works
+
+### Manual Verification
+- Google OAuth flow: signup via Google → forced to set password → can then login with email/password
+- Razorpay webhook endpoint accepts POST from Razorpay
+- Agent status polling shows live updates on dashboard

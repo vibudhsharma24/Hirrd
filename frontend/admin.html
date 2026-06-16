@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IITIIMJobAssistant — Admin Console</title>
+  <meta name="description" content="Admin console for IITIIMJobAssistant — manage user verifications, approvals, analytics, and audit logs."/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            display: ['Space Grotesk', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50:'#EEF0FF',100:'#E0E4FF',200:'#C3CAFF',300:'#A3ACFF',
+              400:'#7D87F5',500:'#5B66E8',600:'#4B52D1',700:'#3E42A8',
+              800:'#2F3380',900:'#1E2055',950:'#0F1033',
+            },
+            accent: {400:'#FFB978',500:'#FF9E50',600:'#F57C2B'},
+            ink: {900:'#0B0D1F',800:'#121534',700:'#1B1F44'},
+          },
+          boxShadow: {
+            soft:'0 10px 40px -12px rgba(17,24,39,0.12)',
+            glow:'0 0 40px -5px rgba(91,102,232,0.45)',
+            card:'0 1px 2px rgba(15,16,51,0.04), 0 4px 16px -4px rgba(15,16,51,0.08)',
+            'card-hover':'0 8px 32px -8px rgba(91,102,232,0.22)',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/admin.css"/>
+</head>
+<body class="grain">
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  LOGIN                                          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="view-login" class="view active login-bg items-center justify-center p-4" style="overflow-y:auto;">
+  <div class="w-full max-w-md">
+    <!-- Logo bar -->
+    <div class="flex justify-center mb-8">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl ring-gradient p-[1.5px]">
+          <div class="w-full h-full rounded-[9px] bg-white flex items-center justify-center font-display font-bold text-brand-900 text-sm">I²</div>
+        </div>
+        <span class="font-display font-bold text-ink-900 text-lg">IITIIMJobAssistant</span>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card p-10">
+      <div class="mb-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+           style="background:#EEF0FF; color:#4B52D1;">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Admin Console · Restricted Access
+      </div>
+      <h1 class="font-display font-bold text-2xl text-ink-900 mt-4 mb-1">Sign in</h1>
+      <p class="text-sm text-gray-400 mb-7">Authorized MKIX administrators only.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+          <input class="inp" type="email" placeholder="admin@iitiim.ai" id="l-email" autocomplete="email"/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
+          <input class="inp" type="password" placeholder="••••••••" id="l-pwd" autocomplete="current-password"/>
+        </div>
+        <div id="login-error" class="hidden text-sm text-red-500 text-center"></div>
+        <label class="flex items-center gap-2.5 text-sm text-gray-500 cursor-pointer select-none">
+          <input type="checkbox" checked class="accent-brand-500 w-4 h-4"/> Keep me signed in
+        </label>
+        <button class="btn-primary w-full justify-center py-3" onclick="doLogin()">Sign in to Console</button>
+        <button class="btn-ghost w-full justify-center py-2.5" onclick="enterMockMode()">Use Demo/Offline Mode</button>
+      </div>
+
+      <div class="mt-6 flex gap-2.5 items-start p-4 rounded-xl" style="background:#F7F8FD; border:1px solid rgba(15,16,51,0.07);">
+        <svg width="15" height="15" fill="none" stroke="#5B66E8" stroke-width="2" viewBox="0 0 24 24" class="mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <p class="text-xs text-gray-400 leading-relaxed">All admin actions are logged and audited. Unauthorized access is reported to the security team.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  APP SHELL                                      -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="app-shell" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="flex items-center gap-2.5 px-3 py-5 border-b mb-3" style="border-color:rgba(15,16,51,0.07);">
+      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px] flex-shrink-0">
+        <div class="w-full h-full rounded-[7px] bg-white flex items-center justify-center font-display font-bold text-brand-900 text-xs">I²</div>
+      </div>
+      <div>
+        <div class="font-display font-bold text-ink-900 text-sm leading-tight">Admin Console</div>
+        <div class="text-xs text-gray-400 leading-none mt-0.5">IITIIMJobAssistant</div>
+      </div>
+    </div>
+
+    <nav class="flex-1">
+      <div class="nav-item active" data-view="dashboard" onclick="navigate('dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-view="queue" onclick="navigate('queue')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Approval Queue
+        <span id="queue-badge" class="ml-auto text-xs font-bold px-2 py-0.5 rounded-full" style="background:#FEF3C7; color:#92400e;">0</span>
+      </div>
+      <div class="nav-item" data-view="users" onclick="navigate('users')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        User Directory
+      </div>
+      <div class="nav-item" data-view="database" onclick="navigate('database')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        User Database
+      </div>
+      <div class="nav-item" data-view="audit" onclick="navigate('audit')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Audit Log
+      </div>
+    </nav>
+
+    <!-- Admin pill -->
+    <div class="border-t pt-4 mt-2" style="border-color:rgba(15,16,51,0.07);">
+      <div class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer" style="border-radius:10px;">
+        <div id="admin-avatar" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+             style="background:linear-gradient(135deg,#5B66E8,#A3ACFF);">SA</div>
+        <div class="flex-1 min-w-0">
+          <div id="admin-name" class="text-sm font-semibold text-ink-900 truncate">Superadmin</div>
+          <div id="admin-email" class="text-xs text-gray-400 truncate">admin@iitiim.ai</div>
+        </div>
+        <button onclick="doLogout()" class="text-gray-300 hover:text-red-400 transition-colors" title="Sign out">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main-wrap" style="margin-left:256px; flex:1; min-width:0; min-height:100vh; display:flex; flex-direction:column;">
+
+    <!-- TOP BAR -->
+    <header class="sticky top-0 z-20 glass shadow-nav px-8 h-14 flex items-center justify-between flex-shrink-0">
+      <div id="page-title" class="font-display font-bold text-ink-900 text-lg">Dashboard</div>
+      <div class="flex items-center gap-3">
+        <span id="mode-badge"></span>
+        <div class="text-xs text-gray-400 px-3 py-1.5" id="live-date"
+             style="background:#F7F8FD; border:1px solid rgba(15,16,51,0.07); border-radius:8px;"></div>
+        <button class="btn-ghost text-xs py-1.5 px-3" onclick="doLogout()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </button>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <div class="flex-1 p-8">
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view active fade-up">
+        <div class="grid grid-cols-5 gap-4 mb-6">
+          <div class="stat-card c-brand"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Total Signups</div><div class="font-display text-3xl font-bold text-ink-900" id="s-total">—</div><div class="text-xs text-green-600 font-medium mt-2">↑ loading…</div></div>
+          <div class="stat-card c-green"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Verified</div><div class="font-display text-3xl font-bold text-ink-900" id="s-verified">—</div><div class="text-xs text-green-600 font-medium mt-2"><span id="s-passrate">—</span> pass rate</div></div>
+          <div class="stat-card c-amber"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pending Review</div><div class="font-display text-3xl font-bold text-ink-900" id="s-pending">—</div><div class="text-xs text-amber-600 font-medium mt-2">Needs action</div></div>
+          <div class="stat-card c-red"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Rejected</div><div class="font-display text-3xl font-bold text-ink-900" id="s-rejected">—</div><div class="text-xs text-gray-400 font-medium mt-2">rejection rate</div></div>
+          <div class="stat-card c-accent"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Agent Buyers</div><div class="font-display text-3xl font-bold text-ink-900" id="s-active">—</div><div class="text-xs text-green-600 font-medium mt-2"><span id="s-conversion">—</span> of users</div><span id="s-inactive" class="hidden">0</span></div>
+        </div>
+        <div class="grid grid-cols-3 gap-5 mb-5">
+          <div class="card col-span-2 p-6">
+            <div class="flex items-start justify-between mb-5">
+              <div><div class="font-semibold text-ink-900 text-sm">Daily Signups</div><div class="text-xs text-gray-400 mt-0.5">New registrations over time</div></div>
+            </div>
+            <div style="position:relative;height:195px;"><canvas id="signupChart"></canvas></div>
+          </div>
+          <div class="card p-6">
+            <div class="font-semibold text-ink-900 text-sm mb-0.5">Verification Funnel</div>
+            <div class="text-xs text-gray-400 mb-5">All-time breakdown</div>
+            <div style="position:relative;height:150px;"><canvas id="funnelChart"></canvas></div>
+            <div id="funnel-legend" class="mt-5 space-y-2.5"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- APPROVAL QUEUE -->
+      <section id="view-queue" class="view fade-up">
+        <div class="pg-tab-bar">
+          <div class="pg-tab active" onclick="queueSubTab('PENDING',this)">Pending <span class="tab-count" id="pending-count">0</span></div>
+          <div class="pg-tab" onclick="queueSubTab('APPROVED',this)">Approved</div>
+          <div class="pg-tab" onclick="queueSubTab('REJECTED',this)">Rejected</div>
+        </div>
+        <div id="queue-content"></div>
+      </section>
+
+      <!-- USER DIRECTORY -->
+      <section id="view-users" class="view fade-up">
+        <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div class="font-display font-bold text-ink-900 text-lg">User Directory</div>
+          <div class="flex items-center gap-2 text-xs text-gray-400" id="users-info"></div>
+        </div>
+        <div class="flex items-center gap-3 mb-5 flex-wrap">
+          <input class="inp" style="max-width:260px;" placeholder="Search name, email, institute…" id="users-search" oninput="onUsersSearch(this.value)"/>
+          <select class="inp" style="max-width:155px;" id="users-status" onchange="onUsersStatus(this.value)">
+            <option value="">All statuses</option><option value="approved">Verified</option><option value="pending">Pending</option><option value="rejected">Rejected</option>
+          </select>
+          <select class="inp" style="max-width:170px;" id="users-sub" onchange="onUsersSub(this.value)">
+            <option value="">All plans</option><option value="active">Active subscription</option><option value="inactive">No subscription</option>
+          </select>
+          <div class="ml-auto flex gap-2">
+            <button class="btn-ghost py-1.5 px-3 text-xs" id="users-prev" onclick="usersPagePrev()">← Prev</button>
+            <button class="btn-ghost py-1.5 px-3 text-xs" id="users-next" onclick="usersPageNext()">Next →</button>
+          </div>
+        </div>
+        <div class="card overflow-hidden">
+          <table>
+            <thead><tr><th style="min-width:200px;">User</th><th>Status</th><th>Subscription</th><th>Signup Date</th><th>Last Login</th><th>Activity</th><th></th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- USER DATABASE -->
+      <section id="view-database" class="view fade-up">
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+          <div class="flex items-center gap-3">
+            <div class="font-display font-bold text-ink-900 text-lg">Signup Database</div>
+            <span id="db-source-badge"></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="btn-ghost text-xs" style="padding:7px 14px" onclick="exportDatabase()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV</button>
+            <button class="btn-ghost text-xs" style="padding:7px 14px;color:#b91c1c" onclick="clearDatabase()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Clear All</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-4 mb-5">
+          <div class="stat-card c-brand"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Total Records</div><div class="font-display font-bold text-2xl text-ink-900" id="db-total">0</div></div>
+          <div class="stat-card c-green"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">With Password</div><div class="font-display font-bold text-2xl text-ink-900" id="db-withpwd">0</div></div>
+          <div class="stat-card c-accent"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">With LinkedIn</div><div class="font-display font-bold text-2xl text-ink-900" id="db-withli">0</div></div>
+          <div class="stat-card c-amber"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pending</div><div class="font-display font-bold text-2xl text-ink-900" id="db-pending">0</div></div>
+        </div>
+        <div class="flex items-center justify-between mb-4">
+          <input class="inp" placeholder="Search by name, email, or LinkedIn…" style="width:340px" id="db-search" oninput="renderDatabase()"/>
+          <span class="text-xs text-gray-400" id="db-count"></span>
+        </div>
+        <div class="card overflow-hidden">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Password</th><th>LinkedIn</th><th>Registered</th><th>Status</th></tr></thead>
+            <tbody id="db-tbody"></tbody>
+          </table>
+          <div id="db-empty" class="hidden text-center py-12">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background:#EEF0FF;border:1px solid #C3CAFF">
+              <svg width="24" height="24" fill="none" stroke="#5B66E8" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </div>
+            <div class="font-display font-bold text-lg mb-1">No signups yet</div>
+            <div class="text-sm text-gray-400">Users who complete the signup form will appear here.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AUDIT LOG -->
+      <section id="view-audit" class="view fade-up">
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+          <div class="font-display font-bold text-ink-900 text-lg">Audit Log</div>
+          <span class="text-xs text-gray-400" id="audit-info"></span>
+        </div>
+        <div class="flex gap-3 mb-5 flex-wrap">
+          <input class="inp" style="max-width:260px;" placeholder="Search user or admin…" id="audit-search" oninput="onAuditSearch(this.value)"/>
+          <select class="inp" style="max-width:200px;" id="audit-action" onchange="onAuditAction(this.value)">
+            <option value="">All actions</option>
+            <option value="VERIFICATION_APPROVED">Approved</option>
+            <option value="VERIFICATION_REJECTED">Rejected</option>
+            <option value="ADMIN_LOGIN">Admin Login</option>
+            <option value="ADMIN_CREATED">Admin Created</option>
+          </select>
+        </div>
+        <div class="card px-6 py-1" id="audit-list"></div>
+      </section>
+
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  REJECT MODAL                                   -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal-box">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#FEE2E2; border:1px solid #fecaca;">
+          <svg width="17" height="17" fill="none" stroke="#b91c1c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div>
+          <div class="font-display font-bold text-ink-900 text-base" id="rej-title">Reject signup</div>
+          <div class="text-xs text-gray-400" id="rej-sub">Provide a reason — this is stored in the audit log.</div>
+        </div>
+      </div>
+      <button onclick="closeRejectModal()" class="text-gray-300 hover:text-gray-500 mt-0.5">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="space-y-3 mb-6">
+      <div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Reason</label>
+        <select class="inp" id="rej-reason-sel">
+          <option value="">Select a reason…</option>
+          <option>No IIT/IIM education found on LinkedIn profile</option>
+          <option>LinkedIn profile URL invalid or inaccessible</option>
+          <option>Profile appears fake or incomplete</option>
+          <option>Duplicate account attempt</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <textarea class="inp" rows="3" placeholder="Additional notes (optional)…" id="rej-notes"></textarea>
+    </div>
+    <div class="flex gap-3">
+      <button class="btn-err flex-1 justify-center py-2.5" onclick="confirmReject()">Confirm Rejection</button>
+      <button class="btn-ghost flex-1 justify-center py-2.5" onclick="closeRejectModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg text-white flex-shrink-0"
+             style="background:linear-gradient(135deg,#5B66E8,#A3ACFF);" id="um-avatar">AK</div>
+        <div>
+          <div class="font-display font-bold text-ink-900 text-xl" id="um-name">—</div>
+          <div class="text-sm text-gray-400" id="um-email">—</div>
+          <div class="mt-1.5" id="um-badge"></div>
+        </div>
+      </div>
+      <button onclick="closeUserModal()" class="text-gray-300 hover:text-gray-500">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-3 gap-3 mb-5" id="um-stats"></div>
+    <div class="divide-y" style="border-color:rgba(15,16,51,0.06);" id="um-rows"></div>
+    <div class="mt-6 flex gap-3">
+      <button class="btn-ghost flex-1 justify-center py-2.5" onclick="closeUserModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toast-wrap"></div>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

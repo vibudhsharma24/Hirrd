@@ -1,0 +1,24 @@
+# Restructure & Styling Walkthrough
+
+We have restored the original light-theme styling (Tailwind CSS, Inter/Space Grotesk fonts, smallcase-style cards) and successfully connected all frontend views (`index.html`, `login.html`, `signup.html`, `dashboard.html`, and `pay.html`) to the new Python/Flask modular backend.
+
+## Verified Views
+
+Here is a visual log of the verification process in the browser:
+
+````carousel
+![Landing Page](file:///C:/Users/VIBUDH/.gemini/antigravity/brain/965486fa-821f-4966-8314-f5a9a5f7144c/landing_page_1780518251712.png)
+<!-- slide -->
+![Login Card](file:///C:/Users/VIBUDH/.gemini/antigravity/brain/965486fa-821f-4966-8314-f5a9a5f7144c/login_page_1780518275894.png)
+<!-- slide -->
+![User Dashboard](file:///C:/Users/VIBUDH/.gemini/antigravity/brain/965486fa-821f-4966-8314-f5a9a5f7144c/dashboard_view_1780518362154.png)
+<!-- slide -->
+![Payment Page](file:///C:/Users/VIBUDH/.gemini/antigravity/brain/965486fa-821f-4966-8314-f5a9a5f7144c/payment_checkout_1780518404176.png)
+````
+
+## Verified Actions
+
+1. **Root Route (`/`)**: Correctly serves the landing page if the user is unauthenticated, and redirects to `/dashboard` if authenticated.
+2. **Authentication Flow (`/signup` & `/login`)**: Users can create accounts via the 3-step signup flow or sign in via the centered login card, which now routes requests directly to the `/api/login` and `/api/signup` endpoints.
+3. **Dynamic Dashboard (`/dashboard`)**: Displays the logged-in user's profile details, custom statistics, subscription state, and agent status.
+4. **Subscription Upgrade (`/pay`)**: Loads a matching smallcase-inspired card displaying plans, features, and launching the Razorpay checkout overlay.

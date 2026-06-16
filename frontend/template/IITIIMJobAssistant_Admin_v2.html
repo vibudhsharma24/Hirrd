@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>I² Admin Console — IITIIMJobAssistant</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+          display: ['Space Grotesk', 'Inter', 'sans-serif'],
+        },
+        colors: {
+          brand: {
+            50:  '#EEF0FF', 100: '#E0E4FF', 200: '#C3CAFF', 300: '#A3ACFF',
+            400: '#7D87F5', 500: '#5B66E8', 600: '#4B52D1', 700: '#3E42A8',
+            800: '#2F3380', 900: '#1E2055', 950: '#0F1033',
+          },
+          accent: { 400: '#FFB978', 500: '#FF9E50', 600: '#F57C2B' },
+          ink:   { 900: '#0B0D1F', 800: '#121534', 700: '#1B1F44' },
+        },
+        boxShadow: {
+          soft: '0 10px 40px -12px rgba(17,24,39,0.12)',
+          glow: '0 0 40px -5px rgba(91,102,232,0.45)',
+          card: '0 1px 2px rgba(15,16,51,0.04), 0 4px 16px -4px rgba(15,16,51,0.08)',
+          'card-hover': '0 8px 32px -8px rgba(91,102,232,0.22)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #FAFBFD; color: #0B0D1F; min-height: 100vh; }
+  .font-display { font-family: 'Space Grotesk', Inter, sans-serif; letter-spacing: -0.02em; }
+
+  /* Grid grain pattern from original */
+  .grain { background-image: radial-gradient(circle at 1px 1px, rgba(91,102,232,0.07) 1px, transparent 0); background-size: 22px 22px; }
+  .ring-gradient { background: conic-gradient(from 220deg, #5B66E8, #A3ACFF, #FFB978, #5B66E8); }
+
+  /* Glass nav — exact from original */
+  .glass { background: rgba(255,255,255,0.82); backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px); }
+  .shadow-nav { box-shadow: 0 1px 0 rgba(15,16,51,0.07), 0 10px 30px -20px rgba(15,16,51,0.12); }
+
+  /* Views */
+  .view        { display: none; }
+  .view.active { display: block; }
+  #view-login.active { display: flex !important; position: fixed; inset: 0; z-index: 999; }
+
+  /* Sidebar */
+  #sidebar {
+    width: 256px; min-width: 256px;
+    background: #fff;
+    border-right: 1px solid rgba(15,16,51,0.07);
+    box-shadow: 2px 0 16px -8px rgba(15,16,51,0.06);
+    position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding: 0 12px 24px;
+    z-index: 30;
+  }
+
+  /* Nav items */
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px;
+    font-size: 13.5px; font-weight: 500; color: #4B52D1;
+    color: rgba(11,13,31,0.55);
+    cursor: pointer; transition: all .15s ease;
+    position: relative; user-select: none;
+  }
+  .nav-item:hover { background: #F0F2FF; color: #3E42A8; }
+  .nav-item.active {
+    background: #EEF0FF; color: #4B52D1; font-weight: 600;
+  }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 18px; background: #5B66E8; border-radius: 0 3px 3px 0;
+  }
+  .nav-section { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(11,13,31,0.32); padding: 0 12px; margin: 20px 0 6px; }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border: 1px solid rgba(15,16,51,0.07);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15,16,51,0.04), 0 4px 16px -4px rgba(15,16,51,0.06);
+  }
+  .card-inner {
+    background: #F7F8FD;
+    border: 1px solid rgba(15,16,51,0.06);
+    border-radius: 10px;
+  }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-ok   { background: #DCFCE7; color: #15803d; }
+  .badge-warn { background: #FEF3C7; color: #92400e; }
+  .badge-err  { background: #FEE2E2; color: #b91c1c; }
+  .badge-blue { background: #EEF0FF; color: #4B52D1; }
+  .badge-mute { background: #F3F4F6; color: #6B7280; }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot-ok   { background: #16a34a; }
+  .dot-warn { background: #d97706; }
+  .dot-err  { background: #dc2626; }
+  .dot-mute { background: #9CA3AF; }
+
+  /* Stat cards */
+  .stat-card {
+    background: #fff;
+    border: 1px solid rgba(15,16,51,0.07);
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: 0 1px 2px rgba(15,16,51,0.04), 0 4px 16px -4px rgba(15,16,51,0.06);
+    position: relative; overflow: hidden;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .stat-card:hover { box-shadow: 0 8px 32px -8px rgba(91,102,232,0.18); transform: translateY(-1px); }
+  .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+  .stat-card.c-brand::after  { background: linear-gradient(90deg, #5B66E8, #A3ACFF); }
+  .stat-card.c-green::after  { background: linear-gradient(90deg, #22c55e, #86efac); }
+  .stat-card.c-amber::after  { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+  .stat-card.c-red::after    { background: linear-gradient(90deg, #ef4444, #fca5a5); }
+  .stat-card.c-accent::after { background: linear-gradient(90deg, #FF9E50, #FFB978); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    padding: 11px 16px; text-align: left;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(11,13,31,0.38); background: #F7F8FD;
+    border-bottom: 1px solid rgba(15,16,51,0.07);
+    white-space: nowrap;
+  }
+  thead th:first-child { border-radius: 0; }
+  tbody td {
+    padding: 13px 16px; color: rgba(11,13,31,0.75);
+    border-bottom: 1px solid rgba(15,16,51,0.05);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #F7F8FD; }
+  tbody tr { cursor: pointer; transition: background .12s; }
+
+  /* Inputs */
+  .inp {
+    background: #fff; border: 1.5px solid rgba(15,16,51,0.12); border-radius: 10px;
+    color: #0B0D1F; padding: 9px 13px; font-size: 13.5px; font-family: 'Inter', sans-serif;
+    outline: none; transition: border-color .18s, box-shadow .18s; width: 100%;
+  }
+  .inp:focus { border-color: #5B66E8; box-shadow: 0 0 0 3px rgba(91,102,232,0.12); }
+  .inp::placeholder { color: rgba(11,13,31,0.3); }
+  select.inp { cursor: pointer; }
+  select.inp option { background: #fff; color: #0B0D1F; }
+  textarea.inp { resize: vertical; }
+
+  /* Buttons */
+  .btn-primary {
+    background: #0F1033; color: #fff; border: none; border-radius: 10px;
+    padding: 10px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: all .18s; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary:hover { background: #1E2055; box-shadow: 0 4px 16px -4px rgba(15,16,51,0.35); }
+
+  .btn-brand {
+    background: #5B66E8; color: #fff; border: none; border-radius: 10px;
+    padding: 10px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: all .18s; font-family: 'Inter', sans-serif;
+  }
+  .btn-brand:hover { background: #4B52D1; box-shadow: 0 4px 16px -4px rgba(91,102,232,0.45); }
+
+  .btn-ok {
+    background: #DCFCE7; color: #15803d; border: 1px solid #bbf7d0; border-radius: 8px;
+    padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all .15s; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-ok:hover { background: #bbf7d0; }
+
+  .btn-err {
+    background: #FEE2E2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 8px;
+    padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all .15s; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-err:hover { background: #fecaca; }
+
+  .btn-ghost {
+    background: transparent; color: rgba(11,13,31,0.55); border: 1.5px solid rgba(15,16,51,0.12); border-radius: 9px;
+    padding: 8px 15px; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all .15s; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-ghost:hover { border-color: rgba(15,16,51,0.22); color: #0B0D1F; background: #F7F8FD; }
+
+  /* Tab bar */
+  .tab-bar { display: flex; gap: 3px; background: #F0F2FF; border-radius: 9px; padding: 3px; }
+  .tab-btn {
+    padding: 6px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 500;
+    color: rgba(11,13,31,0.45); cursor: pointer; transition: all .15s;
+    border: none; background: none; font-family: 'Inter', sans-serif; white-space: nowrap;
+  }
+  .tab-btn.active { background: #fff; color: #0B0D1F; font-weight: 600; box-shadow: 0 1px 4px rgba(15,16,51,0.1); }
+
+  /* Range chips */
+  .range-chip {
+    padding: 6px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+    color: rgba(11,13,31,0.45); cursor: pointer; border: 1.5px solid rgba(15,16,51,0.1);
+    background: transparent; transition: all .15s; font-family: 'Inter', sans-serif;
+  }
+  .range-chip.active { background: #0F1033; color: #fff; border-color: #0F1033; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(11,13,31,0.5);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: #fff; border: 1px solid rgba(15,16,51,0.08); border-radius: 20px;
+    width: 100%; max-width: 520px; padding: 32px; margin: 16px;
+    box-shadow: 0 24px 60px -16px rgba(15,16,51,0.2);
+    transform: translateY(10px); transition: transform .2s;
+  }
+  .modal-overlay.open .modal-box { transform: translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #E0E4FF; border-radius: 10px; }
+
+  /* Login page */
+  .login-bg {
+    background:
+      radial-gradient(900px 500px at 5% 0%, rgba(91,102,232,0.18), transparent 60%),
+      radial-gradient(700px 400px at 95% 0%, rgba(255,158,80,0.16), transparent 60%),
+      linear-gradient(180deg, #FFFFFF 0%, #F5F6FD 100%);
+  }
+
+  /* Audit line */
+  .audit-row {
+    display: grid; grid-template-columns: 36px 1fr auto;
+    gap: 14px; padding: 14px 0; align-items: flex-start;
+    border-bottom: 1px solid rgba(15,16,51,0.05);
+  }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Progress bar */
+  .prog-track { height: 6px; border-radius: 999px; background: #EEF0FF; overflow: hidden; }
+  .prog-fill  { height: 100%; border-radius: 999px; transition: width .6s ease; }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .fade-up { animation: fadeUp .35s ease both; }
+
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
+  .pulse { animation: pulse 2s infinite; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin .8s linear infinite; }
+
+  /* Toast */
+  #toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: #fff; border: 1px solid rgba(15,16,51,0.1); border-radius: 12px;
+    padding: 12px 18px; font-size: 13px; color: #0B0D1F;
+    box-shadow: 0 8px 32px -8px rgba(15,16,51,0.2);
+    animation: fadeUp .22s ease both;
+    display: flex; align-items: center; gap: 9px; min-width: 260px;
+  }
+  .toast.ok   { border-left: 3px solid #22c55e; }
+  .toast.warn { border-left: 3px solid #f59e0b; }
+
+
+  section.view { width: 100%; }
+  /* Sub-tabs */
+  .pg-tab-bar { display:flex; gap:0; border-bottom:2px solid rgba(15,16,51,0.07); margin-bottom:24px; }
+  .pg-tab { padding:10px 18px; font-size:13.5px; font-weight:500; color:rgba(11,13,31,0.45);
+            cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px;
+            transition:all .15s; font-family:'Inter',sans-serif; white-space:nowrap; }
+  .pg-tab:hover { color:#0B0D1F; }
+  .pg-tab.active { color:#5B66E8; border-bottom-color:#5B66E8; font-weight:600; }
+  .pg-tab .tab-count { display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:999px; font-size:11px; font-weight:700;
+    background:#EEF0FF; color:#5B66E8; margin-left:6px; }
+  .pg-tab.active .tab-count { background:#5B66E8; color:#fff; }
+
+  /* Sub-pages */
+  .sub-page { display:none; }
+  .sub-page.active { display:block; }
+
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body class="grain">
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  LOGIN                                          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="view-login" class="view active login-bg items-center justify-center p-4" style="overflow-y:auto;">
+  <div class="w-full max-w-md">
+    <!-- Logo bar -->
+    <div class="flex justify-center mb-8">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl ring-gradient p-[1.5px]">
+          <div class="w-full h-full rounded-[9px] bg-white flex items-center justify-center font-display font-bold text-brand-900 text-sm">I²</div>
+        </div>
+        <span class="font-display font-bold text-ink-900 text-lg">IITIIMJobAssistant</span>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card p-10">
+      <div class="mb-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+           style="background:#EEF0FF; color:#4B52D1;">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Admin Console · Restricted Access
+      </div>
+      <h1 class="font-display font-bold text-2xl text-ink-900 mt-4 mb-1">Sign in</h1>
+      <p class="text-sm text-gray-400 mb-7">Authorized MKIX administrators only.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+          <input class="inp" type="email" value="admin@iitiim.ai" id="l-email"/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
+          <input class="inp" type="password" value="admin123" id="l-pwd"/>
+        </div>
+        <label class="flex items-center gap-2.5 text-sm text-gray-500 cursor-pointer select-none">
+          <input type="checkbox" checked class="accent-brand-500 w-4 h-4"/> Keep me signed in
+        </label>
+        <button class="btn-primary w-full justify-center py-3" onclick="doLogin()">Sign in to Console</button>
+      </div>
+
+      <div class="mt-6 flex gap-2.5 items-start p-4 rounded-xl" style="background:#F7F8FD; border:1px solid rgba(15,16,51,0.07);">
+        <svg width="15" height="15" fill="none" stroke="#5B66E8" stroke-width="2" viewBox="0 0 24 24" class="mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <p class="text-xs text-gray-400 leading-relaxed">All admin actions are logged and audited. Unauthorized access is reported to the security team.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  APP SHELL                                      -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="app-shell" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <!-- Logo -->
+    <div class="flex items-center gap-2.5 px-3 py-5 border-b mb-3" style="border-color:rgba(15,16,51,0.07);">
+      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px] flex-shrink-0">
+        <div class="w-full h-full rounded-[7px] bg-white flex items-center justify-center font-display font-bold text-brand-900 text-xs">I²</div>
+      </div>
+      <div>
+        <div class="font-display font-bold text-ink-900 text-sm leading-tight">Admin Console</div>
+        <div class="text-xs text-gray-400 leading-none mt-0.5">IITIIMJobAssistant</div>
+      </div>
+    </div>
+
+    <nav class="flex-1">
+      <div class="nav-item active" data-view="dashboard" onclick="navigate('dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-view="queue" onclick="navigate('queue')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Approval Queue
+        <span id="queue-badge" class="ml-auto text-xs font-bold px-2 py-0.5 rounded-full" style="background:#FEF3C7; color:#92400e;">7</span>
+      </div>
+      <div class="nav-item" data-view="users" onclick="navigate('users')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        User Directory
+      </div>
+      <div class="nav-item" data-view="audit" onclick="navigate('audit')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="flex-shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Audit Log
+      </div>
+    </nav>
+
+    <!-- Admin pill -->
+    <div class="border-t pt-4 mt-2" style="border-color:rgba(15,16,51,0.07);">
+      <div class="flex items-center gap-3 px-3 py-2 rounded-12 hover:bg-gray-50 transition-colors cursor-pointer" style="border-radius:10px;">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+             style="background:linear-gradient(135deg,#5B66E8,#A3ACFF);">SA</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-ink-900 truncate">Superadmin</div>
+          <div class="text-xs text-gray-400 truncate">admin@iitiim.ai</div>
+        </div>
+        <button onclick="doLogout()" class="text-gray-300 hover:text-red-400 transition-colors" title="Sign out">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main-wrap" style="margin-left:256px; flex:1; min-width:0; min-height:100vh; display:flex; flex-direction:column;">
+
+    <!-- TOP BAR -->
+    <header class="sticky top-0 z-20 glass shadow-nav px-8 h-14 flex items-center justify-between flex-shrink-0">
+      <div id="page-title" class="font-display font-bold text-ink-900 text-lg">Dashboard</div>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 text-xs text-gray-400">
+          <span class="inline-block w-2 h-2 rounded-full bg-green-500 pulse"></span>
+          Live
+        </div>
+        <div class="text-xs text-gray-400 px-3 py-1.5" id="live-date"
+             style="background:#F7F8FD; border:1px solid rgba(15,16,51,0.07); border-radius:8px;"></div>
+        <button class="btn-ghost text-xs py-1.5 px-3" onclick="doLogout()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </button>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <div class="flex-1 p-8">
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view active fade-up">
+        <!-- Overview -->
+        <div id="dash-overview">
+          <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-400">Period:</span>
+              <div class="flex gap-1.5">
+                <button class="range-chip active" onclick="setRange(this)">7D</button>
+                <button class="range-chip" onclick="setRange(this)">30D</button>
+                <button class="range-chip" onclick="setRange(this)">90D</button>
+                <button class="range-chip" onclick="setRange(this)">All time</button>
+              </div>
+            </div>
+            <button class="btn-ghost text-xs">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+          </div>
+          <div class="grid grid-cols-5 gap-4 mb-6">
+            <div class="stat-card c-brand"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Total Signups</div><div class="font-display text-3xl font-bold text-ink-900">2,847</div><div class="text-xs text-green-600 font-medium mt-2">↑ 14.2% vs prev</div></div>
+            <div class="stat-card c-green"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Verified</div><div class="font-display text-3xl font-bold text-ink-900">2,414</div><div class="text-xs text-green-600 font-medium mt-2">84.8% pass rate</div></div>
+            <div class="stat-card c-amber"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pending Review</div><div class="font-display text-3xl font-bold text-ink-900">7</div><div class="text-xs text-amber-600 font-medium mt-2">Needs action</div></div>
+            <div class="stat-card c-red"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Rejected</div><div class="font-display text-3xl font-bold text-ink-900">426</div><div class="text-xs text-gray-400 font-medium mt-2">15.0% rate</div></div>
+            <div class="stat-card c-accent"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Active Subs</div><div class="font-display text-3xl font-bold text-ink-900">1,284</div><div class="text-xs text-green-600 font-medium mt-2">53.2% conversion</div></div>
+          </div>
+          <div class="grid grid-cols-3 gap-5 mb-5">
+            <div class="card col-span-2 p-6">
+              <div class="flex items-start justify-between mb-5">
+                <div><div class="font-semibold text-ink-900 text-sm">Daily Signups</div><div class="text-xs text-gray-400 mt-0.5">New registrations over time</div></div>
+                <div class="tab-bar">
+                  <button class="tab-btn active" onclick="switchChart(this,'signups')">Signups</button>
+                  <button class="tab-btn" onclick="switchChart(this,'verified')">Verified</button>
+                  <button class="tab-btn" onclick="switchChart(this,'subs')">Subscriptions</button>
+                </div>
+              </div>
+              <div style="position:relative;height:195px;"><canvas id="signupChart"></canvas></div>
+            </div>
+            <div class="card p-6">
+              <div class="font-semibold text-ink-900 text-sm mb-0.5">Verification Funnel</div>
+              <div class="text-xs text-gray-400 mb-5">All-time breakdown</div>
+              <div style="position:relative;height:150px;"><canvas id="funnelChart"></canvas></div>
+              <div class="mt-5 space-y-2.5">
+                <div class="flex items-center justify-between text-xs"><div class="flex items-center gap-2"><span class="dot" style="background:#5B66E8;"></span><span class="text-gray-500">Verified</span></div><span class="font-semibold text-ink-900">84.8%</span></div>
+                <div class="flex items-center justify-between text-xs"><div class="flex items-center gap-2"><span class="dot dot-err"></span><span class="text-gray-500">Rejected</span></div><span class="font-semibold text-ink-900">15.0%</span></div>
+                <div class="flex items-center justify-between text-xs"><div class="flex items-center gap-2"><span class="dot dot-warn"></span><span class="text-gray-500">Pending</span></div><span class="font-semibold text-ink-900">0.2%</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-5">
+            <div class="card p-6">
+              <div class="font-semibold text-ink-900 text-sm mb-0.5">Subscription Conversion</div>
+              <div class="text-xs text-gray-400 mb-5">Verified → paid subscriber</div>
+              <div class="flex items-end gap-3 mb-5"><div class="font-display text-4xl font-bold text-ink-900">53.2%</div><div class="text-green-600 text-sm font-semibold pb-1">↑ 3.1pp</div></div>
+              <div class="space-y-3.5">
+                <div><div class="flex justify-between text-xs mb-1.5"><span class="text-gray-400">1-month plan</span><span class="font-semibold text-ink-900">28%</span></div><div class="prog-track"><div class="prog-fill" style="background:#5B66E8;width:28%;"></div></div></div>
+                <div><div class="flex justify-between text-xs mb-1.5"><span class="text-gray-400">3-month plan</span><span class="font-semibold text-ink-900">44%</span></div><div class="prog-track"><div class="prog-fill" style="background:#7D87F5;width:44%;"></div></div></div>
+                <div><div class="flex justify-between text-xs mb-1.5"><span class="text-gray-400">6-month plan</span><span class="font-semibold text-ink-900">28%</span></div><div class="prog-track"><div class="prog-fill" style="background:#FF9E50;width:28%;"></div></div></div>
+              </div>
+            </div>
+            <div class="card col-span-2 overflow-hidden">
+              <div class="flex items-center justify-between px-6 pt-5 pb-4"><div class="font-semibold text-ink-900 text-sm">Recent Signups</div><button class="text-xs text-brand-500 font-semibold hover:underline" onclick="navigate('users')">View all →</button></div>
+              <table>
+                <thead><tr><th>User</th><th>Institute</th><th>Status</th><th>Joined</th></tr></thead>
+                <tbody>
+                  <tr><td><div class="font-medium text-ink-900 text-sm">Ananya Sharma</div><div class="text-xs text-gray-400">ananya.s@iima.ac.in</div></td><td><span class="badge badge-blue">IIM Ahmedabad</span></td><td><span class="badge badge-ok"><span class="dot dot-ok"></span>Verified</span></td><td class="text-xs text-gray-400">2 min ago</td></tr>
+                  <tr><td><div class="font-medium text-ink-900 text-sm">Rohan Mehta</div><div class="text-xs text-gray-400">rohan.m@gmail.com</div></td><td><span class="badge badge-blue">IIT Delhi</span></td><td><span class="badge badge-warn"><span class="dot dot-warn"></span>Pending</span></td><td class="text-xs text-gray-400">18 min ago</td></tr>
+                  <tr><td><div class="font-medium text-ink-900 text-sm">Priya Nair</div><div class="text-xs text-gray-400">priya.nair@iitm.ac.in</div></td><td><span class="badge badge-blue">IIT Madras</span></td><td><span class="badge badge-ok"><span class="dot dot-ok"></span>Verified</span></td><td class="text-xs text-gray-400">34 min ago</td></tr>
+                  <tr><td><div class="font-medium text-ink-900 text-sm">Vikram Rao</div><div class="text-xs text-gray-400">vikram.r@outlook.com</div></td><td><span class="badge badge-mute">Unknown</span></td><td><span class="badge badge-err"><span class="dot dot-err"></span>Rejected</span></td><td class="text-xs text-gray-400">51 min ago</td></tr>
+                  <tr><td><div class="font-medium text-ink-900 text-sm">Shreya Joshi</div><div class="text-xs text-gray-400">shreya.j@iitb.ac.in</div></td><td><span class="badge badge-blue">IIT Bombay</span></td><td><span class="badge badge-ok"><span class="dot dot-ok"></span>Verified</span></td><td class="text-xs text-gray-400">1 hr ago</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+      </section>
+
+      <!-- APPROVAL QUEUE -->
+      <section id="view-queue" class="view fade-up">
+        <div class="pg-tab-bar">
+          <div class="pg-tab active" onclick="subTab('queue','pending',this)">Pending <span class="tab-count" id="pending-count">7</span></div>
+          <div class="pg-tab" onclick="subTab('queue','approved',this)">Approved <span class="tab-count">124</span></div>
+          <div class="pg-tab" onclick="subTab('queue','rejected',this)">Rejected <span class="tab-count">38</span></div>
+        </div>
+
+        <!-- Pending sub-page -->
+        <div id="queue-pending" class="sub-page active">
+          <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <p class="text-sm text-gray-400">Review pending LinkedIn education verifications. All decisions are logged.</p>
+            <div class="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-full" style="background:#FEF3C7;color:#92400e;">
+              <span class="dot dot-warn pulse"></span>
+              <span id="queue-sla-label">7 pending · SLA 24h</span>
+            </div>
+          </div>
+          <div id="queue-list" class="space-y-4"></div>
+          <div id="queue-empty" class="hidden text-center py-20">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background:#DCFCE7;border:1px solid #bbf7d0;">
+              <svg width="24" height="24" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+            <div class="font-display font-bold text-ink-900 text-xl mb-1">All clear!</div>
+            <div class="text-sm text-gray-400">No pending verifications.</div>
+          </div>
+        </div>
+
+        <!-- Approved sub-page -->
+        <div id="queue-approved" class="sub-page">
+          <div class="card overflow-hidden">
+            <div class="flex items-center justify-between px-6 pt-5 pb-4"><div class="font-semibold text-ink-900 text-sm">Approved Verifications</div><span class="text-xs text-gray-400">124 total</span></div>
+            <table>
+              <thead><tr><th>User</th><th>Institute Detected</th><th>Approved By</th><th>Approved At</th><th>Subscribed</th></tr></thead>
+              <tbody>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Ananya Sharma</div><div class="text-xs text-gray-400">ananya.s@iima.ac.in</div></td><td><span class="badge badge-blue">IIM Ahmedabad</span></td><td><span class="text-xs text-gray-500">Superadmin</span></td><td class="text-xs text-gray-400">Today, 11:42 AM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Divya Nambiar</div><div class="text-xs text-gray-400">divya.n@iitm.ac.in</div></td><td><span class="badge badge-blue">IIT Madras</span></td><td><span class="text-xs text-gray-500">Superadmin</span></td><td class="text-xs text-gray-400">Today, 09:55 AM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Ishita Roy</div><div class="text-xs text-gray-400">ishita.r@iimc.ac.in</div></td><td><span class="badge badge-blue">IIM Calcutta</span></td><td><span class="text-xs text-gray-500">Superadmin</span></td><td class="text-xs text-gray-400">Today, 09:30 AM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Sameer Jain</div><div class="text-xs text-gray-400">sameer.j@iitropar.ac.in</div></td><td><span class="badge badge-blue">IIT Ropar</span></td><td><span class="text-xs text-gray-500">Superadmin</span></td><td class="text-xs text-gray-400">Yesterday, 2:47 PM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Aarav Kulkarni</div><div class="text-xs text-gray-400">aarav.k@iitb.ac.in</div></td><td><span class="badge badge-blue">IIT Bombay</span></td><td><span class="text-xs text-gray-500">Superadmin</span></td><td class="text-xs text-gray-400">19 Apr, 3:00 PM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Sneha Agarwal</div><div class="text-xs text-gray-400">sneha.a@iimb.ac.in</div></td><td><span class="badge badge-blue">IIM Bangalore</span></td><td><span class="text-xs text-gray-500">Superadmin</span></td><td class="text-xs text-gray-400">18 Apr, 5:32 PM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Rejected sub-page -->
+        <div id="queue-rejected" class="sub-page">
+          <div class="card overflow-hidden">
+            <div class="flex items-center justify-between px-6 pt-5 pb-4"><div class="font-semibold text-ink-900 text-sm">Rejected Verifications</div><span class="text-xs text-gray-400">38 total</span></div>
+            <table>
+              <thead><tr><th>User</th><th>Submitted LinkedIn</th><th>Rejection Reason</th><th>Rejected By</th><th>Rejected At</th></tr></thead>
+              <tbody>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Harsh Malhotra</div><div class="text-xs text-gray-400">harsh.m@gmail.com</div></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/harsh-m</td><td class="text-xs text-gray-500 max-w-xs">No IIT/IIM education found on profile</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">Today, 10:18 AM</td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Vikram Rao</div><div class="text-xs text-gray-400">vikram.r@outlook.com</div></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/vikram-r</td><td class="text-xs text-gray-500 max-w-xs">LinkedIn profile URL invalid or inaccessible</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">Yesterday, 4:12 PM</td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Pradeep Kumar</div><div class="text-xs text-gray-400">pradeep.k@gmail.com</div></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/pradeep-k2</td><td class="text-xs text-gray-500 max-w-xs">Duplicate account attempt</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">19 Apr, 1:15 PM</td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Namita Soni</div><div class="text-xs text-gray-400">namita.s@yahoo.com</div></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/namita-s</td><td class="text-xs text-gray-500 max-w-xs">Profile appears fake or incomplete</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">17 Apr, 10:44 AM</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- USER DIRECTORY -->
+      <section id="view-users" class="view fade-up">
+        <div class="pg-tab-bar">
+          <div class="pg-tab active" onclick="subTab('users','all',this)">All Users <span class="tab-count">2,847</span></div>
+          <div class="pg-tab" onclick="subTab('users','active',this)">Active Subscribers <span class="tab-count">1,284</span></div>
+          <div class="pg-tab" onclick="subTab('users','suspended',this)">Suspended <span class="tab-count">3</span></div>
+          <div class="pg-tab" onclick="subTab('users','agents',this)">Agent Activity</div>
+        </div>
+
+        <!-- All Users sub-page -->
+        <div id="users-all" class="sub-page active">
+          <div class="flex items-center gap-3 mb-5 flex-wrap">
+            <input class="inp" style="max-width:260px;" placeholder="Search name, email, institute…" oninput="filterUsers(this.value)"/>
+            <select class="inp" style="max-width:155px;" onchange="filterStatus(this.value)">
+              <option value="">All statuses</option><option value="verified">Verified</option><option value="pending">Pending</option><option value="rejected">Rejected</option>
+            </select>
+            <select class="inp" style="max-width:170px;" onchange="filterSub(this.value)">
+              <option value="">All plans</option><option value="active">Active subscription</option><option value="none">No subscription</option>
+            </select>
+            <div class="ml-auto text-sm text-gray-400" id="user-count">2,847 users</div>
+          </div>
+          <div class="card overflow-hidden">
+            <table>
+              <thead><tr><th style="min-width:200px;">User</th><th>Institute</th><th>Status</th><th>Subscription</th><th>Last Active</th><th>Activity (30d)</th><th></th></tr></thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+            <div class="flex items-center justify-between px-5 py-3.5 border-t text-sm" style="border-color:rgba(15,16,51,0.07);">
+              <span class="text-gray-400 text-xs">Showing 1–20 of 2,847</span>
+              <div class="flex gap-2"><button class="btn-ghost py-1.5 px-3 text-xs">← Prev</button><button class="btn-ghost py-1.5 px-3 text-xs">Next →</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Subscribers sub-page -->
+        <div id="users-active" class="sub-page">
+          <div class="grid grid-cols-4 gap-4 mb-5">
+            <div class="stat-card c-brand"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Active Subscribers</div><div class="font-display text-3xl font-bold text-ink-900">1,284</div><div class="text-xs text-green-600 font-medium mt-2">↑ 142 this month</div></div>
+            <div class="stat-card c-green"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Avg Plan Value</div><div class="font-display text-3xl font-bold text-ink-900">₹2,213</div><div class="text-xs text-green-600 font-medium mt-2">/month</div></div>
+            <div class="stat-card c-amber"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Renewals This Week</div><div class="font-display text-3xl font-bold text-ink-900">47</div><div class="text-xs text-gray-400 font-medium mt-2">₹1.2L expected</div></div>
+            <div class="stat-card c-accent"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">At-risk (expiring)</div><div class="font-display text-3xl font-bold text-ink-900">23</div><div class="text-xs text-amber-600 font-medium mt-2">Within 7 days</div></div>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="flex items-center justify-between px-6 pt-5 pb-4"><div class="font-semibold text-ink-900 text-sm">Active Subscribers</div><button class="btn-ghost text-xs">Export</button></div>
+            <table>
+              <thead><tr><th>User</th><th>Institute</th><th>Plan</th><th>Monthly Value</th><th>Renews</th><th>Apps (30d)</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Aarav Kulkarni</div><div class="text-xs text-gray-400">IIT Bombay '22</div></td><td><span class="badge badge-blue">IIT Bombay</span></td><td><span class="badge badge-blue">3-month</span></td><td class="font-semibold text-ink-900">₹2,500</td><td class="text-xs text-gray-400">19 Jul 2026</td><td class="text-xs text-gray-500">142 apps</td><td><span class="badge badge-ok">Active</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Sneha Agarwal</div><div class="text-xs text-gray-400">IIM Bangalore '21</div></td><td><span class="badge badge-blue">IIM Bangalore</span></td><td><span class="badge badge-blue">6-month</span></td><td class="font-semibold text-ink-900">₹2,000</td><td class="text-xs text-gray-400">19 Oct 2026</td><td class="text-xs text-gray-500">89 apps</td><td><span class="badge badge-ok">Active</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Abhishek Das</div><div class="text-xs text-gray-400">IIT Kharagpur '20</div></td><td><span class="badge badge-blue">IIT Kharagpur</span></td><td><span class="badge badge-blue">6-month</span></td><td class="font-semibold text-ink-900">₹2,000</td><td class="text-xs text-gray-400">18 Oct 2026</td><td class="text-xs text-gray-500">201 apps</td><td><span class="badge badge-ok">Active</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Riya Menon</div><div class="text-xs text-gray-400">IIT Guwahati '22</div></td><td><span class="badge badge-blue">IIT Guwahati</span></td><td><span class="badge badge-blue">1-month</span></td><td class="font-semibold text-ink-900">₹3,000</td><td class="text-xs text-amber-600 font-semibold">26 Apr 2026 ⚠</td><td class="text-xs text-gray-500">24 apps</td><td><span class="badge badge-warn">Expiring soon</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Akash Tiwari</div><div class="text-xs text-gray-400">IIT Delhi '23</div></td><td><span class="badge badge-blue">IIT Delhi</span></td><td><span class="badge badge-blue">6-month</span></td><td class="font-semibold text-ink-900">₹2,000</td><td class="text-xs text-gray-400">19 Oct 2026</td><td class="text-xs text-gray-500">133 apps</td><td><span class="badge badge-ok">Active</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Suspended sub-page -->
+        <div id="users-suspended" class="sub-page">
+          <div class="mb-5 p-4 rounded-xl flex gap-3" style="background:#FEF3C7;border:1px solid #fde68a;">
+            <svg width="16" height="16" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24" class="mt-0.5 flex-shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p class="text-sm text-amber-800">Suspended accounts cannot log in or use agents. Suspension can be lifted by an admin from the user detail view.</p>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="flex items-center justify-between px-6 pt-5 pb-4"><div class="font-semibold text-ink-900 text-sm">Suspended Accounts</div><span class="text-xs text-gray-400">3 accounts</span></div>
+            <table>
+              <thead><tr><th>User</th><th>Institute</th><th>Reason</th><th>Suspended By</th><th>Suspended At</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Kartik Malviya</div><div class="text-xs text-gray-400">kartik.m@iitd.ac.in</div></td><td><span class="badge badge-blue">IIT Delhi</span></td><td class="text-xs text-gray-500 max-w-xs">Reported abuse — excessive recruiter spam</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">Yesterday, 11:20 AM</td><td><button class="btn-ghost text-xs py-1">Reinstate</button></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Deepak Nair</div><div class="text-xs text-gray-400">deepak.n@iimk.ac.in</div></td><td><span class="badge badge-blue">IIM Kozhikode</span></td><td class="text-xs text-gray-500 max-w-xs">Violated terms — used shared account credentials</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">15 Apr, 3:00 PM</td><td><button class="btn-ghost text-xs py-1">Reinstate</button></td></tr>
+                <tr><td><div class="font-medium text-ink-900 text-sm">Arun Sharma</div><div class="text-xs text-gray-400">arun.s@iitg.ac.in</div></td><td><span class="badge badge-blue">IIT Guwahati</span></td><td class="text-xs text-gray-500 max-w-xs">Payment fraud — chargeback dispute opened</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">12 Apr, 9:15 AM</td><td><button class="btn-ghost text-xs py-1">Reinstate</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Agent Activity sub-page -->
+        <div id="users-agents" class="sub-page">
+          <div class="grid grid-cols-4 gap-4 mb-5">
+            <div class="stat-card c-brand"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Total Apps Sent (7d)</div><div class="font-display text-3xl font-bold text-ink-900">41.2K</div><div class="text-xs text-green-600 font-medium mt-2">↑ 12% vs last week</div></div>
+            <div class="stat-card c-green"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Avg Reply Rate</div><div class="font-display text-3xl font-bold text-ink-900">17.4%</div><div class="text-xs text-green-600 font-medium mt-2">vs 3.1% industry</div></div>
+            <div class="stat-card c-accent"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Interviews Booked</div><div class="font-display text-3xl font-bold text-ink-900">892</div><div class="text-xs text-green-600 font-medium mt-2">This month</div></div>
+            <div class="stat-card c-amber"><div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Rate-limit Warnings</div><div class="font-display text-3xl font-bold text-ink-900">2</div><div class="text-xs text-amber-600 font-medium mt-2">Auto-throttled</div></div>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="flex items-center justify-between px-6 pt-5 pb-4"><div class="font-semibold text-ink-900 text-sm">Top Performers · Last 30 Days</div><span class="text-xs text-gray-400">By applications sent</span></div>
+            <table>
+              <thead><tr><th>#</th><th>User</th><th>Institute</th><th>Apps Sent</th><th>Replies</th><th>Reply Rate</th><th>Interviews</th><th>Channel Mix</th></tr></thead>
+              <tbody>
+                <tr><td class="text-gray-400 font-bold">1</td><td><div class="font-medium text-ink-900">Abhishek Das</div></td><td><span class="badge badge-blue">IIT KGP</span></td><td class="font-semibold text-ink-900">201</td><td>38</td><td><span class="badge badge-ok">18.9%</span></td><td class="font-semibold text-green-600">9</td><td class="text-xs text-gray-400">LI 51% · Email 28% · Portal 21%</td></tr>
+                <tr><td class="text-gray-400 font-bold">2</td><td><div class="font-medium text-ink-900">Aarav Kulkarni</div></td><td><span class="badge badge-blue">IIT Bombay</span></td><td class="font-semibold text-ink-900">142</td><td>27</td><td><span class="badge badge-ok">19.0%</span></td><td class="font-semibold text-green-600">5</td><td class="text-xs text-gray-400">LI 48% · Email 31% · Portal 21%</td></tr>
+                <tr><td class="text-gray-400 font-bold">3</td><td><div class="font-medium text-ink-900">Akash Tiwari</div></td><td><span class="badge badge-blue">IIT Delhi</span></td><td class="font-semibold text-ink-900">133</td><td>22</td><td><span class="badge badge-ok">16.5%</span></td><td class="font-semibold text-green-600">6</td><td class="text-xs text-gray-400">LI 44% · Email 34% · Portal 22%</td></tr>
+                <tr><td class="text-gray-400 font-bold">4</td><td><div class="font-medium text-ink-900">Divya Nambiar</div></td><td><span class="badge badge-blue">IIT Madras</span></td><td class="font-semibold text-ink-900">112</td><td>19</td><td><span class="badge badge-ok">16.9%</span></td><td class="font-semibold text-green-600">4</td><td class="text-xs text-gray-400">LI 52% · Email 27% · Portal 21%</td></tr>
+                <tr><td class="text-gray-400 font-bold">5</td><td><div class="font-medium text-ink-900">Sameer Jain</div></td><td><span class="badge badge-blue">IIT Ropar</span></td><td class="font-semibold text-ink-900">95</td><td>16</td><td><span class="badge badge-warn">16.8%</span></td><td class="font-semibold text-green-600">3</td><td class="text-xs text-gray-400">LI 47% · Email 32% · Portal 21%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- AUDIT LOG -->
+      <section id="view-audit" class="view fade-up">
+        <div class="pg-tab-bar">
+          <div class="pg-tab active" onclick="subTab('audit','all',this)">All Actions</div>
+          <div class="pg-tab" onclick="subTab('audit','approvals',this)">Approvals</div>
+          <div class="pg-tab" onclick="subTab('audit','rejections',this)">Rejections</div>
+          <div class="pg-tab" onclick="subTab('audit','suspensions',this)">Suspensions</div>
+        </div>
+
+        <!-- Shared filter bar -->
+        <div class="flex gap-3 mb-5 flex-wrap">
+          <input class="inp" style="max-width:260px;" placeholder="Search user or admin…"/>
+          <select class="inp" style="max-width:155px;">
+            <option>All admins</option><option>Superadmin</option>
+          </select>
+          <input class="inp" style="max-width:160px;" type="date" value="2026-04-19"/>
+          <button class="btn-ghost text-xs ml-auto">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export log
+          </button>
+        </div>
+
+        <!-- All Actions sub-page -->
+        <div id="audit-all" class="sub-page active">
+          <div class="card px-6 py-1" id="audit-list"></div>
+        </div>
+
+        <!-- Approvals sub-page -->
+        <div id="audit-approvals" class="sub-page">
+          <div class="card overflow-hidden">
+            <table>
+              <thead><tr><th>User Approved</th><th>Institute</th><th>LinkedIn Profile</th><th>Approved By</th><th>Timestamp</th></tr></thead>
+              <tbody>
+                <tr><td><div class="font-medium text-ink-900">Ananya Sharma</div><div class="text-xs text-gray-400">ananya.s@iima.ac.in</div></td><td><span class="badge badge-blue">IIM Ahmedabad</span></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/ananya-s</td><td class="text-xs text-gray-500">Superadmin</td><td class="text-xs text-gray-400">Today, 11:42 AM</td></tr>
+                <tr><td><div class="font-medium text-ink-900">Divya Nambiar</div><div class="text-xs text-gray-400">divya.n@iitm.ac.in</div></td><td><span class="badge badge-blue">IIT Madras</span></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/divya-n</td><td class="text-xs text-gray-500">Superadmin</td><td class="text-xs text-gray-400">Today, 09:55 AM</td></tr>
+                <tr><td><div class="font-medium text-ink-900">Ishita Roy</div><div class="text-xs text-gray-400">ishita.r@iimc.ac.in</div></td><td><span class="badge badge-blue">IIM Calcutta</span></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/ishita-r</td><td class="text-xs text-gray-500">Superadmin</td><td class="text-xs text-gray-400">Today, 09:30 AM</td></tr>
+                <tr><td><div class="font-medium text-ink-900">Sameer Jain</div><div class="text-xs text-gray-400">sameer.j@iitropar.ac.in</div></td><td><span class="badge badge-blue">IIT Ropar</span></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/sameer-j</td><td class="text-xs text-gray-500">Superadmin</td><td class="text-xs text-gray-400">Yesterday, 2:47 PM</td></tr>
+                <tr><td><div class="font-medium text-ink-900">Aarav Kulkarni</div><div class="text-xs text-gray-400">aarav.k@iitb.ac.in</div></td><td><span class="badge badge-blue">IIT Bombay</span></td><td class="text-xs text-brand-500 font-mono">linkedin.com/in/aarav-k</td><td class="text-xs text-gray-500">Superadmin</td><td class="text-xs text-gray-400">19 Apr, 3:00 PM</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Rejections sub-page -->
+        <div id="audit-rejections" class="sub-page">
+          <div class="card overflow-hidden">
+            <table>
+              <thead><tr><th>User Rejected</th><th>Rejection Reason</th><th>Rejected By</th><th>Timestamp</th><th>Can Appeal</th></tr></thead>
+              <tbody>
+                <tr><td><div class="font-medium text-ink-900">Harsh Malhotra</div><div class="text-xs text-gray-400">harsh.m@gmail.com</div></td><td class="text-xs text-gray-500 max-w-xs">No IIT/IIM education found on LinkedIn profile</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">Today, 10:18 AM</td><td><span class="badge badge-mute">No</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900">Vikram Rao</div><div class="text-xs text-gray-400">vikram.r@outlook.com</div></td><td class="text-xs text-gray-500 max-w-xs">LinkedIn profile URL invalid or inaccessible</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">Yesterday, 4:12 PM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900">Pradeep Kumar</div><div class="text-xs text-gray-400">pradeep.k@gmail.com</div></td><td class="text-xs text-gray-500 max-w-xs">Duplicate account attempt</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">19 Apr, 1:15 PM</td><td><span class="badge badge-mute">No</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900">Namita Soni</div><div class="text-xs text-gray-400">namita.s@yahoo.com</div></td><td class="text-xs text-gray-500 max-w-xs">Profile appears fake or incomplete</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">17 Apr, 10:44 AM</td><td><span class="badge badge-ok">Yes</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Suspensions sub-page -->
+        <div id="audit-suspensions" class="sub-page">
+          <div class="card overflow-hidden">
+            <table>
+              <thead><tr><th>User Suspended</th><th>Reason</th><th>Suspended By</th><th>Timestamp</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><div class="font-medium text-ink-900">Kartik Malviya</div><div class="text-xs text-gray-400">kartik.m@iitd.ac.in</div></td><td class="text-xs text-gray-500 max-w-xs">Reported abuse — excessive recruiter spam beyond safe limits</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">Yesterday, 11:20 AM</td><td><span class="badge badge-err">Active suspension</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900">Deepak Nair</div><div class="text-xs text-gray-400">deepak.n@iimk.ac.in</div></td><td class="text-xs text-gray-500 max-w-xs">Violated terms — used shared account credentials</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">15 Apr, 3:00 PM</td><td><span class="badge badge-err">Active suspension</span></td></tr>
+                <tr><td><div class="font-medium text-ink-900">Arun Sharma</div><div class="text-xs text-gray-400">arun.s@iitg.ac.in</div></td><td class="text-xs text-gray-500 max-w-xs">Payment fraud — chargeback dispute</td><td class="text-xs text-gray-400">Superadmin</td><td class="text-xs text-gray-400">12 Apr, 9:15 AM</td><td><span class="badge badge-err">Active suspension</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /p-8 -->
+  </div><!-- /main-wrap -->
+</div><!-- /app-shell -->
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  REJECT MODAL                                   -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal-box">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#FEE2E2; border:1px solid #fecaca;">
+          <svg width="17" height="17" fill="none" stroke="#b91c1c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div>
+          <div class="font-display font-bold text-ink-900 text-base" id="rej-title">Reject signup</div>
+          <div class="text-xs text-gray-400" id="rej-sub">Provide a reason — this is stored in the audit log.</div>
+        </div>
+      </div>
+      <button onclick="closeRejectModal()" class="text-gray-300 hover:text-gray-500 mt-0.5">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="space-y-3 mb-6">
+      <div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Reason</label>
+        <select class="inp" id="rej-reason-sel">
+          <option value="">Select a reason…</option>
+          <option>No IIT/IIM education found on LinkedIn profile</option>
+          <option>LinkedIn profile URL invalid or inaccessible</option>
+          <option>Profile appears fake or incomplete</option>
+          <option>Duplicate account attempt</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <textarea class="inp" rows="3" placeholder="Additional notes (optional)…" id="rej-notes"></textarea>
+    </div>
+    <div class="flex gap-3">
+      <button class="btn-err flex-1 justify-center py-2.5" onclick="confirmReject()">Confirm Rejection</button>
+      <button class="btn-ghost flex-1 justify-center py-2.5" onclick="closeRejectModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg text-white flex-shrink-0"
+             style="background:linear-gradient(135deg,#5B66E8,#A3ACFF);" id="um-avatar">AK</div>
+        <div>
+          <div class="font-display font-bold text-ink-900 text-xl" id="um-name">—</div>
+          <div class="text-sm text-gray-400" id="um-email">—</div>
+          <div class="mt-1.5" id="um-badge"></div>
+        </div>
+      </div>
+      <button onclick="closeUserModal()" class="text-gray-300 hover:text-gray-500">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-3 gap-3 mb-5" id="um-stats"></div>
+    <div class="divide-y" style="border-color:rgba(15,16,51,0.06);" id="um-rows"></div>
+    <div class="mt-6 flex gap-3">
+      <button class="btn-err flex-1 justify-center py-2.5" onclick="closeUserModal()">Suspend Account</button>
+      <button class="btn-ghost flex-1 justify-center py-2.5" onclick="closeUserModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toast-wrap"></div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  JS                                             -->
+<!-- ═══════════════════════════════════════════════ -->
+<script>
+/* ── Data ── */
+const QUEUE = [
+  { id:1, name:'Rohan Mehta',    email:'rohan.m@gmail.com',       li:'linkedin.com/in/rohan-mehta-iitd',      parsed:'IIT Delhi · B.Tech Computer Science · 2023',   raw:'"Indian Institute of Technology Delhi, B.Tech in Computer Science, 2019–2023"', ago:'18 min ago',  av:'RM', match:true  },
+  { id:2, name:'Kavya Reddy',    email:'kavya.r@iimb.ac.in',      li:'linkedin.com/in/kavya-reddy-iimb',      parsed:'IIM Bangalore · MBA · 2024',                   raw:'"Indian Institute of Management Bangalore, MBA, 2022–2024"',                   ago:'1 hr ago',    av:'KR', match:true  },
+  { id:3, name:'Arjun Singh',    email:'arjun.s99@yahoo.com',     li:'linkedin.com/in/arjun-singh-99',        parsed:'No IIT/IIM detected in education section',     raw:'"VIT Vellore, B.Tech in ECE, 2017–2021"',                                     ago:'2 hrs ago',   av:'AS', match:false },
+  { id:4, name:'Meera Krishnan', email:'meera.k@iitm.ac.in',      li:'linkedin.com/in/meera-krishnan',        parsed:'IIT Madras · M.Tech Data Science · 2025',      raw:'"Indian Institute of Technology Madras, M.Tech, 2023–2025"',                  ago:'3 hrs ago',   av:'MK', match:true  },
+  { id:5, name:'Siddharth Patel',email:'sid.patel@hotmail.com',   li:'linkedin.com/in/siddharth-patel',       parsed:'Could not access education — profile private', raw:'Error: Profile is private. Education section inaccessible.',                  ago:'4 hrs ago',   av:'SP', match:false },
+  { id:6, name:'Tanvi Agarwal',  email:'tanvi.a@iimc.ac.in',      li:'linkedin.com/in/tanvi-agarwal-iimc',    parsed:'IIM Calcutta · PGDM · 2023',                   raw:'"Indian Institute of Management Calcutta, PGDM, 2021–2023"',                  ago:'5 hrs ago',   av:'TA', match:true  },
+  { id:7, name:'Kiran Bhat',     email:'kiran.b@iitk.ac.in',      li:'linkedin.com/in/kiran-bhat-iitk',       parsed:'IIT Kanpur · B.Tech Mechanical · 2022',        raw:'"Indian Institute of Technology Kanpur, B.Tech ME, 2018–2022"',              ago:'6 hrs ago',   av:'KB', match:true  },
+];
+
+const USERS = [
+  { name:'Aarav Kulkarni',   email:'aarav.k@iitb.ac.in',        inst:'IIT Bombay',    grad:"'22", st:'verified', sub:'3-month · ₹2,500/mo', la:'6 min ago',   act:'142 apps · 5 interviews', ss:'active' },
+  { name:'Sneha Agarwal',    email:'sneha.a@iimb.ac.in',        inst:'IIM Bangalore', grad:"'21", st:'verified', sub:'6-month · ₹2,000/mo', la:'2 hrs ago',   act:'89 apps · 3 interviews',  ss:'active' },
+  { name:'Rahul Verma',      email:'rahul.v@iitk.ac.in',        inst:'IIT Kanpur',    grad:"'23", st:'verified', sub:'1-month · ₹3,000/mo', la:'1 day ago',   act:'38 apps · 1 interview',   ss:'active' },
+  { name:'Pooja Iyer',       email:'pooja.i@iima.ac.in',        inst:'IIM Ahmedabad', grad:"'20", st:'verified', sub:'—',                   la:'3 days ago',  act:'—',                       ss:'none'   },
+  { name:'Aman Gupta',       email:'aman.g@iitd.ac.in',         inst:'IIT Delhi',     grad:"'24", st:'pending',  sub:'—',                   la:'Just now',    act:'—',                       ss:'none'   },
+  { name:'Divya Nambiar',    email:'divya.n@iitm.ac.in',        inst:'IIT Madras',    grad:"'22", st:'verified', sub:'3-month · ₹2,500/mo', la:'4 hrs ago',   act:'112 apps · 4 interviews', ss:'active' },
+  { name:'Harsh Malhotra',   email:'harsh.m@gmail.com',         inst:'Unknown',       grad:'—',   st:'rejected', sub:'—',                   la:'5 days ago',  act:'—',                       ss:'none'   },
+  { name:'Ishita Roy',       email:'ishita.r@iimc.ac.in',       inst:'IIM Calcutta',  grad:"'23", st:'verified', sub:'6-month · ₹2,000/mo', la:'1 hr ago',    act:'67 apps · 2 interviews',  ss:'active' },
+  { name:'Nikhil Sharma',    email:'nikhil.s@iitbhu.ac.in',     inst:'IIT (BHU)',     grad:"'21", st:'verified', sub:'—',                   la:'2 days ago',  act:'—',                       ss:'none'   },
+  { name:'Riya Menon',       email:'riya.m@iitg.ac.in',         inst:'IIT Guwahati',  grad:"'22", st:'verified', sub:'1-month · ₹3,000/mo', la:'8 hrs ago',   act:'24 apps · 0 interviews',  ss:'active' },
+  { name:'Sameer Jain',      email:'sameer.j@iitropar.ac.in',   inst:'IIT Ropar',     grad:"'23", st:'verified', sub:'3-month · ₹2,500/mo', la:'3 hrs ago',   act:'95 apps · 3 interviews',  ss:'active' },
+  { name:'Neha Kapoor',      email:'neha.k@iiml.ac.in',         inst:'IIM Lucknow',   grad:"'22", st:'verified', sub:'—',                   la:'1 week ago',  act:'—',                       ss:'none'   },
+  { name:'Abhishek Das',     email:'abhi.d@iitkharagpur.ac.in', inst:'IIT Kharagpur', grad:"'20", st:'verified', sub:'6-month · ₹2,000/mo', la:'30 min ago',  act:'201 apps · 9 interviews', ss:'active' },
+  { name:'Sanya Bose',       email:'sanya.b@iimi.ac.in',        inst:'IIM Indore',    grad:"'24", st:'pending',  sub:'—',                   la:'15 min ago',  act:'—',                       ss:'none'   },
+  { name:'Vikram Rao',       email:'vikram.r@outlook.com',      inst:'Unknown',       grad:'—',   st:'rejected', sub:'—',                   la:'2 weeks ago', act:'—',                       ss:'none'   },
+  { name:'Kritika Sharma',   email:'kritika.s@iitbbs.ac.in',    inst:'IIT Bhubaneswar',grad:"'23",st:'verified', sub:'1-month · ₹3,000/mo', la:'5 hrs ago',   act:'41 apps · 1 interview',   ss:'active' },
+  { name:'Manish Puri',      email:'manish.p@iimidr.ac.in',     inst:'IIM Indore',    grad:"'21", st:'verified', sub:'3-month · ₹2,500/mo', la:'2 hrs ago',   act:'78 apps · 2 interviews',  ss:'active' },
+  { name:'Preethi Sundar',   email:'preethi.s@iitm.ac.in',      inst:'IIT Madras',    grad:"'22", st:'verified', sub:'—',                   la:'4 days ago',  act:'—',                       ss:'none'   },
+  { name:'Akash Tiwari',     email:'akash.t@iitd.ac.in',        inst:'IIT Delhi',     grad:"'23", st:'verified', sub:'6-month · ₹2,000/mo', la:'1 hr ago',    act:'133 apps · 6 interviews', ss:'active' },
+  { name:'Ananya Sharma',    email:'ananya.s@iima.ac.in',       inst:'IIM Ahmedabad', grad:"'24", st:'verified', sub:'—',                   la:'2 min ago',   act:'—',                       ss:'none'   },
+];
+
+const AUDIT = [
+  { t:'Today, 11:42 AM', by:'Superadmin', act:'approved', user:'Ananya Sharma',   reason:'Valid IIM Ahmedabad profile',            type:'ok'   },
+  { t:'Today, 10:18 AM', by:'Superadmin', act:'rejected', user:'Harsh Malhotra',  reason:'No IIT/IIM education found on profile',  type:'err'  },
+  { t:'Today, 09:55 AM', by:'Superadmin', act:'approved', user:'Divya Nambiar',   reason:'Valid IIT Madras profile',               type:'ok'   },
+  { t:'Today, 09:30 AM', by:'Superadmin', act:'approved', user:'Ishita Roy',      reason:'Valid IIM Calcutta profile',             type:'ok'   },
+  { t:'Yesterday, 4:12 PM', by:'Superadmin', act:'rejected', user:'Vikram Rao',   reason:'LinkedIn URL invalid or inaccessible',   type:'err'  },
+  { t:'Yesterday, 2:47 PM', by:'Superadmin', act:'approved', user:'Sameer Jain',  reason:'Valid IIT Ropar profile',               type:'ok'   },
+  { t:'Yesterday, 11:20 AM',by:'Superadmin', act:'suspended',user:'Kartik Malviya',reason:'Reported abuse — excessive recruiter spam', type:'warn'},
+  { t:'19 Apr, 3:00 PM',  by:'Superadmin', act:'approved', user:'Aarav Kulkarni', reason:'Valid IIT Bombay profile',              type:'ok'   },
+  { t:'19 Apr, 1:15 PM',  by:'Superadmin', act:'rejected', user:'Pradeep Kumar',  reason:'Duplicate account attempt',             type:'err'  },
+  { t:'18 Apr, 5:32 PM',  by:'Superadmin', act:'approved', user:'Sneha Agarwal',  reason:'Valid IIM Bangalore profile',           type:'ok'   },
+  { t:'18 Apr, 3:11 PM',  by:'Superadmin', act:'approved', user:'Rahul Verma',    reason:'Valid IIT Kanpur profile',              type:'ok'   },
+  { t:'17 Apr, 10:44 AM', by:'Superadmin', act:'rejected', user:'Namita Soni',    reason:'Profile appears fake or incomplete',    type:'err'  },
+];
+
+/* ── State ── */
+let pendingQueue = [...QUEUE];
+let rejectTargetId = null;
+let charts = {};
+
+/* ── Navigate ── */
+function navigate(view) {
+  document.querySelectorAll('#app-shell .view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.add('active');
+  const ni = document.querySelector(`.nav-item[data-view="${view}"]`);
+  if (ni) ni.classList.add('active');
+  const titles = { dashboard:'Dashboard', queue:'Approval Queue', users:'User Directory', audit:'Audit Log' };
+  document.getElementById('page-title').textContent = titles[view] || view;
+  if (view === 'queue') renderQueue();
+  if (view === 'users') renderUsers(USERS);
+  if (view === 'audit') renderAudit();
+}
+
+/* ── Login / Logout ── */
+function doLogin() {
+  document.getElementById('view-login').classList.remove('active');
+  const shell = document.getElementById('app-shell');
+  shell.style.display = 'flex';
+  initCharts();
+  updateDate(); setInterval(updateDate, 60000);
+}
+function doLogout() {
+  document.getElementById('app-shell').style.display = 'none';
+  document.querySelectorAll('#app-shell .view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-dashboard').classList.add('active');
+  document.getElementById('view-login').classList.add('active');
+}
+function updateDate() {
+  const d = new Date();
+  document.getElementById('live-date').textContent =
+    d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'}) + ' · ' +
+    d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ── Charts ── */
+function initCharts() {
+  const sCtx = document.getElementById('signupChart').getContext('2d');
+  const grad = sCtx.createLinearGradient(0,0,0,195);
+  grad.addColorStop(0,'rgba(91,102,232,0.18)'); grad.addColorStop(1,'rgba(91,102,232,0)');
+  charts.s = new Chart(sCtx, {
+    type:'line',
+    data:{ labels:['Apr 13','Apr 14','Apr 15','Apr 16','Apr 17','Apr 18','Apr 19'],
+           datasets:[{ label:'Signups', data:[38,52,41,67,71,58,84], borderColor:'#5B66E8',
+                       backgroundColor:grad, borderWidth:2, fill:true, tension:0.4,
+                       pointBackgroundColor:'#5B66E8', pointRadius:4, pointHoverRadius:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#fff', borderColor:'rgba(15,16,51,0.1)', borderWidth:1, titleColor:'#6B7280', bodyColor:'#0B0D1F', padding:10, boxShadow:'0 4px 12px rgba(0,0,0,0.1)' } },
+      scales:{
+        x:{ grid:{color:'rgba(15,16,51,0.05)'}, ticks:{color:'#9CA3AF',font:{size:11,family:'Inter'}} },
+        y:{ grid:{color:'rgba(15,16,51,0.05)'}, ticks:{color:'#9CA3AF',font:{size:11,family:'Inter'}} }
+      }
+    }
+  });
+
+  const fCtx = document.getElementById('funnelChart').getContext('2d');
+  charts.f = new Chart(fCtx, {
+    type:'doughnut',
+    data:{ labels:['Verified','Rejected','Pending'],
+           datasets:[{ data:[84.8,15.0,0.2], backgroundColor:['#5B66E8','#ef4444','#f59e0b'], borderWidth:0, hoverOffset:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'70%',
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#fff', borderColor:'rgba(15,16,51,0.1)', borderWidth:1, titleColor:'#6B7280', bodyColor:'#0B0D1F', padding:10, callbacks:{label:c=>` ${c.label}: ${c.raw}%`} } }
+    }
+  });
+}
+
+function switchChart(el, type) {
+  document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const sets = {
+    signups: {d:[38,52,41,67,71,58,84], c:'#5B66E8'},
+    verified:{d:[31,45,36,60,63,50,74], c:'#22c55e'},
+    subs:    {d:[12,18,14,24,27,20,31], c:'#FF9E50'},
+  };
+  const s = sets[type];
+  charts.s.data.datasets[0].data = s.d;
+  charts.s.data.datasets[0].borderColor = s.c;
+  charts.s.update();
+}
+
+function setRange(el) {
+  document.querySelectorAll('.range-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── Sub-tabs ── */
+function subTab(section, page, el) {
+  const view = document.getElementById('view-' + section);
+  if (!view) return;
+  view.querySelectorAll('.pg-tab').forEach(t => t.classList.remove('active'));
+  view.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const target = document.getElementById(section + '-' + page);
+  if (target) {
+    target.classList.add('active');
+    if (page === 'signups' && !charts.inst) initAnalyticsCharts();
+    if (page === 'revenue' && !charts.rev)  initRevenueCharts();
+  }
+}
+
+function initAnalyticsCharts() {
+  const iCtx = document.getElementById('instChart');
+  if (!iCtx) return;
+  charts.inst = new Chart(iCtx.getContext('2d'), {
+    type: 'bar',
+    data: { labels:['IIT Bombay','IIT Delhi','IIM-A','IIT Madras','IIM-B','IIT KGP'],
+      datasets:[{ label:'Signups', data:[312,287,241,228,198,184],
+        backgroundColor:['#5B66E8','#7D87F5','#A3ACFF','#5B66E8','#7D87F5','#A3ACFF'],
+        borderRadius:6, borderSkipped:false }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',borderColor:'rgba(15,16,51,0.1)',borderWidth:1,titleColor:'#6B7280',bodyColor:'#0B0D1F',padding:10}},
+      scales:{ x:{grid:{display:false},ticks:{color:'#9CA3AF',font:{size:11}}}, y:{grid:{color:'rgba(15,16,51,0.05)'},ticks:{color:'#9CA3AF',font:{size:11}}} }
+    }
+  });
+  const dCtx = document.getElementById('dowChart');
+  if (!dCtx) return;
+  charts.dow = new Chart(dCtx.getContext('2d'), {
+    type:'bar',
+    data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      datasets:[{ label:'Avg signups', data:[62,71,68,74,81,48,31],
+        backgroundColor:'#EEF0FF', hoverBackgroundColor:'#5B66E8', borderRadius:6, borderSkipped:false }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',borderColor:'rgba(15,16,51,0.1)',borderWidth:1,titleColor:'#6B7280',bodyColor:'#0B0D1F',padding:10}},
+      scales:{ x:{grid:{display:false},ticks:{color:'#9CA3AF',font:{size:11}}}, y:{grid:{color:'rgba(15,16,51,0.05)'},ticks:{color:'#9CA3AF',font:{size:11}}} }
+    }
+  });
+}
+
+function initRevenueCharts() {
+  const rCtx = document.getElementById('revenueChart');
+  if (!rCtx) return;
+  const grad = rCtx.getContext('2d').createLinearGradient(0,0,0,195);
+  grad.addColorStop(0,'rgba(255,158,80,0.2)'); grad.addColorStop(1,'rgba(255,158,80,0)');
+  charts.rev = new Chart(rCtx.getContext('2d'), {
+    type:'line',
+    data:{ labels:['Nov','Dec','Jan','Feb','Mar','Apr'],
+      datasets:[{ label:'MRR', data:[12.1,15.4,18.2,21.9,25.5,28.4],
+        borderColor:'#FF9E50', backgroundColor:grad, borderWidth:2, fill:true,
+        tension:0.4, pointBackgroundColor:'#FF9E50', pointRadius:4, pointHoverRadius:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',borderColor:'rgba(15,16,51,0.1)',borderWidth:1,titleColor:'#6B7280',bodyColor:'#0B0D1F',padding:10}},
+      scales:{ x:{grid:{color:'rgba(15,16,51,0.05)'},ticks:{color:'#9CA3AF',font:{size:11}}}, y:{grid:{color:'rgba(15,16,51,0.05)'},ticks:{color:'#9CA3AF',font:{size:11}}} }
+    }
+  });
+  const pCtx = document.getElementById('planChart');
+  if (!pCtx) return;
+  charts.plan = new Chart(pCtx.getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:['6-month','3-month','1-month'],
+      datasets:[{ data:[46,35,19], backgroundColor:['#5B66E8','#7D87F5','#FF9E50'], borderWidth:0, hoverOffset:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'70%',
+      plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',borderColor:'rgba(15,16,51,0.1)',borderWidth:1,titleColor:'#6B7280',bodyColor:'#0B0D1F',padding:10,callbacks:{label:c=>` ${c.label}: ${c.raw}%`}} }
+    }
+  });
+}
+
+/* ── Queue ── */
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  const empty = document.getElementById('queue-empty');
+  document.getElementById('queue-badge').textContent = pendingQueue.length;
+  document.getElementById('queue-sla-label').textContent = `${pendingQueue.length} pending · SLA 24h`;
+  if (!pendingQueue.length) { list.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  list.innerHTML = pendingQueue.map(u => `
+    <div class="card p-6 fade-up" id="qc-${u.id}">
+      <div class="flex items-start gap-4">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
+             style="background:linear-gradient(135deg,#5B66E8,#A3ACFF);">${u.av}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2.5 flex-wrap mb-1">
+            <span class="font-display font-bold text-ink-900 text-base">${u.name}</span>
+            ${u.match
+              ? `<span class="badge badge-ok"><span class="dot dot-ok"></span>IIT/IIM detected</span>`
+              : `<span class="badge badge-warn"><span class="dot dot-warn"></span>Needs manual review</span>`}
+            <span class="ml-auto text-xs text-gray-400">${u.ago}</span>
+          </div>
+          <div class="text-sm text-gray-400 mb-4">${u.email}</div>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="card-inner p-3">
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">LinkedIn URL</div>
+              <div class="text-xs text-brand-500 font-medium break-all">${u.li}</div>
+            </div>
+            <div class="card-inner p-3">
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Parsed Education</div>
+              <div class="text-xs text-ink-900 font-medium">${u.parsed}</div>
+            </div>
+          </div>
+
+          <details class="mb-4">
+            <summary class="text-xs text-brand-500 font-semibold cursor-pointer hover:underline select-none inline-flex items-center gap-1.5">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              View raw scrape evidence
+            </summary>
+            <div class="mt-2.5 p-3 rounded-xl text-xs text-gray-500 leading-relaxed font-mono" style="background:#F7F8FD; border:1px solid rgba(15,16,51,0.07);">${u.raw}</div>
+          </details>
+
+          <div class="flex items-center gap-3 flex-wrap">
+            <button class="btn-ok" onclick="approveUser(${u.id})">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Approve
+            </button>
+            <button class="btn-err" onclick="openReject(${u.id})">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Reject
+            </button>
+            <span class="text-xs text-gray-300">Action will be recorded in audit log</span>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function approveUser(id) {
+  const u = pendingQueue.find(x=>x.id===id);
+  pendingQueue = pendingQueue.filter(x=>x.id!==id);
+  AUDIT.unshift({t:'Just now',by:'Superadmin',act:'approved',user:u.name,reason:'Verified by admin',type:'ok'});
+  renderQueue();
+  toast(`✓ ${u.name} approved`, 'ok');
+}
+function openReject(id) {
+  rejectTargetId = id;
+  const u = pendingQueue.find(x=>x.id===id);
+  document.getElementById('rej-title').textContent = `Reject — ${u.name}`;
+  document.getElementById('rej-sub').textContent = u.email;
+  document.getElementById('rej-reason-sel').value = '';
+  document.getElementById('rej-notes').value = '';
+  document.getElementById('reject-modal').classList.add('open');
+}
+function confirmReject() {
+  const sel = document.getElementById('rej-reason-sel').value;
+  const notes = document.getElementById('rej-notes').value.trim();
+  const reason = sel || notes || 'No reason provided';
+  const u = pendingQueue.find(x=>x.id===rejectTargetId);
+  pendingQueue = pendingQueue.filter(x=>x.id!==rejectTargetId);
+  AUDIT.unshift({t:'Just now',by:'Superadmin',act:'rejected',user:u.name,reason,type:'err'});
+  closeRejectModal(); renderQueue();
+  toast(`✗ ${u.name} rejected`, 'warn');
+}
+function closeRejectModal() { document.getElementById('reject-modal').classList.remove('open'); rejectTargetId=null; }
+
+/* ── Users ── */
+function badge(st) {
+  return {
+    verified: `<span class="badge badge-ok"><span class="dot dot-ok"></span>Verified</span>`,
+    pending:  `<span class="badge badge-warn"><span class="dot dot-warn"></span>Pending</span>`,
+    rejected: `<span class="badge badge-err"><span class="dot dot-err"></span>Rejected</span>`,
+  }[st] || '';
+}
+let _lastRendered = [];
+function renderUsers(data) {
+  _lastRendered = data;
+  document.getElementById('user-count').textContent = `${data.length} users`;
+  document.getElementById('users-tbody').innerHTML = data.map((u, idx) => `
+    <tr onclick="openUserModal(${idx})">
+      <td>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+               style="background:linear-gradient(135deg,#5B66E8,#A3ACFF);">${u.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+          <div>
+            <div class="font-semibold text-ink-900 text-sm">${u.name}</div>
+            <div class="text-xs text-gray-400">${u.email}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-blue">${u.inst} ${u.grad}</span></td>
+      <td>${badge(u.st)}</td>
+      <td>${u.ss==='active' ? `<span class="badge badge-blue">${u.sub}</span>` : `<span class="text-gray-300 text-xs">—</span>`}</td>
+      <td class="text-xs text-gray-400 whitespace-nowrap">${u.la}</td>
+      <td class="text-xs text-gray-500">${u.act}</td>
+      <td><button class="btn-ghost py-1 px-2.5 text-xs" onclick="event.stopPropagation();openUserModal(${idx})">View</button></td>
+    </tr>`).join('');
+}
+
+function filterUsers(q) { renderUsers(USERS.filter(u=> [u.name,u.email,u.inst].some(s=>s.toLowerCase().includes(q.toLowerCase())))); }
+function filterStatus(v){ renderUsers(v ? USERS.filter(u=>u.st===v) : USERS); }
+function filterSub(v)   { renderUsers(v ? USERS.filter(u=>u.ss===v) : USERS); }
+
+function openUserModal(idx) {
+  const u = _lastRendered[idx];
+  if (!u) return;
+  document.getElementById('um-avatar').textContent = u.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+  document.getElementById('um-name').textContent = u.name;
+  document.getElementById('um-email').textContent = u.email;
+  document.getElementById('um-badge').innerHTML = badge(u.st);
+  document.getElementById('um-stats').innerHTML = [
+    ['Institute', `${u.inst} ${u.grad}`],
+    ['Last Active', u.la],
+    ['Subscription', u.sub],
+  ].map(([k,v]) => `<div class="card-inner p-3 text-center"><div class="text-xs text-gray-400 mb-1">${k}</div><div class="text-sm font-semibold text-ink-900">${v}</div></div>`).join('');
+  document.getElementById('um-rows').innerHTML = [
+    ['Verify status', badge(u.st)],
+    ['Agent activity (30d)', `<span class="text-ink-900 font-medium">${u.act}</span>`],
+    ['Signup source', '<span class="text-ink-900 font-medium">LinkedIn verification</span>'],
+  ].map(([k,v]) => `<div class="flex items-center justify-between py-3 text-sm"><span class="text-gray-400">${k}</span>${v}</div>`).join('');
+  document.getElementById('user-modal').classList.add('open');
+}
+function closeUserModal() { document.getElementById('user-modal').classList.remove('open'); }
+
+/* ── Audit ── */
+function renderAudit() {
+  const icn = {
+    ok:   { bg:'#DCFCE7', bo:'#bbf7d0', sc:'#16a34a', path:'<polyline points="20 6 9 17 4 12"/>' },
+    err:  { bg:'#FEE2E2', bo:'#fecaca', sc:'#dc2626', path:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' },
+    warn: { bg:'#FEF3C7', bo:'#fde68a', sc:'#d97706', path:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/>' },
+  };
+  const lbl = { approved:'Approved', rejected:'Rejected', suspended:'Suspended' };
+  document.getElementById('audit-list').innerHTML = AUDIT.map(e => {
+    const ic = icn[e.type];
+    return `<div class="audit-row">
+      <div class="audit-icon" style="background:${ic.bg}; border:1px solid ${ic.bo};">
+        <svg width="14" height="14" fill="none" stroke="${ic.sc}" stroke-width="2.5" viewBox="0 0 24 24">${ic.path}</svg>
+      </div>
+      <div>
+        <div class="text-sm text-ink-900 leading-snug">
+          <span class="font-semibold">${e.by}</span>
+          <span class="text-gray-400"> · ${lbl[e.act] || e.act}</span>
+          <span class="font-semibold"> ${e.user}</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-0.5">${e.reason}</div>
+      </div>
+      <div class="text-xs text-gray-400 whitespace-nowrap pt-0.5">${e.t}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Toast ── */
+function toast(msg, type='ok') {
+  const tc = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<svg width="14" height="14" fill="none" stroke="${type==='ok'?'#16a34a':'#d97706'}" stroke-width="2.5" viewBox="0 0 24 24">${type==='ok'?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}</svg><span>${msg}</span>`;
+  tc.appendChild(t); setTimeout(()=>t.remove(), 3500);
+}
+
+/* ── Keyboard + click-outside ── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('view-login').classList.contains('active')) doLogin();
+  if (e.key === 'Escape') { closeRejectModal(); closeUserModal(); }
+});
+document.addEventListener('click', e => {
+  if (e.target.id === 'reject-modal') closeRejectModal();
+  if (e.target.id === 'user-modal') closeUserModal();
+});
+</script>
+</body>
+</html>

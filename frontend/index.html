@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IITIIMJobAssistant — Exclusive AI Career Agents for IIT & IIM</title>
+<script src="config.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+          display: ['Space Grotesk', 'Inter', 'sans-serif'],
+        },
+        colors: {
+          brand: {
+            50:  '#EEF0FF', 100: '#E0E4FF', 200: '#C3CAFF', 300: '#A3ACFF',
+            400: '#7D87F5', 500: '#5B66E8', 600: '#4B52D1', 700: '#3E42A8',
+            800: '#2F3380', 900: '#1E2055', 950: '#0F1033',
+          },
+          accent: { 400: '#FFB978', 500: '#FF9E50', 600: '#F57C2B' },
+          ink: { 900: '#0B0D1F', 800: '#121534', 700: '#1B1F44' }
+        },
+        boxShadow: {
+          'soft': '0 10px 40px -12px rgba(17, 24, 39, 0.12)',
+          'glow': '0 0 40px -5px rgba(91,102,232,0.45)',
+          'card': '0 1px 2px rgba(15,16,51,0.04), 0 4px 16px -4px rgba(15,16,51,0.06)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', system-ui, sans-serif; background:#FAFBFD; color:#0B0D1F; }
+  .font-display { font-family: 'Space Grotesk', Inter, sans-serif; letter-spacing:-0.02em; }
+  .grain { background-image: radial-gradient(circle at 1px 1px, rgba(91,102,232,0.08) 1px, transparent 0); background-size: 22px 22px; }
+  .hero-gradient {
+    background:
+      radial-gradient(1000px 500px at 10% -10%, rgba(91,102,232,0.25), transparent 60%),
+      radial-gradient(800px 400px at 90% 10%, rgba(255,158,80,0.22), transparent 60%),
+      radial-gradient(700px 500px at 50% 110%, rgba(163,172,255,0.2), transparent 60%),
+      linear-gradient(180deg, #FFFFFF 0%, #F5F6FD 100%);
+  }
+  .glass { background: rgba(255,255,255,0.75); backdrop-filter: saturate(180%) blur(14px); border-bottom: 1px solid rgba(15,16,51,0.05); }
+  .card-glow:hover { box-shadow: 0 20px 50px -20px rgba(91,102,232,0.35); transform: translateY(-2px); transition: .25s ease; }
+  .marquee { mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%); }
+  .marquee-track { animation: scroll 30s linear infinite; }
+  @keyframes scroll { 0%{transform:translateX(0);} 100%{transform:translateX(-50%);} }
+  .pulse-dot { width:8px; height:8px; border-radius:999px; background:#22c55e; box-shadow:0 0 0 0 rgba(34,197,94,.6); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(34,197,94,.6);} 70%{box-shadow:0 0 0 10px rgba(34,197,94,0);} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0);} }
+  .fade-in { animation: fadeIn .45s ease both; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  .slide-in { animation: slideIn .45s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes slideIn { from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;} }
+  .ring-gradient { background: conic-gradient(from 220deg, #5B66E8, #A3ACFF, #FFB978, #5B66E8); }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background:#E0E4FF; border-radius:10px; }
+  .hide-scroll::-webkit-scrollbar { display: none; }
+  .bg-dots { background-image: radial-gradient(#D9DEF0 1px, transparent 1px); background-size: 16px 16px; }
+  .loader { width:18px; height:18px; border-radius:999px; border:2px solid rgba(91,102,232,0.25); border-top-color:#5B66E8; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tab-active { background:#0F1033; color:white; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  .checkmark { stroke-dasharray: 48; stroke-dashoffset: 48; animation: draw 700ms ease forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .shadow-nav { box-shadow: 0 1px 0 rgba(15,16,51,0.06), 0 10px 30px -20px rgba(15,16,51,0.2); }
+  .dashed-divider { background-image: linear-gradient(to right, #D9DEF0 50%, transparent 50%); background-size: 10px 1px; background-repeat: repeat-x; height: 1px; }
+  .icon { width: 18px; height: 18px; stroke-width: 1.8; }
+  .hidden-view { display: none !important; }
+  .plan-radio:checked + label { border-color:#0B0D1F; background:#0B0D1F; color:white; }
+  .plan-radio:checked + label .priceNum { color:#fff; }
+  .plan-radio:checked + label .priceSub { color:rgba(255,255,255,0.7); }
+  .plan-radio:checked + label .tagSave { background:#FF9E50; color:#0B0D1F; }
+  .savings-pill { background:linear-gradient(90deg,#FFB978,#FF9E50); }
+  .divider-line { height:1px; background:linear-gradient(to right, transparent, rgba(15,16,51,0.12), transparent); }
+  .shine { background: linear-gradient(110deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%); background-size: 200% 100%; animation: shine 3s linear infinite; }
+  @keyframes shine { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+  .ag-card:hover .ag-cta { opacity:1; transform: translateY(0); }
+  .ag-cta { opacity: 0; transform: translateY(4px); transition: all .25s ease; }
+  .perf-up { color:#16a34a; }
+  .perf-down { color:#e11d48; }
+  .sm-card { background:#fff; border:1px solid rgba(15,16,51,0.06); border-radius:20px; }
+</style>
+</head>
+<body class="antialiased text-ink-900">
+
+<!-- ============================================================= -->
+<!-- TOP NAV (Marketing)                                            -->
+<!-- ============================================================= -->
+<header id="marketingNav" class="sticky top-0 z-40 glass shadow-nav">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+    <a href="#" onclick="navigate('landing')" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
+        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center">
+          <span class="font-display text-white text-[13px] font-bold">I²</span>
+        </div>
+      </div>
+      <div class="font-display font-bold text-[17px] tracking-tight">IITIIMJobAssistant</div>
+      <span class="hidden sm:inline-flex ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-brand-50 text-brand-700">EXCLUSIVE</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-7 text-[14px] text-ink-800/80">
+      <a href="#how" class="hover:text-ink-900">How it works</a>
+      <a href="#" onclick="navigate('store')" class="hover:text-ink-900">Agent Store</a>
+      <a href="#faq" class="hover:text-ink-900">FAQ</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <button onclick="navigate('login')" class="hidden sm:inline-flex px-3.5 py-2 rounded-lg text-[14px] font-medium text-ink-800 hover:bg-ink-900/5">Sign in</button>
+      <button onclick="navigate('signup')" class="px-3.5 py-2 rounded-lg text-[14px] font-semibold bg-ink-900 text-white hover:bg-brand-700 transition">Get access</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================= -->
+<!-- APP SHELL (Dashboard / Agent / Settings / Store)               -->
+<!-- ============================================================= -->
+<div id="appShell" class="hidden-view min-h-screen bg-[#FAFBFD]">
+  <aside id="appSidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-ink-900/5 p-5 flex-col z-30 hidden md:flex">
+    <a href="#" onclick="navigate('dashboard')" class="flex items-center gap-2 mb-8">
+      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
+        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center">
+          <span class="font-display text-white text-[13px] font-bold">I²</span>
+        </div>
+      </div>
+      <div class="font-display font-bold text-[16px]">IITIIMJobAssistant</div>
+    </a>
+    <nav class="flex-1 space-y-1 text-[14px]">
+      <a href="#" data-appnav="dashboard" onclick="navigate('dashboard')" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-900 font-medium">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12 12 4l9 8"/><path d="M5 10v10h14V10"/></svg>
+        My Dashboard
+      </a>
+      <a href="#" data-appnav="store" onclick="navigate('store')" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 7Z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
+        Agent Store
+      </a>
+      <div class="mt-5 mb-2 text-[11px] font-semibold text-ink-700/60 px-3 tracking-widest">MY AGENTS</div>
+      <a href="#" data-appnav="agent" onclick="navigate('agent')" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+        Job Seeker Agent
+        <span class="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>LIVE
+        </span>
+      </a>
+      <div class="mt-5 mb-2 text-[11px] font-semibold text-ink-700/60 px-3 tracking-widest">ACCOUNT</div>
+      <a href="#" data-appnav="settings" onclick="navigate('settings')" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.34.22.7.22 1.09 0 .39-.08.75-.22 1.09Z"/></svg>
+        Settings
+      </a>
+      <a href="#" data-appnav="billing" onclick="navigate('billing')" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>
+        Billing
+      </a>
+      <a href="#" onclick="navigate('landing')" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 17l-5-5 5-5M5 12h14"/></svg>
+        Exit app
+      </a>
+    </nav>
+    <div class="mt-4 p-3 rounded-xl bg-brand-50/60 border border-brand-100">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-brand-600 text-white grid place-items-center font-semibold">A</div>
+        <div class="min-w-0">
+          <div class="text-[13px] font-semibold truncate">Aarav Kulkarni</div>
+          <div class="text-[11px] text-ink-700/70 truncate">IIT Bombay · '22</div>
+        </div>
+      </div>
+      <div class="mt-2 flex items-center gap-1.5 text-[11px] text-ink-700/70">
+        <span class="pulse-dot inline-block"></span> Agent running · 3 hrs left today
+      </div>
+    </div>
+  </aside>
+
+  <main id="appMain" class="md:pl-64">
+    <header class="sticky top-0 z-20 bg-white/70 backdrop-blur border-b border-ink-900/5">
+      <div class="px-5 md:px-8 h-16 flex items-center gap-3">
+        <button class="md:hidden p-2 rounded-lg hover:bg-ink-900/5" onclick="toggleSidebar()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="flex-1 max-w-md relative">
+          <svg class="icon absolute top-1/2 left-3 -translate-y-1/2 text-ink-700/50" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input placeholder="Search agents, roles, companies..." class="w-full pl-10 pr-3 py-2 text-[13px] bg-ink-900/[.04] rounded-lg border border-transparent focus:bg-white focus:border-brand-200 outline-none"/>
+        </div>
+        <button class="relative p-2 rounded-lg hover:bg-ink-900/5">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-500 rounded-full"></span>
+        </button>
+        <a href="#" onclick="navigate('settings')" class="w-9 h-9 rounded-full bg-brand-600 text-white grid place-items-center font-semibold">A</a>
+      </div>
+    </header>
+    <div id="appView" class="p-5 md:p-8"></div>
+  </main>
+</div>
+
+<!-- ============================================================= -->
+<!-- LANDING (kept as v1 — homepage & logo looked good)            -->
+<!-- ============================================================= -->
+<section id="viewLanding" class="view">
+  <section class="relative hero-gradient overflow-hidden">
+    <div class="absolute inset-0 grain pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-5 md:px-8 pt-20 pb-28 md:pt-28 md:pb-36 relative">
+      <div class="flex flex-col items-center text-center max-w-3xl mx-auto fade-in">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-200 bg-white text-[12px] text-brand-700 font-medium shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+          Invite-only · Verified IIT & IIM alumni & students
+        </div>
+        <h1 class="mt-6 font-display text-[44px] md:text-[68px] font-bold leading-[1.05] tracking-tight">
+          Your private AI team<br/>
+          for the <span class="relative inline-block">
+            <span class="bg-gradient-to-tr from-brand-600 via-brand-500 to-accent-500 bg-clip-text text-transparent">career you deserve.</span>
+            <svg viewBox="0 0 300 12" class="absolute -bottom-2 left-0 w-full" preserveAspectRatio="none"><path d="M2,8 Q75,2 150,6 T298,6" fill="none" stroke="#FF9E50" stroke-width="3" stroke-linecap="round"/></svg>
+          </span>
+        </h1>
+        <p class="mt-6 text-[17px] md:text-[19px] text-ink-800/70 leading-relaxed">
+          IITIIMJobAssistant deploys AI agents that discover roles, reach recruiters, and apply on your behalf — across LinkedIn, email, and company portals. Built exclusively for the IIT & IIM community.
+        </p>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3">
+          <button onclick="navigate('signup')" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 transition shadow-soft">
+            Verify & get started
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </button>
+          <button onclick="navigate('store')" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white border border-ink-900/10 font-semibold hover:bg-white/80">
+            Browse Agent Store
+          </button>
+        </div>
+        <div class="mt-7 flex items-center gap-5 text-[12px] text-ink-800/60">
+          <div class="flex -space-x-2">
+            <div class="w-7 h-7 rounded-full ring-2 ring-white bg-gradient-to-tr from-brand-400 to-brand-700"></div>
+            <div class="w-7 h-7 rounded-full ring-2 ring-white bg-gradient-to-tr from-accent-400 to-accent-600"></div>
+            <div class="w-7 h-7 rounded-full ring-2 ring-white bg-gradient-to-tr from-emerald-400 to-emerald-700"></div>
+            <div class="w-7 h-7 rounded-full ring-2 ring-white bg-gradient-to-tr from-pink-400 to-pink-700"></div>
+          </div>
+          <span>Trusted by <strong class="text-ink-900">2,400+</strong> verified alumni</span>
+          <span class="hidden sm:inline">·</span>
+          <span class="hidden sm:inline">Average <strong class="text-ink-900">3.2×</strong> interview rate</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOGO MARQUEE -->
+  <section class="py-10 bg-white border-y border-ink-900/5">
+    <div class="max-w-7xl mx-auto px-5 md:px-8 text-center">
+      <div class="text-[11px] tracking-widest font-semibold text-ink-700/60">ALUMNI FROM COMPANIES LIKE</div>
+      <div class="marquee mt-5 overflow-hidden">
+        <div class="marquee-track flex gap-12 whitespace-nowrap text-ink-700/60 font-display text-lg font-semibold">
+          <span>Google</span><span>McKinsey</span><span>Stripe</span><span>Goldman Sachs</span><span>Microsoft</span><span>BCG</span><span>Razorpay</span><span>Meta</span><span>Flipkart</span><span>Bain</span><span>OpenAI</span><span>Zerodha</span>
+          <span>Google</span><span>McKinsey</span><span>Stripe</span><span>Goldman Sachs</span><span>Microsoft</span><span>BCG</span><span>Razorpay</span><span>Meta</span><span>Flipkart</span><span>Bain</span><span>OpenAI</span><span>Zerodha</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENTS -->
+  <section id="agents" class="py-24 relative">
+    <div class="max-w-7xl mx-auto px-5 md:px-8">
+      <div class="max-w-2xl">
+        <div class="text-[12px] font-semibold tracking-widest text-brand-700">MEET YOUR AGENTS</div>
+        <h2 class="font-display text-4xl md:text-5xl font-bold mt-2">An AI team that never sleeps.</h2>
+        <p class="mt-4 text-ink-800/70 text-[17px]">Subscribe to each agent individually — every agent has its own pricing and plan durations. Start with the Job Seeker Agent.</p>
+      </div>
+
+      <div class="mt-12 grid md:grid-cols-2 gap-5">
+        <div class="relative p-6 md:p-8 rounded-3xl bg-gradient-to-br from-ink-900 to-brand-950 text-white overflow-hidden card-glow">
+          <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-brand-500/30 blur-3xl"></div>
+          <div class="absolute -left-20 -bottom-20 w-60 h-60 rounded-full bg-accent-500/20 blur-3xl"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between">
+              <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-semibold">
+                <span class="pulse-dot"></span> LIVE · PHASE 1
+              </div>
+              <div class="text-[11px] text-white/60">v1.4 · updated today</div>
+            </div>
+            <div class="mt-4 text-[12px] uppercase tracking-widest text-white/50">Job Seeker Agent</div>
+            <h3 class="font-display text-3xl md:text-4xl font-bold mt-1">Apply to dream roles — on autopilot.</h3>
+            <p class="mt-3 text-white/70 leading-relaxed">Discover roles matching your preferences, then apply across three channels automatically: LinkedIn DMs, recruiter emails, and company application forms.</p>
+            <ul class="mt-5 space-y-2 text-[14px]">
+              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> LinkedIn direct messages to recruiters & hiring managers</li>
+              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Personalized cold emails with resume + pitch</li>
+              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Auto-fills application forms on company career pages</li>
+              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Smart throttling to stay within LinkedIn & email limits</li>
+            </ul>
+            <div class="mt-6 flex gap-3">
+              <button onclick="navigate('agentDetail')" class="px-4 py-2.5 rounded-lg bg-white text-ink-900 font-semibold text-[14px] hover:bg-brand-50">View agent & pricing</button>
+            </div>
+            <div class="mt-4 text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹2,000/month</span> (6-month plan)</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-5">
+          <div class="p-6 rounded-3xl bg-white border border-ink-900/5 card-glow">
+            <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">AVG/DAY PER USER</div>
+            <div class="font-display text-4xl font-bold mt-2">32</div>
+            <div class="mt-1 text-[13px] text-ink-700/70">Targeted applications</div>
+            <svg viewBox="0 0 100 30" class="mt-4 w-full h-10"><polyline fill="none" stroke="#5B66E8" stroke-width="2" points="0,25 10,20 20,22 30,15 40,18 50,10 60,13 70,8 80,10 90,5 100,6"/></svg>
+          </div>
+          <div class="p-6 rounded-3xl bg-brand-50 border border-brand-100 card-glow">
+            <div class="text-[11px] font-semibold tracking-widest text-brand-700">REPLY RATE</div>
+            <div class="font-display text-4xl font-bold mt-2 text-brand-900">17.4%</div>
+            <div class="mt-1 text-[13px] text-brand-700/80">vs 3.1% industry avg</div>
+            <div class="mt-4 w-full h-2 rounded-full bg-white overflow-hidden">
+              <div class="h-2 bg-gradient-to-r from-brand-500 to-accent-500" style="width:82%"></div>
+            </div>
+          </div>
+          <div class="col-span-2 p-6 rounded-3xl bg-gradient-to-br from-white to-brand-50/60 border border-ink-900/5 card-glow">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-ink-900 text-white grid place-items-center">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+              </div>
+              <div>
+                <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">EXCLUSIVITY GUARDRAIL</div>
+                <div class="font-display text-xl font-semibold">LinkedIn-verified IIT & IIM members only</div>
+              </div>
+            </div>
+            <p class="mt-3 text-[14px] text-ink-800/70">We manually verify every new account by reviewing the education section on LinkedIn. Our team approves only IIT or IIM students and alumni. No verified alumni? No access.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="py-24 bg-white border-y border-ink-900/5 relative">
+    <div class="absolute inset-0 bg-dots opacity-60 pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-5 md:px-8 relative">
+      <div class="text-center max-w-2xl mx-auto">
+        <div class="text-[12px] font-semibold tracking-widest text-brand-700">HOW IT WORKS</div>
+        <h2 class="font-display text-4xl md:text-5xl font-bold mt-2">Three steps. Zero busywork.</h2>
+      </div>
+      <div class="mt-14 grid md:grid-cols-3 gap-5 relative">
+        <div class="p-6 rounded-2xl bg-white border border-ink-900/5 card-glow">
+          <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 grid place-items-center font-display font-bold">1</div>
+          <div class="font-display font-bold mt-4">Verify you're one of us</div>
+          <p class="mt-1 text-[14px] text-ink-800/70">Sign up with Google or email and share your LinkedIn profile URL. Our team manually verifies your IIT/IIM education — you'll get an email once approved.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-white border border-ink-900/5 card-glow">
+          <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 grid place-items-center font-display font-bold">2</div>
+          <div class="font-display font-bold mt-4">Pick an agent & plan</div>
+          <p class="mt-1 text-[14px] text-ink-800/70">Each agent has its own pricing. Choose a 1, 3, or 6-month subscription.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-white border border-ink-900/5 card-glow">
+          <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 grid place-items-center font-display font-bold">3</div>
+          <div class="font-display font-bold mt-4">Track & iterate</div>
+          <p class="mt-1 text-[14px] text-ink-800/70">Watch your dashboard light up. Adjust preferences in real time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMING SOON -->
+  <section id="coming-soon" class="py-24 bg-white border-y border-ink-900/5">
+    <div class="max-w-7xl mx-auto px-5 md:px-8">
+      <div class="flex items-end justify-between flex-wrap gap-4">
+        <div class="max-w-2xl">
+          <div class="text-[12px] font-semibold tracking-widest text-accent-600">COMING SOON</div>
+          <h2 class="font-display text-4xl md:text-5xl font-bold mt-2">Your AI team, multiplied.</h2>
+          <p class="mt-4 text-ink-800/70">Three more agents on the way. Each with its own purpose — and its own pricing.</p>
+        </div>
+        <button class="px-4 py-2.5 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Join waitlist</button>
+      </div>
+
+      <div class="mt-12 grid md:grid-cols-3 gap-5">
+        <div class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden">
+          <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent-500 text-white">Q3 2026</div>
+          <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-brand-700 text-[15px]">N</div>
+          <div class="font-display font-bold text-xl mt-4">Naukri AI Agent</div>
+          <p class="mt-2 text-[14px] text-ink-800/70">Automatically searches and applies to matching jobs across Naukri.com, with smart filters for role & compensation.</p>
+        </div>
+        <div class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden">
+          <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent-500 text-white">Q3 2026</div>
+          <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-brand-700 text-[15px]">in</div>
+          <div class="font-display font-bold text-xl mt-4">LinkedIn Jobs Agent</div>
+          <p class="mt-2 text-[14px] text-ink-800/70">Applies directly through LinkedIn Easy Apply and standard job listings — with tailored cover letters.</p>
+        </div>
+        <div class="relative p-6 rounded-3xl bg-gradient-to-br from-accent-500/10 to-white border border-accent-500/20 overflow-hidden">
+          <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-ink-900 text-white">Q4 2026</div>
+          <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-accent-600 text-[15px]">✦</div>
+          <div class="font-display font-bold text-xl mt-4">LinkedIn Growth Agent</div>
+          <p class="mt-2 text-[14px] text-ink-800/70">Grows your network: writes and schedules posts that match your voice, engages with relevant people, and tracks reach.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIAL -->
+  <section class="py-24">
+    <div class="max-w-4xl mx-auto px-5 md:px-8 text-center">
+      <div class="text-[12px] font-semibold tracking-widest text-brand-700">LOVED BY ALUMNI</div>
+      <blockquote class="mt-4 font-display text-3xl md:text-4xl font-bold leading-tight">
+        "Within 11 days my IITIIMJobAssistant agent landed me 4 recruiter calls at FAANG — I hadn't touched LinkedIn in months."
+      </blockquote>
+      <div class="mt-6 flex items-center justify-center gap-3">
+        <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-brand-400 to-brand-700"></div>
+        <div class="text-left">
+          <div class="font-semibold">Sneha Agarwal</div>
+          <div class="text-[13px] text-ink-700/70">IIM Bangalore '21 · Senior PM, Ex-Flipkart</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-24 bg-white border-t border-ink-900/5">
+    <div class="max-w-3xl mx-auto px-5 md:px-8">
+      <div class="text-center">
+        <div class="text-[12px] font-semibold tracking-widest text-brand-700">FAQ</div>
+        <h2 class="font-display text-4xl font-bold mt-2">Questions, answered.</h2>
+      </div>
+      <div class="mt-10 space-y-3">
+        <details class="p-5 rounded-2xl border border-ink-900/10 bg-white group" open>
+          <summary class="flex items-center justify-between">
+            <span class="font-semibold">How do you verify I'm from IIT or IIM?</span>
+            <svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <p class="mt-3 text-ink-800/70 text-[14px]">During signup, you provide your LinkedIn profile URL. Our team manually reviews your education section and approves only verified IIT or IIM alumni and students. You'll receive an email once a decision is made, typically within a few hours.</p>
+        </details>
+        <details class="p-5 rounded-2xl border border-ink-900/10 bg-white group">
+          <summary class="flex items-center justify-between">
+            <span class="font-semibold">Is automating LinkedIn safe for my account?</span>
+            <svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <p class="mt-3 text-ink-800/70 text-[14px]">We throttle activity well below LinkedIn's usage patterns, humanize pauses, and never scrape. All actions are authorized by you via OAuth.</p>
+        </details>
+        <details class="p-5 rounded-2xl border border-ink-900/10 bg-white group">
+          <summary class="flex items-center justify-between">
+            <span class="font-semibold">Can I pause or cancel my subscription?</span>
+            <svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <p class="mt-3 text-ink-800/70 text-[14px]">Yes. Pause anytime from Settings → Billing. Refunds on longer plans are pro-rated.</p>
+        </details>
+        <details class="p-5 rounded-2xl border border-ink-900/10 bg-white group">
+          <summary class="flex items-center justify-between">
+            <span class="font-semibold">What happens to my data?</span>
+            <svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <p class="mt-3 text-ink-800/70 text-[14px]">Your resume, preferences, and messages are encrypted at rest (AES-256) and transit. You can delete everything with one click.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24">
+    <div class="max-w-5xl mx-auto px-5 md:px-8">
+      <div class="relative rounded-3xl overflow-hidden bg-ink-900 text-white p-10 md:p-14">
+        <div class="absolute -right-10 -top-10 w-80 h-80 rounded-full bg-brand-600/40 blur-3xl"></div>
+        <div class="absolute -left-10 -bottom-10 w-80 h-80 rounded-full bg-accent-500/30 blur-3xl"></div>
+        <div class="relative grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <h3 class="font-display text-4xl md:text-5xl font-bold leading-tight">Ready to let your AI agent work the room?</h3>
+            <p class="mt-3 text-white/70">Verification takes seconds. Your first applications go out in under an hour.</p>
+          </div>
+          <div class="md:justify-self-end flex gap-3">
+            <button onclick="navigate('signup')" class="px-5 py-3 rounded-xl bg-white text-ink-900 font-semibold hover:bg-brand-50">Verify with LinkedIn</button>
+            <button onclick="navigate('login')" class="px-5 py-3 rounded-xl border border-white/20 hover:bg-white/10">Sign in</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-ink-900/5 bg-white">
+    <div class="max-w-7xl mx-auto px-5 md:px-8 py-12 grid md:grid-cols-4 gap-8 text-[14px]">
+      <div>
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg ring-gradient p-[1.5px]">
+            <div class="w-full h-full rounded-[6px] bg-ink-900 grid place-items-center text-white text-[11px] font-bold">I²</div>
+          </div>
+          <div class="font-display font-bold">IITIIMJobAssistant</div>
+        </div>
+        <p class="mt-3 text-ink-700/70">AI agents for the IIT/IIM community.</p>
+      </div>
+      <div>
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 mb-3">PRODUCT</div>
+        <div class="space-y-2 text-ink-800/80">
+          <div>Job Seeker Agent</div><div>Naukri Agent</div><div>LinkedIn Jobs</div><div>LinkedIn Growth</div>
+        </div>
+      </div>
+      <div>
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 mb-3">COMPANY</div>
+        <div class="space-y-2 text-ink-800/80"><div>About</div><div>Careers</div><div>Blog</div><div>Contact</div></div>
+      </div>
+      <div>
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 mb-3">LEGAL</div>
+        <div class="space-y-2 text-ink-800/80"><div>Privacy</div><div>Terms</div><div>Security</div><div>DPA</div></div>
+      </div>
+    </div>
+    <div class="border-t border-ink-900/5 py-5 text-center text-[12px] text-ink-700/60">© 2026 IITIIMJobAssistant Inc. Exclusively for IIT & IIM alumni and students.</div>
+  </footer>
+</section>
+
+<!-- ============================================================= -->
+<!-- LOGIN (smallcase-inspired: single centered card)               -->
+<!-- ============================================================= -->
+<section id="viewLogin" class="view hidden-view min-h-screen bg-[#FAFBFD] relative overflow-hidden">
+  <div class="absolute inset-0 hero-gradient opacity-60 pointer-events-none"></div>
+  <div class="relative max-w-md mx-auto px-5 py-14">
+    <a href="#" onclick="navigate('landing')" class="flex items-center justify-center gap-2 mb-10">
+      <div class="w-9 h-9 rounded-lg ring-gradient p-[1.5px]">
+        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center text-white text-[14px] font-bold">I²</div>
+      </div>
+      <span class="font-display font-bold text-lg">IITIIMJobAssistant</span>
+    </a>
+
+    <div class="sm-card shadow-soft p-7 fade-in">
+      <h1 class="font-display text-2xl font-bold">Sign in to your agent</h1>
+      <p class="mt-1 text-[13px] text-ink-700/70">Continue to your dashboard and activity feed.</p>
+
+      <button onclick="startGoogleOAuth()" class="mt-6 w-full py-3 rounded-xl border border-ink-900/10 font-semibold flex items-center justify-center gap-2.5 hover:bg-ink-900/5 transition">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H24v8.1h11.3c-1 5.2-5.5 8.5-11.3 8.5-6.8 0-12.3-5.5-12.3-12.4S17.2 11.9 24 11.9c3.1 0 5.9 1.2 8 3.1l5.8-5.8C34 5.9 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11.6 0 19.6-8.2 19.6-19.7 0-1.4-.1-2.7-.4-4.2z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8c1.8-3.6 5.6-6 10.1-6 2.7 0 5.2 1 7 2.6l5.7-5.7C31.9 6.9 28.1 5 24 5 17 5 10.9 8.7 7.3 14.2l-1 .5z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.9 13.7-5.2l-6.3-5.2c-2 1.4-4.6 2.3-7.4 2.3-5.8 0-10.3-3.4-11.3-8.5H6.2v5.3C9.7 39.7 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H24v8.1h11.3c-.5 2.4-1.8 4.4-3.6 5.7l.1.1 6.3 5.2c-.4.3 6.8-4.9 6.8-15-.1-1.4-.2-2.7-.4-4.1z"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="my-5 flex items-center gap-3 text-[12px] text-ink-700/50">
+        <div class="flex-1 h-px bg-ink-900/10"></div> or email <div class="flex-1 h-px bg-ink-900/10"></div>
+      </div>
+
+      <label class="text-[13px] font-medium">Email</label>
+      <input placeholder="you@iitb.ac.in" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      <label class="text-[13px] font-medium mt-4 block">Password</label>
+      <input type="password" placeholder="••••••••" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      <div class="flex items-center justify-between mt-3 text-[12px]">
+        <label class="flex items-center gap-2"><input type="checkbox" class="accent-brand-600"/> Remember me</label>
+        <a class="text-brand-700 font-semibold">Forgot password?</a>
+      </div>
+      <button onclick="signIn()" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Sign in</button>
+    </div>
+
+    <div class="mt-6 text-center text-[13px] text-ink-700/70">
+      New here? <a href="#" onclick="navigate('signup')" class="text-brand-700 font-semibold">Apply for access</a>
+    </div>
+    <div class="mt-8 text-center text-[11px] text-ink-700/50 flex items-center justify-center gap-1.5">
+      <svg class="icon text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+      Bank-grade encryption · SOC 2 in progress
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- SIGNUP (3-step, cleaner smallcase-like flow)                   -->
+<!-- ============================================================= -->
+<section id="viewSignup" class="view hidden-view min-h-screen bg-[#FAFBFD]">
+  <div class="max-w-3xl mx-auto px-5 md:px-8 py-10">
+    <div class="flex items-center justify-between mb-10">
+      <a href="#" onclick="navigate('landing')" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
+          <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center text-white text-[13px] font-bold">I²</div>
+        </div>
+        <span class="font-display font-bold">IITIIMJobAssistant</span>
+      </a>
+      <div class="text-[13px] text-ink-700/70">Already a member? <a href="#" onclick="navigate('login')" class="text-brand-700 font-semibold">Sign in</a></div>
+    </div>
+
+    <!-- Stepper -->
+    <div class="max-w-xl mx-auto">
+      <div class="flex items-center gap-2 mb-8">
+        <div class="flex items-center gap-2" id="stp1">
+          <div class="w-7 h-7 rounded-full bg-ink-900 text-white grid place-items-center text-[12px] font-bold">1</div>
+          <span class="text-[12px] font-semibold">Account</span>
+        </div>
+        <div class="flex-1 h-[2px] bg-ink-900/10 stepline"></div>
+        <div class="flex items-center gap-2 opacity-60" id="stp2">
+          <div class="w-7 h-7 rounded-full bg-white border border-ink-900/15 grid place-items-center text-[12px] font-bold">2</div>
+          <span class="text-[12px]">Verify</span>
+        </div>
+        <div class="flex-1 h-[2px] bg-ink-900/10 stepline"></div>
+        <div class="flex items-center gap-2 opacity-60" id="stp3">
+          <div class="w-7 h-7 rounded-full bg-white border border-ink-900/15 grid place-items-center text-[12px] font-bold">3</div>
+          <span class="text-[12px]">Done</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="signupStep1" class="max-w-xl mx-auto sm-card shadow-soft p-8 fade-in">
+      <h1 class="font-display text-2xl font-bold">Create your account</h1>
+      <p class="mt-1 text-[14px] text-ink-700/70">Exclusive to verified IIT & IIM students and alumni.</p>
+
+      
+
+      <button onclick="startGoogleOAuth()" class="mt-6 w-full py-3 rounded-xl border border-ink-900/10 font-semibold flex items-center justify-center gap-2.5 hover:bg-ink-900/5 transition">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H24v8.1h11.3c-1 5.2-5.5 8.5-11.3 8.5-6.8 0-12.3-5.5-12.3-12.4S17.2 11.9 24 11.9c3.1 0 5.9 1.2 8 3.1l5.8-5.8C34 5.9 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11.6 0 19.6-8.2 19.6-19.7 0-1.4-.1-2.7-.4-4.2z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8c1.8-3.6 5.6-6 10.1-6 2.7 0 5.2 1 7 2.6l5.7-5.7C31.9 6.9 28.1 5 24 5 17 5 10.9 8.7 7.3 14.2l-1 .5z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.9 13.7-5.2l-6.3-5.2c-2 1.4-4.6 2.3-7.4 2.3-5.8 0-10.3-3.4-11.3-8.5H6.2v5.3C9.7 39.7 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H24v8.1h11.3c-.5 2.4-1.8 4.4-3.6 5.7l.1.1 6.3 5.2c-.4.3 6.8-4.9 6.8-15-.1-1.4-.2-2.7-.4-4.1z"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="my-5 flex items-center gap-3 text-[12px] text-ink-700/50">
+        <div class="flex-1 h-px bg-ink-900/10"></div> or email sign up <div class="flex-1 h-px bg-ink-900/10"></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-[13px] font-medium">First name</label><input id="signupFirst" placeholder="Aarav" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/></div>
+        <div><label class="text-[13px] font-medium">Last name</label><input id="signupLast" placeholder="Kulkarni" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/></div>
+      </div>
+      <label class="text-[13px] font-medium mt-3 block">Email</label>
+      <input id="signupEmail" placeholder="you@iitb.ac.in" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      <label class="text-[13px] font-medium mt-3 block">Password</label>
+      <input id="signupPassword" type="password" placeholder="Minimum 10 characters" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+
+      <button onclick="showSignupStep(2)" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Continue</button>
+      <p class="mt-4 text-[12px] text-ink-700/60 text-center">By continuing you agree to our Terms & Privacy Policy.</p>
+    </div>
+
+    <div id="signupStep2" class="hidden max-w-xl mx-auto sm-card shadow-soft p-8 fade-in">
+      <h1 class="font-display text-2xl font-bold">Verify your IIT / IIM status</h1>
+      <p class="mt-1 text-[14px] text-ink-700/70">Paste your LinkedIn profile URL below. Our team will manually review your education and approve or reject your application, usually within a few hours.</p>
+
+      <label class="text-[13px] font-medium mt-6 block">LinkedIn profile URL <span class="text-rose-500">*</span></label>
+      <div class="mt-1 flex items-center gap-2">
+        <input id="liUrl" placeholder="https://www.linkedin.com/in/your-handle" class="flex-1 px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+        <button onclick="submitForReview()" class="px-4 py-2.5 rounded-xl bg-ink-900 text-white font-semibold whitespace-nowrap">Submit</button>
+      </div>
+      <p class="mt-2 text-[12px] text-ink-700/50">Make sure your LinkedIn education section is visible to the public.</p>
+
+      <div id="reviewSubmitting" class="hidden mt-6 p-5 rounded-2xl bg-brand-50/70 border border-brand-100 flex items-center gap-3">
+        <div class="loader"></div>
+        <div>
+          <div class="font-semibold text-[14px]">Submitting your application…</div>
+          <div class="text-[12px] text-brand-700/80">Just a moment.</div>
+        </div>
+      </div>
+
+      <div id="reviewPending" class="hidden mt-6 p-5 rounded-2xl fade-in" style="background:#FFF7ED; border:1.5px solid #fed7aa;">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style="background:#FFEDD5; border:1px solid #fed7aa;">
+            <svg width="16" height="16" fill="none" stroke="#c2410c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div>
+            <div class="font-semibold text-[15px]" style="color:#9a3412;">Application submitted — pending review</div>
+            <p class="text-[13px] mt-1" style="color:#c2410c;">Our team will review your LinkedIn profile and verify your IIT/IIM status. You'll receive an email once a decision is made (typically within a few hours).</p>
+          </div>
+        </div>
+        <button onclick="showSignupStep(3)" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Got it</button>
+      </div>
+    </div>
+
+    <div id="signupStep3" class="hidden max-w-xl mx-auto sm-card shadow-soft p-8 text-center fade-in">
+      <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center" style="background:#FFF7ED; border:1.5px solid #fed7aa;">
+        <svg width="28" height="28" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h1 class="font-display text-2xl font-bold mt-4">Application submitted!</h1>
+      <p class="mt-2 text-ink-700/70 text-[14px]">We've received your LinkedIn profile URL. Our team will manually verify your IIT/IIM status and send you an email once approved.</p>
+
+      <div class="mt-6 text-left p-5 rounded-2xl" style="background:#F7F8FD; border:1px solid rgba(15,16,51,0.08);">
+        <div class="text-[11px] font-semibold tracking-widest text-ink-700/50 mb-3">WHAT HAPPENS NEXT</div>
+        <div class="space-y-3">
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-[11px] flex-shrink-0 mt-0.5">1</div>
+            <div class="text-[13px] text-ink-800/80">Our team opens your LinkedIn profile and checks your education section for IIT or IIM.</div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-[11px] flex-shrink-0 mt-0.5">2</div>
+            <div class="text-[13px] text-ink-800/80">If verified, your account is activated and you'll get an email with a sign-in link.</div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-[11px] flex-shrink-0 mt-0.5">3</div>
+            <div class="text-[13px] text-ink-800/80">If we can't confirm IIT/IIM, you'll receive an email explaining why and how to appeal.</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-5 text-[12px] text-ink-700/50">Typical review time: a few hours. Check your inbox (and spam folder).</p>
+      <button onclick="navigate('landing')" class="mt-5 w-full py-3 rounded-xl border border-ink-900/10 font-semibold text-ink-800 hover:bg-ink-900/5">Back to home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- APP TEMPLATES: Store / Agent Detail / Payment / Onboarding /   -->
+<!-- Dashboard / Agent / Settings / Billing                         -->
+<!-- ============================================================= -->
+
+<!-- AGENT STORE (smallcase-like browse) -->
+<template id="tplStore">
+<div class="slide-in">
+  <div class="flex items-end justify-between flex-wrap gap-3">
+    <div>
+      <div class="text-[12px] font-semibold tracking-widest text-brand-700">AGENT STORE</div>
+      <h1 class="font-display text-3xl font-bold mt-1">Choose your AI teammate</h1>
+      <p class="text-[13px] text-ink-700/70 mt-1">Every agent solves one part of your career journey. Subscribe to what you need — skip what you don't.</p>
+    </div>
+    <div class="inline-flex items-center gap-2 text-[12px] bg-white border border-ink-900/10 rounded-lg p-0.5">
+      <button class="px-3 py-1.5 rounded-md tab-active">All · 4</button>
+      <button class="px-3 py-1.5 rounded-md text-ink-700">Live</button>
+      <button class="px-3 py-1.5 rounded-md text-ink-700">Coming soon</button>
+    </div>
+  </div>
+
+  <!-- Categories chips -->
+  <div class="mt-5 flex flex-wrap gap-2 text-[12px]">
+    <button class="px-3 py-1.5 rounded-full bg-ink-900 text-white font-semibold">Most popular</button>
+    <button class="px-3 py-1.5 rounded-full bg-white border border-ink-900/10 hover:bg-ink-900/5">Outreach</button>
+    <button class="px-3 py-1.5 rounded-full bg-white border border-ink-900/10 hover:bg-ink-900/5">Auto-apply</button>
+    <button class="px-3 py-1.5 rounded-full bg-white border border-ink-900/10 hover:bg-ink-900/5">Networking</button>
+    <button class="px-3 py-1.5 rounded-full bg-white border border-ink-900/10 hover:bg-ink-900/5">Content</button>
+  </div>
+
+  <!-- Agent grid -->
+  <div class="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <!-- Job Seeker Agent (LIVE) -->
+    <div class="ag-card relative sm-card p-6 card-glow overflow-hidden cursor-pointer" onclick="navigate('agentDetail')">
+      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold tracking-widest">
+        <span class="pulse-dot"></span>LIVE
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-ink-900 to-brand-700 text-white grid place-items-center shadow-soft">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+      </div>
+      <div class="mt-4 font-display font-bold text-lg">Job Seeker Agent</div>
+      <div class="text-[12px] text-ink-700/60">LinkedIn DMs · Email · Portal auto-apply</div>
+      <p class="mt-3 text-[13px] text-ink-800/80">Finds roles matching your preferences and applies across 3 channels automatically.</p>
+      <div class="mt-4 flex items-center gap-2 text-[11px]">
+        <span class="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700">Outreach</span>
+        <span class="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700">Auto-apply</span>
+      </div>
+      <div class="mt-5 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-ink-700/60">Starts at</div>
+          <div class="font-display font-bold text-lg">₹2,000<span class="text-[12px] font-medium text-ink-700/60">/mo</span></div>
+        </div>
+        <div class="ag-cta px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold">Subscribe →</div>
+      </div>
+    </div>
+
+    <!-- Naukri Agent (SOON) -->
+    <div class="relative sm-card p-6 overflow-hidden">
+      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-600 text-[10px] font-bold tracking-widest">Q3 '26</div>
+      <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-lg">N</div>
+      <div class="mt-4 font-display font-bold text-lg">Naukri AI Agent</div>
+      <div class="text-[12px] text-ink-700/60">Naukri.com auto-search & apply</div>
+      <p class="mt-3 text-[13px] text-ink-800/80">Scans Naukri's massive listing pool and applies to high-match roles with tailored cover letters.</p>
+      <div class="mt-4 flex items-center gap-2 text-[11px]">
+        <span class="px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700">Auto-apply</span>
+      </div>
+      <div class="mt-5 flex items-center justify-between">
+        <div class="text-[12px] text-ink-700/60">Waitlist open</div>
+        <button class="px-3 py-1.5 rounded-lg border border-ink-900/15 text-[12px] font-semibold">Notify me</button>
+      </div>
+    </div>
+
+    <!-- LinkedIn Jobs (SOON) -->
+    <div class="relative sm-card p-6 overflow-hidden">
+      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-600 text-[10px] font-bold tracking-widest">Q3 '26</div>
+      <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-lg">in</div>
+      <div class="mt-4 font-display font-bold text-lg">LinkedIn Jobs Agent</div>
+      <div class="text-[12px] text-ink-700/60">Easy Apply + direct listings</div>
+      <p class="mt-3 text-[13px] text-ink-800/80">Applies to roles directly on LinkedIn with tailored cover letters and smart throttling.</p>
+      <div class="mt-4 flex items-center gap-2 text-[11px]">
+        <span class="px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700">Auto-apply</span>
+      </div>
+      <div class="mt-5 flex items-center justify-between">
+        <div class="text-[12px] text-ink-700/60">Waitlist open</div>
+        <button class="px-3 py-1.5 rounded-lg border border-ink-900/15 text-[12px] font-semibold">Notify me</button>
+      </div>
+    </div>
+
+    <!-- LinkedIn Growth (SOON) -->
+    <div class="relative sm-card p-6 overflow-hidden">
+      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700 text-[10px] font-bold tracking-widest">Q4 '26</div>
+      <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-accent-600 text-lg">✦</div>
+      <div class="mt-4 font-display font-bold text-lg">LinkedIn Growth Agent</div>
+      <div class="text-[12px] text-ink-700/60">Content + network automation</div>
+      <p class="mt-3 text-[13px] text-ink-800/80">Writes posts in your voice and grows your network without you lifting a finger.</p>
+      <div class="mt-4 flex items-center gap-2 text-[11px]">
+        <span class="px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700">Networking</span>
+        <span class="px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700">Content</span>
+      </div>
+      <div class="mt-5 flex items-center justify-between">
+        <div class="text-[12px] text-ink-700/60">Waitlist open</div>
+        <button class="px-3 py-1.5 rounded-lg border border-ink-900/15 text-[12px] font-semibold">Notify me</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-10 sm-card p-5 flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-accent-500/10 text-accent-600 grid place-items-center">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <div>
+        <div class="font-semibold text-[14px]">Have an agent idea?</div>
+        <div class="text-[12px] text-ink-700/60">We're building the roadmap with alumni input. Tell us what you need next.</div>
+      </div>
+    </div>
+    <button class="px-3.5 py-2 rounded-lg bg-ink-900 text-white text-[13px] font-semibold">Suggest an agent</button>
+  </div>
+</div>
+</template>
+
+<!-- AGENT DETAIL + PRICING (smallcase-style detail page) -->
+<template id="tplAgentDetail">
+<div class="slide-in max-w-5xl mx-auto">
+  <button onclick="navigate('store')" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-4">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7"/></svg> Back to Agent Store
+  </button>
+
+  <!-- Hero card -->
+  <div class="sm-card p-6 md:p-8 bg-gradient-to-br from-ink-900 to-brand-800 text-white overflow-hidden relative">
+    <div class="absolute -right-10 -top-10 w-72 h-72 rounded-full bg-brand-500/30 blur-3xl"></div>
+    <div class="absolute -left-10 -bottom-10 w-72 h-72 rounded-full bg-accent-500/20 blur-3xl"></div>
+    <div class="relative flex items-start gap-5 flex-wrap">
+      <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 grid place-items-center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+      </div>
+      <div class="flex-1 min-w-[220px]">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-bold tracking-widest">
+            <span class="pulse-dot"></span>LIVE · PHASE 1
+          </div>
+          <div class="text-[11px] text-white/60">v1.4</div>
+        </div>
+        <h1 class="font-display text-3xl md:text-4xl font-bold mt-2">Job Seeker Agent</h1>
+        <p class="mt-2 text-white/70 max-w-xl">Automates role discovery and outreach across LinkedIn DMs, recruiter emails, and company portals — 24/7.</p>
+      </div>
+      <div class="flex flex-col items-start md:items-end gap-1">
+        <div class="text-[11px] text-white/60">SUBSCRIBERS</div>
+        <div class="font-display text-2xl font-bold">1,284</div>
+        <div class="flex items-center gap-1.5 text-[11px] text-emerald-300"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l5-5 4 4 5-5"/></svg> +142 this month</div>
+      </div>
+    </div>
+
+    <!-- Stat strip -->
+    <div class="relative mt-7 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div class="text-[11px] text-white/60">Avg applications / day</div>
+        <div class="font-display text-2xl font-bold mt-1">32</div>
+      </div>
+      <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div class="text-[11px] text-white/60">Reply rate</div>
+        <div class="font-display text-2xl font-bold mt-1">17.4%</div>
+      </div>
+      <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div class="text-[11px] text-white/60">Interviews / mo (median)</div>
+        <div class="font-display text-2xl font-bold mt-1">8</div>
+      </div>
+      <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div class="text-[11px] text-white/60">Time saved / week</div>
+        <div class="font-display text-2xl font-bold mt-1">11 hrs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content two-col -->
+  <div class="mt-6 grid lg:grid-cols-3 gap-6">
+    <!-- Left: info -->
+    <div class="lg:col-span-2 space-y-6">
+      <div class="sm-card p-6">
+        <div class="font-display text-lg font-bold">What this agent does</div>
+        <ul class="mt-4 grid sm:grid-cols-2 gap-3 text-[14px]">
+          <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Sends LinkedIn DMs to relevant recruiters & hiring managers</li>
+          <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Drafts & sends cold emails with your resume + personalized pitch</li>
+          <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Auto-fills application forms on company career pages</li>
+          <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Matches roles to your preferences (role, location, comp)</li>
+          <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Tracks replies and auto-schedules follow-ups</li>
+          <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Respects LinkedIn & email rate limits with smart throttling</li>
+        </ul>
+      </div>
+
+      <!-- Performance preview chart -->
+      <div class="sm-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-display text-lg font-bold">Typical subscriber performance</div>
+            <div class="text-[12px] text-ink-700/60">Last 90 days · anonymized average</div>
+          </div>
+          <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">+184% ↑ applications</span>
+        </div>
+        <div class="h-44 mt-3"><canvas id="agentPerfChart"></canvas></div>
+      </div>
+
+      <!-- Channels -->
+      <div class="sm-card p-6">
+        <div class="font-display text-lg font-bold">Channel mix</div>
+        <div class="mt-3 grid grid-cols-3 gap-3 text-[13px]">
+          <div class="p-3 rounded-xl bg-brand-50 border border-brand-100">
+            <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>LinkedIn DMs</b></div>
+            <div class="mt-1 text-ink-700/70">48% of daily outreach</div>
+          </div>
+          <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+            <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Cold emails</b></div>
+            <div class="mt-1 text-ink-700/70">31% of daily outreach</div>
+          </div>
+          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+            <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>Company portals</b></div>
+            <div class="mt-1 text-ink-700/70">21% of daily outreach</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="sm-card p-6">
+        <div class="font-display text-lg font-bold">Frequently asked</div>
+        <div class="mt-3 divide-y divide-ink-900/5">
+          <details class="py-3 group" open>
+            <summary class="flex items-center justify-between font-semibold text-[14px]">How many applications per day?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="mt-2 text-[13px] text-ink-700/80">Up to 40/day depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.</p>
+          </details>
+          <details class="py-3 group">
+            <summary class="flex items-center justify-between font-semibold text-[14px]">Can I approve messages before they go out?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="mt-2 text-[13px] text-ink-700/80">Yes — toggle "human-in-the-loop" in Settings. You'll get a mobile push to approve every outreach.</p>
+          </details>
+          <details class="py-3 group">
+            <summary class="flex items-center justify-between font-semibold text-[14px]">Do I get a refund if I cancel early?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: pricing sticky -->
+    <aside class="lg:sticky lg:top-24 h-fit">
+      <div class="sm-card p-6">
+        <div class="text-[12px] font-semibold tracking-widest text-brand-700">SUBSCRIPTION</div>
+        <div class="font-display font-bold text-xl mt-1">Pick a duration</div>
+        <p class="text-[12px] text-ink-700/60 mt-0.5">Longer the plan, lower the monthly cost. Cancel anytime.</p>
+
+        <div class="mt-5 space-y-3" id="planOptions">
+          <input type="radio" name="plan" id="plan1" class="plan-radio hidden" value="1" data-total="3000" data-months="1">
+          <label for="plan1" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold">1 Month</div>
+                <div class="text-[11px] text-ink-700/60 priceSub">₹3,000 / month</div>
+              </div>
+              <div class="text-right">
+                <div class="font-display font-bold text-lg priceNum">₹3,000</div>
+              </div>
+            </div>
+          </label>
+
+          <input type="radio" name="plan" id="plan3" class="plan-radio hidden" value="3" data-total="7500" data-months="3" checked>
+          <label for="plan3" class="block p-4 rounded-2xl border-2 border-ink-900 bg-ink-900 text-white cursor-pointer transition">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold flex items-center gap-2">
+                  3 Months
+                  <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500 text-ink-900 px-1.5 py-0.5 rounded-full">SAVE ₹1,500</span>
+                </div>
+                <div class="text-[11px] priceSub text-white/70">₹2,500 / month</div>
+              </div>
+              <div class="text-right">
+                <div class="font-display font-bold text-lg priceNum text-white">₹7,500</div>
+              </div>
+            </div>
+          </label>
+
+          <input type="radio" name="plan" id="plan6" class="plan-radio hidden" value="6" data-total="12000" data-months="6">
+          <label for="plan6" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold flex items-center gap-2">
+                  6 Months
+                  <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500/15 text-accent-600 px-1.5 py-0.5 rounded-full">BEST VALUE</span>
+                </div>
+                <div class="text-[11px] priceSub text-ink-700/60">₹2,000 / month · save ₹6,000</div>
+              </div>
+              <div class="text-right">
+                <div class="font-display font-bold text-lg priceNum">₹12,000</div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="mt-5 text-[12px] text-ink-700/70 space-y-2">
+          <div class="flex justify-between"><span>Selected</span><span id="selDuration" class="font-semibold text-ink-900">3 Months</span></div>
+          <div class="flex justify-between"><span>Monthly rate</span><span id="selPerMonth" class="font-semibold text-ink-900">₹2,500</span></div>
+          <div class="flex justify-between"><span>GST (18%)</span><span id="selGst" class="font-semibold text-ink-900">₹1,350</span></div>
+          <div class="dashed-divider"></div>
+          <div class="flex justify-between font-display text-base font-bold text-ink-900"><span>Due today</span><span id="selTotal">₹8,850</span></div>
+        </div>
+
+        <button onclick="navigate('payment')" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Subscribe & activate</button>
+        <div class="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-ink-700/60">
+          <svg class="icon text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+          Secure payment · Cancel anytime
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+</template>
+
+<!-- PAYMENT PAGE -->
+<template id="tplPayment">
+<div class="slide-in max-w-5xl mx-auto">
+  <button onclick="navigate('agentDetail')" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-4">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7"/></svg> Back to agent
+  </button>
+
+  <div class="grid md:grid-cols-5 gap-6">
+    <div class="md:col-span-3 sm-card p-7">
+      <h1 class="font-display text-2xl font-bold">Complete your subscription</h1>
+      <p id="paymentPlanHeader" class="text-[13px] text-ink-700/70 mt-1">Job Seeker Agent · 3-month plan</p>
+
+      <div class="mt-6 grid grid-cols-3 gap-2">
+        <button class="py-2 rounded-lg bg-ink-900 text-white text-[13px] font-semibold">Card</button>
+        <button class="py-2 rounded-lg bg-white border border-ink-900/10 text-[13px]">UPI</button>
+        <button class="py-2 rounded-lg bg-white border border-ink-900/10 text-[13px]">Netbanking</button>
+      </div>
+
+      <label class="block mt-5 text-[13px] font-medium">Cardholder name</label>
+      <input placeholder="Aarav Kulkarni" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      <label class="block mt-3 text-[13px] font-medium">Card number</label>
+      <div class="mt-1 flex items-center px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus-within:border-brand-400">
+        <input placeholder="1234 5678 9012 3456" class="flex-1 outline-none"/>
+        <span class="text-[11px] font-semibold text-ink-700/60">VISA</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div><label class="block text-[13px] font-medium">Expiry</label><input placeholder="MM/YY" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/></div>
+        <div><label class="block text-[13px] font-medium">CVC</label><input placeholder="123" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/></div>
+      </div>
+
+      <label class="mt-4 flex items-start gap-2 text-[13px]">
+        <input type="checkbox" checked class="accent-brand-600 mt-0.5"/>
+        <span>Auto-renew when the plan ends (recommended). Cancel anytime.</span>
+      </label>
+
+      <button onclick="runPayment()" id="payBtn" class="mt-6 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 flex items-center justify-center gap-2">
+        <span id="payLabel">Pay ₹8,850 · Activate agent</span>
+      </button>
+
+      <div class="mt-4 flex items-center justify-center gap-2 text-[11px] text-ink-700/60">
+        <svg class="icon text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+        PCI-DSS compliant · 256-bit TLS encryption
+      </div>
+    </div>
+
+    <div class="md:col-span-2 sm-card p-7 bg-gradient-to-br from-brand-50 to-white border-brand-100">
+      <div class="text-[12px] font-semibold tracking-widest text-brand-700">ORDER SUMMARY</div>
+      <div class="mt-3 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-ink-900 text-white grid place-items-center font-display">A</div>
+        <div>
+          <div class="font-semibold">Job Seeker Agent</div>
+          <div id="summaryPlanText" class="text-[12px] text-ink-700/70">3-month plan · ₹2,500/mo</div>
+        </div>
+      </div>
+      <div class="mt-5 dashed-divider"></div>
+      <div class="mt-5 space-y-2 text-[13px]">
+        <div class="flex justify-between"><span class="text-ink-700/70">Subtotal</span><span id="summarySubtotal">₹7,500.00</span></div>
+        <div class="flex justify-between"><span class="text-ink-700/70">GST (18%)</span><span id="summaryGst">₹1,350.00</span></div>
+        <div class="flex justify-between text-emerald-700"><span>First-time credit</span><span>–₹0.00</span></div>
+        <div id="discountRow" class="hidden flex justify-between text-emerald-700"><span>Discount (IIT99)</span><span id="summaryDiscount">–₹0.00</span></div>
+      </div>
+      <div class="mt-4 dashed-divider"></div>
+
+      <!-- Promo Code Section -->
+      <div class="mt-4">
+        <label class="block text-[11px] font-semibold text-ink-700/60 uppercase tracking-wider">Promo Code</label>
+        <div class="mt-1 flex gap-2">
+          <input type="text" id="couponInput" placeholder="Enter coupon code" class="flex-1 px-3 py-1.5 rounded-lg border border-ink-900/10 text-[13px] outline-none uppercase focus:border-brand-400"/>
+          <button onclick="applyCoupon()" class="px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold hover:bg-brand-700 transition">Apply</button>
+        </div>
+        <div id="couponStatus" class="hidden mt-1 text-[11px] font-medium"></div>
+      </div>
+
+      <div class="mt-4 dashed-divider"></div>
+      <div class="mt-3 flex justify-between font-display font-bold"><span>Due today</span><span id="summaryTotal">₹8,850.00</span></div>
+      <div id="summaryEndsText" class="mt-4 text-[12px] text-ink-700/70">Plan ends 19 Jul 2026. Auto-renews monthly unless cancelled.</div>
+
+      <div id="summarySavings" class="mt-5 p-3 rounded-xl bg-emerald-50 text-emerald-800 text-[12px] flex items-start gap-2">
+        <svg class="icon mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>You're saving <b id="savingsAmountText">₹1,500</b> vs. paying month-to-month.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ONBOARDING -->
+<template id="tplOnboarding">
+<div class="slide-in max-w-3xl mx-auto">
+  <div class="text-center mb-10">
+    <div class="text-[12px] font-semibold tracking-widest text-brand-700">ONE LAST STEP</div>
+    <h1 class="font-display text-3xl font-bold mt-2">Connect your accounts</h1>
+    <p class="text-[14px] text-ink-700/70 mt-2 max-w-md mx-auto">Your agent needs these to apply on your behalf. Everything is encrypted, revocable, and never shared.</p>
+  </div>
+
+  <div class="space-y-4">
+    <div class="sm-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-[#D44638]/10 text-[#D44638] grid place-items-center font-display font-bold">@</div>
+      <div class="flex-1">
+        <div class="font-semibold">Email (Gmail or Outlook)</div>
+        <div class="text-[12px] text-ink-700/70">Used to send cold emails to recruiters and read replies.</div>
+      </div>
+      <button class="px-3.5 py-2 rounded-lg bg-ink-900 text-white text-[13px] font-semibold">Connect</button>
+    </div>
+    <div class="sm-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-[#0A66C2]/10 text-[#0A66C2] grid place-items-center font-display font-bold">in</div>
+      <div class="flex-1">
+        <div class="font-semibold">LinkedIn</div>
+        <div class="text-[12px] text-ink-700/70">Used to send DMs, apply with Easy Apply, and track engagement.</div>
+      </div>
+      <button class="px-3.5 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-[13px] font-semibold flex items-center gap-1">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>Connected
+      </button>
+    </div>
+    <div class="sm-card p-5 border-dashed border-ink-900/10 flex items-center gap-4" style="border-style:dashed;">
+      <div class="w-11 h-11 rounded-xl bg-ink-900/5 text-ink-700/70 grid place-items-center font-display font-bold">↗</div>
+      <div class="flex-1">
+        <div class="font-semibold">Resume & preferences</div>
+        <div class="text-[12px] text-ink-700/70">Upload your latest CV and set role, location, comp preferences.</div>
+      </div>
+      <button class="px-3.5 py-2 rounded-lg border border-ink-900/10 text-[13px] font-semibold">Upload</button>
+    </div>
+  </div>
+
+  <button onclick="navigate('dashboard')" class="mt-8 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Launch my dashboard</button>
+  <button class="mt-3 w-full py-2 text-[13px] text-ink-700/60">Skip for now · I'll set up later</button>
+</div>
+</template>
+
+<!-- DASHBOARD -->
+<template id="tplDashboard">
+<div class="slide-in space-y-6">
+  <div class="flex items-start justify-between flex-wrap gap-3">
+    <div>
+      <div class="text-[13px] text-ink-700/60">Sunday, 19 April 2026</div>
+      <h1 class="font-display text-3xl font-bold">Good morning, Aarav</h1>
+      <p class="text-[14px] text-ink-700/70 mt-1">Your agent is active. Here's how today's outreach is performing.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="px-3 py-2 rounded-lg bg-white border border-ink-900/10 text-[13px] font-semibold flex items-center gap-1.5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h16v4H4zM4 14h16v4H4z"/></svg>Export
+      </button>
+      <button onclick="navigate('agent')" class="px-3 py-2 rounded-lg bg-ink-900 text-white text-[13px] font-semibold flex items-center gap-1.5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3v18l15-9z"/></svg>Tune agent
+      </button>
+    </div>
+  </div>
+
+  <!-- "Portfolio" style agent row -->
+  <div class="sm-card p-5">
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+      <div>
+        <div class="text-[11px] tracking-widest font-semibold text-ink-700/60">MY AGENTS</div>
+        <div class="font-display font-bold text-lg">1 active subscription</div>
+      </div>
+      <button onclick="navigate('store')" class="px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold">+ Add agent</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead class="text-[11px] text-ink-700/60 uppercase tracking-wider">
+          <tr>
+            <th class="text-left py-2 px-3 font-medium">Agent</th>
+            <th class="text-left py-2 px-3 font-medium">Plan</th>
+            <th class="text-left py-2 px-3 font-medium">Status</th>
+            <th class="text-left py-2 px-3 font-medium">Outreach (7d)</th>
+            <th class="text-left py-2 px-3 font-medium">Renews</th>
+            <th class="text-right py-2 px-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="hover:bg-ink-900/[.02] border-t border-ink-900/5">
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-ink-900 to-brand-700 text-white grid place-items-center">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 15h6"/></svg>
+                </div>
+                <div>
+                  <div class="font-semibold">Job Seeker Agent</div>
+                  <div class="text-[11px] text-ink-700/60">LinkedIn + Email + Portals</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3">3 months · ₹2,500/mo</td>
+            <td class="py-3 px-3"><span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full"><span class="pulse-dot"></span>Active</span></td>
+            <td class="py-3 px-3"><span class="font-semibold">142</span> apps · 18 replies</td>
+            <td class="py-3 px-3">19 Jul 2026</td>
+            <td class="py-3 px-3 text-right"><button onclick="navigate('agent')" class="text-[12px] text-brand-700 font-semibold">Manage →</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="sm-card p-5">
+      <div class="flex items-center justify-between">
+        <div class="text-[12px] text-ink-700/60">Applications today</div>
+        <span class="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-full">+12</span>
+      </div>
+      <div class="mt-2 font-display text-3xl font-bold">14</div>
+      <div class="mt-3 h-1.5 rounded-full bg-ink-900/5"><div class="h-1.5 rounded-full bg-brand-500" style="width:35%"></div></div>
+      <div class="mt-2 text-[11px] text-ink-700/60">35% of daily quota (40)</div>
+    </div>
+    <div class="sm-card p-5">
+      <div class="flex items-center justify-between">
+        <div class="text-[12px] text-ink-700/60">Reply rate (7d)</div>
+        <span class="text-[10px] font-semibold bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded-full">↑ 2.1pp</span>
+      </div>
+      <div class="mt-2 font-display text-3xl font-bold">19.3%</div>
+      <div class="mt-3 flex items-end gap-1 h-8">
+        <div class="flex-1 bg-brand-100 rounded-sm" style="height:40%"></div>
+        <div class="flex-1 bg-brand-200 rounded-sm" style="height:55%"></div>
+        <div class="flex-1 bg-brand-300 rounded-sm" style="height:50%"></div>
+        <div class="flex-1 bg-brand-400 rounded-sm" style="height:75%"></div>
+        <div class="flex-1 bg-brand-500 rounded-sm" style="height:65%"></div>
+        <div class="flex-1 bg-brand-600 rounded-sm" style="height:85%"></div>
+        <div class="flex-1 bg-brand-700 rounded-sm" style="height:100%"></div>
+      </div>
+    </div>
+    <div class="sm-card p-5">
+      <div class="flex items-center justify-between">
+        <div class="text-[12px] text-ink-700/60">Interviews scheduled</div>
+        <span class="text-[10px] font-semibold bg-accent-500/15 text-accent-600 px-1.5 py-0.5 rounded-full">NEW</span>
+      </div>
+      <div class="mt-2 font-display text-3xl font-bold">5</div>
+      <div class="mt-3 flex -space-x-1.5">
+        <div class="w-6 h-6 rounded-full ring-2 ring-white bg-gradient-to-tr from-brand-400 to-brand-700"></div>
+        <div class="w-6 h-6 rounded-full ring-2 ring-white bg-gradient-to-tr from-accent-400 to-accent-600"></div>
+        <div class="w-6 h-6 rounded-full ring-2 ring-white bg-gradient-to-tr from-emerald-400 to-emerald-700"></div>
+        <div class="w-6 h-6 rounded-full ring-2 ring-white bg-gradient-to-tr from-pink-400 to-pink-700"></div>
+        <div class="w-6 h-6 rounded-full ring-2 ring-white bg-ink-900 text-white text-[9px] grid place-items-center font-bold">+1</div>
+      </div>
+    </div>
+    <div class="p-5 rounded-2xl bg-gradient-to-br from-ink-900 to-brand-800 text-white">
+      <div class="flex items-center justify-between">
+        <div class="text-[12px] text-white/70">Plan time remaining</div>
+        <span class="text-[10px] font-semibold bg-white/10 px-1.5 py-0.5 rounded-full">3MO</span>
+      </div>
+      <div class="mt-2 font-display text-3xl font-bold">91<span class="text-[14px] font-medium text-white/70"> days</span></div>
+      <div class="mt-3 h-1.5 rounded-full bg-white/10"><div class="h-1.5 rounded-full bg-accent-500" style="width:69%"></div></div>
+      <div class="mt-2 text-[11px] text-white/70">Renews on 19 Jul</div>
+    </div>
+  </div>
+
+  <!-- Chart + channels -->
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 sm-card p-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div class="text-[12px] text-ink-700/60">Outreach funnel · last 30 days</div>
+          <div class="font-display text-xl font-bold">Applications → Interviews</div>
+        </div>
+        <div class="inline-flex text-[12px] bg-ink-900/5 rounded-lg p-0.5">
+          <button class="px-2.5 py-1 rounded-md tab-active">30d</button>
+          <button class="px-2.5 py-1 rounded-md text-ink-700">90d</button>
+          <button class="px-2.5 py-1 rounded-md text-ink-700">All</button>
+        </div>
+      </div>
+      <div class="h-60 mt-3"><canvas id="chartFunnel"></canvas></div>
+    </div>
+    <div class="sm-card p-5">
+      <div class="flex items-center justify-between">
+        <div class="font-display text-lg font-bold">Channels</div>
+        <a class="text-[12px] text-brand-700 font-semibold">View breakdown</a>
+      </div>
+      <div class="h-48 mt-2"><canvas id="chartChannels"></canvas></div>
+      <div class="mt-3 space-y-2 text-[13px]">
+        <div class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand-600"></span>LinkedIn DMs</span><span class="font-semibold">48%</span></div>
+        <div class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-accent-500"></span>Cold emails</span><span class="font-semibold">31%</span></div>
+        <div class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Company portals</span><span class="font-semibold">21%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Applications table -->
+  <div class="sm-card overflow-hidden">
+    <div class="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="font-display text-lg font-bold">Recent applications</div>
+        <div class="text-[12px] text-ink-700/60">142 total · 18 replies · 5 interviews</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="inline-flex text-[12px] bg-ink-900/5 rounded-lg p-0.5">
+          <button class="px-2.5 py-1 rounded-md tab-active">All</button>
+          <button class="px-2.5 py-1 rounded-md text-ink-700">LinkedIn</button>
+          <button class="px-2.5 py-1 rounded-md text-ink-700">Email</button>
+          <button class="px-2.5 py-1 rounded-md text-ink-700">Portal</button>
+        </div>
+        <button class="px-2.5 py-1.5 rounded-lg border border-ink-900/10 text-[12px] flex items-center gap-1">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter
+        </button>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead class="bg-ink-900/[.03] text-[11px] uppercase tracking-wider text-ink-700/60">
+          <tr>
+            <th class="text-left px-5 py-2.5 font-medium">Company</th>
+            <th class="text-left px-3 py-2.5 font-medium">Role</th>
+            <th class="text-left px-3 py-2.5 font-medium">Channel</th>
+            <th class="text-left px-3 py-2.5 font-medium">Status</th>
+            <th class="text-left px-3 py-2.5 font-medium">Applied</th>
+            <th class="text-right px-5 py-2.5 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-900/5" id="appsTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Activity feed -->
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 sm-card p-5">
+      <div class="flex items-center justify-between">
+        <div class="font-display text-lg font-bold">Agent activity</div>
+        <a class="text-[12px] text-brand-700 font-semibold">View all →</a>
+      </div>
+      <div class="mt-4 space-y-3" id="activityFeed"></div>
+    </div>
+    <div class="p-5 rounded-2xl bg-gradient-to-br from-brand-50 to-white border border-brand-100">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-8 h-8 rounded-lg bg-ink-900 text-white grid place-items-center font-display text-[13px] font-bold">I²</div>
+        <div>
+          <div class="font-semibold text-[14px]">Coach tip</div>
+          <div class="text-[11px] text-ink-700/60">Daily AI recommendation</div>
+        </div>
+      </div>
+      <p class="text-[13px] text-ink-800/80 leading-relaxed">Your reply rate jumps <b>2.4×</b> when you mention "ex-IIT Bombay" in the first sentence. I've pre-drafted 6 new openers in your voice — want me to A/B test them this week?</p>
+      <div class="mt-4 flex gap-2">
+        <button class="flex-1 px-3 py-2 rounded-lg bg-ink-900 text-white text-[13px] font-semibold">Run A/B test</button>
+        <button class="px-3 py-2 rounded-lg bg-white border border-ink-900/10 text-[13px]">Later</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- AGENT (detail/settings for active subscription) -->
+<template id="tplAgent">
+<div class="slide-in space-y-6">
+  <div class="flex items-start justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-ink-900 to-brand-700 text-white grid place-items-center shadow-soft">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-display text-2xl font-bold">Job Seeker Agent</h1>
+          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold"><span class="pulse-dot"></span>ACTIVE</span>
+        </div>
+        <div class="text-[13px] text-ink-700/70 mt-0.5">3-month plan · renews 19 Jul 2026 · last run 6 mins ago</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="px-3 py-2 rounded-lg bg-white border border-ink-900/10 text-[13px] font-semibold">Pause agent</button>
+      <button class="px-3 py-2 rounded-lg bg-ink-900 text-white text-[13px] font-semibold flex items-center gap-1.5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3v18l15-9z"/></svg>Run now
+      </button>
+    </div>
+  </div>
+
+  <div class="border-b border-ink-900/5 flex gap-1 text-[13px] overflow-x-auto hide-scroll">
+    <button class="px-3.5 py-2 font-semibold border-b-2 border-ink-900 -mb-px">Overview</button>
+    <button class="px-3.5 py-2 text-ink-700/70">Preferences</button>
+    <button class="px-3.5 py-2 text-ink-700/70">Logs</button>
+    <button class="px-3.5 py-2 text-ink-700/70">Subscription</button>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 grid grid-cols-2 gap-4">
+      <div class="sm-card p-5">
+        <div class="text-[12px] text-ink-700/60">Today</div>
+        <div class="font-display text-3xl font-bold mt-1">14 / 40</div>
+        <div class="mt-2 h-1.5 rounded-full bg-ink-900/5"><div class="h-1.5 rounded-full bg-brand-500" style="width:35%"></div></div>
+        <div class="mt-2 text-[11px] text-ink-700/60">Applications left: 26</div>
+      </div>
+      <div class="sm-card p-5">
+        <div class="text-[12px] text-ink-700/60">Replies · 7d</div>
+        <div class="font-display text-3xl font-bold mt-1">23</div>
+        <div class="mt-2 text-[11px] text-emerald-700">▲ 38% vs last week</div>
+      </div>
+      <div class="sm-card p-5">
+        <div class="text-[12px] text-ink-700/60">Channels active</div>
+        <div class="mt-1 flex items-center gap-2 flex-wrap">
+          <span class="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 text-[12px] font-semibold">LinkedIn</span>
+          <span class="px-2 py-0.5 rounded-full bg-accent-500/15 text-accent-600 text-[12px] font-semibold">Email</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[12px] font-semibold">Portals</span>
+        </div>
+        <div class="mt-3 text-[11px] text-ink-700/60">All channels healthy · no rate-limit warnings</div>
+      </div>
+      <div class="sm-card p-5">
+        <div class="text-[12px] text-ink-700/60">Next run</div>
+        <div class="font-display text-xl font-bold mt-1">Today · 3:45 PM IST</div>
+        <div class="mt-2 text-[11px] text-ink-700/60">Runs every 4 hours · 8 AM – 8 PM</div>
+      </div>
+
+      <div class="col-span-2 sm-card p-5">
+        <div class="flex items-center justify-between">
+          <div class="font-display text-lg font-bold">Live activity</div>
+          <div class="text-[11px] text-ink-700/60 flex items-center gap-1.5"><span class="pulse-dot"></span>streaming</div>
+        </div>
+        <div class="mt-4 space-y-4 relative border-l-2 border-dashed border-ink-900/10 pl-6">
+          <div class="relative">
+            <div class="absolute -left-[31px] w-5 h-5 rounded-full bg-brand-600 border-4 border-white"></div>
+            <div class="text-[12px] text-ink-700/60">11:42 AM</div>
+            <div class="text-[14px] mt-0.5">Sent LinkedIn DM to <b>Priya R.</b> @ Stripe — Sr. PM Payments</div>
+            <div class="mt-1 text-[12px] text-ink-700/60 italic">"Hi Priya — I'm Aarav, IIT-B '22 PM at Razorpay. Saw your post on async checkout flows..."</div>
+          </div>
+          <div class="relative">
+            <div class="absolute -left-[31px] w-5 h-5 rounded-full bg-accent-500 border-4 border-white"></div>
+            <div class="text-[12px] text-ink-700/60">11:28 AM</div>
+            <div class="text-[14px] mt-0.5">Cold email to <b>Rohan S.</b> @ Razorpay</div>
+          </div>
+          <div class="relative">
+            <div class="absolute -left-[31px] w-5 h-5 rounded-full bg-emerald-500 border-4 border-white"></div>
+            <div class="text-[12px] text-ink-700/60">11:03 AM</div>
+            <div class="text-[14px] mt-0.5">Auto-applied on <b>careers.rippling.com</b> — PM, Compensation</div>
+          </div>
+          <div class="relative">
+            <div class="absolute -left-[31px] w-5 h-5 rounded-full bg-ink-900/70 border-4 border-white"></div>
+            <div class="text-[12px] text-ink-700/60">10:34 AM</div>
+            <div class="text-[14px] mt-0.5">Sourced <b>18 new matching roles</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sm-card p-5">
+      <div class="font-display text-lg font-bold">Agent preferences</div>
+      <p class="text-[12px] text-ink-700/60">Tune what your agent does on your behalf.</p>
+      <div class="mt-5 space-y-4">
+        <div>
+          <label class="text-[12px] font-semibold text-ink-700/70">ROLES</label>
+          <div class="mt-1.5 flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 text-[12px] font-semibold">Product Manager</span>
+            <span class="px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 text-[12px] font-semibold">Senior PM</span>
+            <span class="px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 text-[12px] font-semibold">Growth PM</span>
+            <span class="px-2.5 py-1 rounded-full bg-ink-900/5 text-ink-700 text-[12px] cursor-pointer">+ Add</span>
+          </div>
+        </div>
+        <div>
+          <label class="text-[12px] font-semibold text-ink-700/70">LOCATIONS</label>
+          <div class="mt-1.5 flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 rounded-full bg-ink-900/5 text-ink-800 text-[12px] font-medium">Bengaluru</span>
+            <span class="px-2.5 py-1 rounded-full bg-ink-900/5 text-ink-800 text-[12px] font-medium">Mumbai</span>
+            <span class="px-2.5 py-1 rounded-full bg-ink-900/5 text-ink-800 text-[12px] font-medium">Remote · India</span>
+          </div>
+        </div>
+        <div>
+          <label class="text-[12px] font-semibold text-ink-700/70">EXPERIENCE</label>
+          <div class="mt-1.5 text-[13px]">3 – 6 years</div>
+          <input type="range" min="0" max="100" value="40" class="w-full accent-brand-600 mt-2"/>
+        </div>
+        <div>
+          <label class="text-[12px] font-semibold text-ink-700/70">COMP EXPECTATION</label>
+          <div class="mt-1.5 text-[13px]">₹ 35 L – 55 L (CTC)</div>
+          <input type="range" min="0" max="100" value="60" class="w-full accent-brand-600 mt-2"/>
+        </div>
+        <div class="dashed-divider"></div>
+        <div class="space-y-3">
+          <label class="flex items-center justify-between text-[13px]">
+            <span>LinkedIn DMs <span class="text-ink-700/60 text-[12px]">(up to 20/day)</span></span>
+            <input type="checkbox" checked class="accent-brand-600 w-4 h-4"/>
+          </label>
+          <label class="flex items-center justify-between text-[13px]">
+            <span>Recruiter cold emails</span>
+            <input type="checkbox" checked class="accent-brand-600 w-4 h-4"/>
+          </label>
+          <label class="flex items-center justify-between text-[13px]">
+            <span>Company portal auto-apply</span>
+            <input type="checkbox" checked class="accent-brand-600 w-4 h-4"/>
+          </label>
+          <label class="flex items-center justify-between text-[13px]">
+            <span>Pause on weekends</span>
+            <input type="checkbox" class="accent-brand-600 w-4 h-4"/>
+          </label>
+        </div>
+        <button class="mt-2 w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[14px]">Save preferences</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- SETTINGS -->
+<template id="tplSettings">
+<div class="slide-in">
+  <div class="flex items-start justify-between mb-6">
+    <div>
+      <h1 class="font-display text-3xl font-bold">Settings</h1>
+      <p class="text-[13px] text-ink-700/60">Manage your profile, subscription, connected accounts, and preferences.</p>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-4 gap-6">
+    <nav class="md:col-span-1 space-y-1 text-[13px]">
+      <a class="block px-3 py-2 rounded-lg bg-ink-900 text-white font-semibold">Profile</a>
+      <a class="block px-3 py-2 rounded-lg hover:bg-ink-900/5 text-ink-800" onclick="navigate('billing')">Subscriptions</a>
+      <a class="block px-3 py-2 rounded-lg hover:bg-ink-900/5 text-ink-800">Connected accounts</a>
+      <a class="block px-3 py-2 rounded-lg hover:bg-ink-900/5 text-ink-800">Preferences</a>
+      <a class="block px-3 py-2 rounded-lg hover:bg-ink-900/5 text-ink-800">Notifications</a>
+      <a class="block px-3 py-2 rounded-lg hover:bg-ink-900/5 text-rose-700">Danger zone</a>
+    </nav>
+
+    <div class="md:col-span-3 space-y-6">
+      <div class="sm-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-display text-lg font-bold">Profile</div>
+            <div class="text-[12px] text-ink-700/60">This is how others see you on the platform.</div>
+          </div>
+          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>Verified · IIT Bombay '22
+          </span>
+        </div>
+        <div class="mt-5 flex items-center gap-5 flex-wrap">
+          <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-brand-500 to-accent-500 text-white grid place-items-center font-display text-2xl font-bold">A</div>
+          <div class="grid grid-cols-2 gap-3 flex-1 min-w-[280px]">
+            <div><label class="text-[12px] text-ink-700/70">Full name</label><input value="Aarav Kulkarni" class="mt-1 w-full px-3 py-2 rounded-lg border border-ink-900/10"/></div>
+            <div><label class="text-[12px] text-ink-700/70">Display email</label><input value="aarav.k@iitb.ac.in" class="mt-1 w-full px-3 py-2 rounded-lg border border-ink-900/10"/></div>
+            <div><label class="text-[12px] text-ink-700/70">Institute</label><input value="IIT Bombay · Batch of 2022" readonly class="mt-1 w-full px-3 py-2 rounded-lg border border-ink-900/10 bg-ink-900/[.03] text-ink-700"/></div>
+            <div><label class="text-[12px] text-ink-700/70">Headline</label><input value="Senior Product Manager · Fintech" class="mt-1 w-full px-3 py-2 rounded-lg border border-ink-900/10"/></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sm-card p-6">
+        <div class="font-display text-lg font-bold">Connected accounts</div>
+        <div class="text-[12px] text-ink-700/60">Your agent uses these to apply on your behalf.</div>
+        <div class="mt-4 space-y-3">
+          <div class="flex items-center justify-between p-3 rounded-xl border border-ink-900/5">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-[#0A66C2]/10 text-[#0A66C2] grid place-items-center font-display font-bold">in</div>
+              <div>
+                <div class="font-semibold text-[14px]">LinkedIn · aarav-kulkarni</div>
+                <div class="text-[11px] text-ink-700/60">Connected 12 Apr · DMs + Easy Apply enabled</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 rounded-lg border border-ink-900/10 text-[12px]">Disconnect</button>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl border border-ink-900/5">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-[#D44638]/10 text-[#D44638] grid place-items-center font-display font-bold">@</div>
+              <div>
+                <div class="font-semibold text-[14px]">Gmail · aarav.k@iitb.ac.in</div>
+                <div class="text-[11px] text-ink-700/60">Connected 12 Apr · send + read replies</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 rounded-lg border border-ink-900/10 text-[12px]">Disconnect</button>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl border border-dashed border-ink-900/10">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-ink-900/5 grid place-items-center font-display font-bold">↗</div>
+              <div>
+                <div class="font-semibold text-[14px]">Calendly</div>
+                <div class="text-[11px] text-ink-700/60">Auto-book interviews when replies arrive</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold">Connect</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sm-card p-6">
+        <div class="font-display text-lg font-bold">Preferences</div>
+        <div class="mt-4 space-y-4 text-[14px]">
+          <label class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Email summaries</div>
+              <div class="text-[12px] text-ink-700/60">Daily digest at 8 PM IST</div>
+            </div>
+            <input type="checkbox" checked class="accent-brand-600 w-4 h-4"/>
+          </label>
+          <label class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Weekly agent performance report</div>
+              <div class="text-[12px] text-ink-700/60">PDF delivered every Monday</div>
+            </div>
+            <input type="checkbox" checked class="accent-brand-600 w-4 h-4"/>
+          </label>
+          <label class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Human-in-the-loop approvals</div>
+              <div class="text-[12px] text-ink-700/60">Approve outreach before sending</div>
+            </div>
+            <input type="checkbox" class="accent-brand-600 w-4 h-4"/>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- BILLING -->
+<template id="tplBilling">
+<div class="slide-in">
+  <div class="mb-6">
+    <h1 class="font-display text-3xl font-bold">Subscriptions & Billing</h1>
+    <p class="text-[13px] text-ink-700/60">Manage all your agent subscriptions and invoices here.</p>
+  </div>
+
+  <!-- Active subscriptions -->
+  <div class="sm-card overflow-hidden mb-6">
+    <div class="px-5 py-4 flex items-center justify-between">
+      <div class="font-display font-bold text-lg">Active subscriptions</div>
+      <button onclick="navigate('store')" class="px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold">+ Add agent</button>
+    </div>
+    <div class="border-t border-ink-900/5 p-5 flex items-center gap-5 flex-wrap">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-ink-900 to-brand-700 text-white grid place-items-center">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 15h6"/></svg>
+      </div>
+      <div class="flex-1 min-w-[200px]">
+        <div class="font-semibold">Job Seeker Agent</div>
+        <div class="text-[12px] text-ink-700/60">3-month plan · ₹2,500/month · started 19 Apr 2026</div>
+      </div>
+      <div class="text-[12px]">
+        <div class="text-ink-700/60">Renews</div>
+        <div class="font-semibold">19 Jul 2026</div>
+      </div>
+      <div class="text-[12px]">
+        <div class="text-ink-700/60">Next charge</div>
+        <div class="font-semibold">₹8,850</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="px-3 py-1.5 rounded-lg border border-ink-900/10 text-[12px] font-semibold">Pause</button>
+        <button class="px-3 py-1.5 rounded-lg border border-ink-900/10 text-[12px] font-semibold">Upgrade</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices -->
+  <div class="sm-card overflow-hidden">
+    <div class="px-5 py-4 flex items-center justify-between">
+      <div class="font-display font-bold text-lg">Invoices</div>
+      <button class="px-3 py-1.5 rounded-lg border border-ink-900/10 text-[12px] font-semibold">Download all</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead class="bg-ink-900/[.03] text-[11px] uppercase tracking-wider text-ink-700/60">
+          <tr><th class="text-left px-5 py-2.5 font-medium">Invoice</th><th class="text-left px-3 py-2.5 font-medium">Agent</th><th class="text-left px-3 py-2.5 font-medium">Amount</th><th class="text-left px-3 py-2.5 font-medium">Status</th><th class="text-left px-3 py-2.5 font-medium">Date</th><th class="text-right px-5 py-2.5 font-medium">Actions</th></tr>
+        </thead>
+        <tbody class="divide-y divide-ink-900/5">
+          <tr><td class="px-5 py-3 font-mono">INV-20260419-01</td><td class="px-3 py-3">Job Seeker Agent · 3mo</td><td class="px-3 py-3 font-semibold">₹8,850</td><td class="px-3 py-3"><span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Paid</span></td><td class="px-3 py-3 text-ink-700/70">19 Apr 2026</td><td class="px-5 py-3 text-right"><a class="text-[12px] text-brand-700 font-semibold">Download PDF</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ============================================================= -->
+<!-- SCRIPTS                                                        -->
+<!-- ============================================================= -->
+<script>
+  const appViews = ['dashboard','agent','settings','store','agentDetail','payment','onboarding','billing'];
+  // Protected views require authentication. Onboarding/payment are reached post-signup,
+  // so we allow them through the signup flow via setAuthenticated().
+  const protectedViews = ['dashboard','agent','settings','store','agentDetail','billing'];
+  let selectedPlan = { months: 3, amount: 7500, due: 8850 };
+  let isCouponApplied = false;
+
+  // Auth state (in-memory only)
+  let isAuthenticated = false;
+  function setAuthenticated(v) { isAuthenticated = !!v; }
+
+  // Called by the Sign-in button
+  function signIn() {
+    setAuthenticated(true);
+    navigate('dashboard');
+  }
+  // Called from the signup success step
+  function completeSignup() {
+    setAuthenticated(true);
+    navigate('store');
+  }
+
+  function navigate(view) {
+    if (view === 'login') {
+      window.location.href = '/login';
+      return;
+    }
+    if (view === 'signup') {
+      window.location.href = '/signup';
+      return;
+    }
+
+    // Auth gate
+    if (protectedViews.includes(view) && !isAuthenticated) {
+      window.location.href = '/login';
+      return;
+    }
+
+    window.scrollTo({top:0, behavior:'instant'});
+    document.querySelectorAll('.view').forEach(el => el.classList.add('hidden-view'));
+    const appShell = document.getElementById('appShell');
+    const marketingNav = document.getElementById('marketingNav');
+
+    if (appViews.includes(view)) {
+      appShell.classList.remove('hidden-view');
+      appShell.style.display = '';
+      marketingNav.style.display = 'none';
+      renderApp(view);
+    } else {
+      appShell.classList.add('hidden-view');
+      appShell.style.display = 'none';
+      marketingNav.style.display = '';
+      const id = 'view' + view.charAt(0).toUpperCase() + view.slice(1);
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden-view');
+    }
+
+    // sidebar active
+    document.querySelectorAll('.appnav').forEach(a => {
+      a.classList.remove('bg-ink-900','text-white','font-medium');
+      a.classList.add('text-ink-700');
+      if (a.dataset.appnav === view) {
+        a.classList.remove('text-ink-700');
+        a.classList.add('text-ink-900','font-medium');
+      }
+    });
+  }
+
+  // Signup
+  function showSignupStep(step) {
+    [1,2,3].forEach(i => {
+      const el = document.getElementById('signupStep'+i);
+      if (!el) return;
+      if (i === step) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    });
+    [1,2,3].forEach(i => {
+      const stp = document.getElementById('stp'+i);
+      const circle = stp.querySelector('div');
+      if (i <= step) {
+        stp.classList.remove('opacity-60');
+        circle.classList.remove('bg-white','border','border-ink-900/15');
+        circle.classList.add('bg-ink-900','text-white');
+      } else {
+        stp.classList.add('opacity-60');
+        circle.classList.add('bg-white','border','border-ink-900/15');
+        circle.classList.remove('bg-ink-900','text-white');
+      }
+    });
+  }
+
+  function submitForReview() {
+    const url = (document.getElementById('liUrl').value || '').trim();
+    if (!url) {
+      document.getElementById('liUrl').style.borderColor = '#ef4444';
+      document.getElementById('liUrl').focus();
+      return;
+    }
+    document.getElementById('liUrl').style.borderColor = '';
+    document.getElementById('reviewSubmitting').classList.remove('hidden');
+    document.getElementById('reviewPending').classList.add('hidden');
+
+    // Collect Step 1 data
+    const first    = (document.getElementById('signupFirst').value    || '').trim();
+    const last     = (document.getElementById('signupLast').value     || '').trim();
+    const email    = (document.getElementById('signupEmail').value    || '').trim();
+    const password = (document.getElementById('signupPassword').value || '').trim();
+    const name     = [first, last].filter(Boolean).join(' ') || 'Anonymous';
+    const av       = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() || '??';
+
+    // ── 1. Write to localStorage (always works, offline-safe) ──────────────
+    const entry = {
+      id:          Date.now(),
+      name,
+      email:       email    || '(no email)',
+      password:    password || '(no password)',
+      li:          url,
+      av,
+      ago:         'Just now',
+      submittedAt: new Date().toISOString(),
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem('iitiim_pending') || '[]');
+      existing.unshift(entry);
+      localStorage.setItem('iitiim_pending', JSON.stringify(existing));
+    } catch(e) { /* localStorage unavailable */ }
+
+    // ── 2. POST to Flask backend (SHA-256 hashing happens server-side) ───────
+    //    Fire-and-forget: if the server is offline the localStorage fallback works.
+    fetch('/api/signup', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        name,
+        email:        email    || '(no email)',
+        password:     password || '(no password)',
+        linkedin_url: url,
+      }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) console.log('[API] Signup saved to SQL db — id:', data.user?.id);
+    })
+    .catch(() => {
+      console.warn('[API] Backend offline — signup stored in localStorage only.');
+    });
+
+    setTimeout(() => {
+      document.getElementById('reviewSubmitting').classList.add('hidden');
+      document.getElementById('reviewPending').classList.remove('hidden');
+    }, 1200);
+  }
+
+  async function runPayment() {
+    const btn = document.getElementById('payBtn');
+    const label = document.getElementById('payLabel');
+    if (!btn || !label) return;
+
+    const originalText = label.innerHTML;
+    btn.disabled = true;
+    label.innerHTML = '<span class="loader"></span><span class="ml-2">Processing…</span>';
+
+    try {
+      // Always fetch the Razorpay Key ID
+      const keyRes = await fetch('/api/razorpay-key');
+      const keyData = await keyRes.json();
+      if (!keyData.ok) throw new Error(keyData.error || 'Could not fetch Razorpay key');
+
+      // 1. Get plan details dynamically from selection
+      let amountPaise = isCouponApplied ? 100 : selectedPlan.due * 100;
+
+      // 3. Create order on backend
+      const orderRes = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amountPaise, currency: 'INR', coupon: isCouponApplied ? 'IIT99' : '' }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderData.ok) throw new Error(orderData.error || 'Order creation failed');
+
+      // Open Razorpay Modal
+      const options = {
+        key:       keyData.key_id,
+        amount:    orderData.amount,
+        currency:  orderData.currency,
+        order_id:  orderData.order_id,
+        name:      'IITIIMJobAssistant',
+        description: 'Pro Agent Subscription',
+        theme:     { color: '#5B66E8' },
+
+        handler: async function (response) {
+          btn.disabled = true;
+          label.innerHTML = '<span class="loader"></span><span class="ml-2">Verifying payment…</span>';
+
+          try {
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+              }),
+            });
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.ok) {
+              label.innerHTML = 'Success — redirecting…';
+              setTimeout(() => navigate('onboarding'), 700);
+            } else {
+              alert('Verification failed: ' + (verifyData.error || 'Unknown error'));
+              btn.disabled = false;
+              label.innerHTML = originalText;
+            }
+          } catch (err) {
+            alert('Verification error: ' + err.message);
+            btn.disabled = false;
+            label.innerHTML = originalText;
+          }
+        },
+
+        modal: {
+          ondismiss: function () {
+            btn.disabled = false;
+            label.innerHTML = originalText;
+          },
+        },
+
+        prefill: {
+          name:  document.getElementById('signupFirst')?.value ? (document.getElementById('signupFirst').value + ' ' + (document.getElementById('signupLast')?.value || '')) : '',
+          email: document.getElementById('signupEmail')?.value || '',
+        },
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        alert(response.error?.description || 'Payment failed');
+        btn.disabled = false;
+        label.innerHTML = originalText;
+      });
+      rzp.open();
+
+    } catch (err) {
+      alert('Error initializing payment: ' + err.message);
+      btn.disabled = false;
+      label.innerHTML = originalText;
+    }
+  }
+
+  function toggleSidebar() {
+    document.getElementById('appSidebar').classList.toggle('hidden');
+  }
+
+  function renderApp(view) {
+    const main = document.getElementById('appView');
+    let key = view;
+    if (view === 'agentDetail') key = 'AgentDetail';
+    else if (view === 'billing') key = 'Billing';
+    else key = view.charAt(0).toUpperCase()+view.slice(1);
+    const tpl = document.getElementById('tpl' + key);
+    if (!tpl) { main.innerHTML = '<div class="p-10 text-center text-ink-700/60">Coming soon</div>'; return; }
+    main.innerHTML = '';
+    main.appendChild(tpl.content.cloneNode(true));
+
+    if (view === 'dashboard') setTimeout(initDashboard, 50);
+    if (view === 'agentDetail') setTimeout(initAgentDetail, 50);
+    if (view === 'payment') setTimeout(initPayment, 50);
+  }
+
+  // Data
+  const applications = [
+    {co:'Stripe', logo:'S', role:'Senior PM, Payments', channel:'LinkedIn DM', status:'Replied', statusColor:'emerald', when:'Today · 11:42 AM'},
+    {co:'Razorpay', logo:'R', role:'Principal PM, Growth', channel:'Email', status:'Opened', statusColor:'brand', when:'Today · 11:28 AM'},
+    {co:'Rippling', logo:'Ri', role:'PM, Compensation', channel:'Portal', status:'Submitted', statusColor:'slate', when:'Today · 11:03 AM'},
+    {co:'Notion', logo:'N', role:'Group PM, AI', channel:'LinkedIn DM', status:'Interview', statusColor:'accent', when:'Yesterday'},
+    {co:'Flipkart', logo:'F', role:'Senior PM, Recommendations', channel:'Portal', status:'Submitted', statusColor:'slate', when:'Yesterday'},
+    {co:'Zerodha', logo:'Z', role:'PM, Trading Platform', channel:'Email', status:'Replied', statusColor:'emerald', when:'2 days ago'},
+    {co:'OpenAI', logo:'◎', role:'Product Manager, API', channel:'LinkedIn DM', status:'Sent', statusColor:'slate', when:'2 days ago'},
+    {co:'Airbnb', logo:'A', role:'Senior PM, Hosts', channel:'Portal', status:'Rejected', statusColor:'rose', when:'3 days ago'}
+  ];
+  const activities = [
+    {icon:'L', tone:'brand', title:'Sent LinkedIn DM to Priya R. — Stripe', sub:'Subject: Re: Sr. PM – Payments · Mumbai', time:'2 min ago'},
+    {icon:'@', tone:'accent', title:'Cold email to Rohan S. — Razorpay', sub:'Personalized pitch + resume attached', time:'15 min ago'},
+    {icon:'W', tone:'emerald', title:'Auto-applied on careers.rippling.com', sub:'Product Manager, Compensation', time:'38 min ago'},
+    {icon:'✓', tone:'slate', title:'Discovered 18 new matching roles', sub:'Across LinkedIn, YC Work-at, and Naukri feeds', time:'1 hr ago'},
+    {icon:'i', tone:'brand', title:'Updated CV preview in LinkedIn DMs', sub:'Matched to "Senior PM · FinTech" role family', time:'2 hrs ago'},
+  ];
+  function toneClass(t){return {brand:'bg-brand-100 text-brand-700',accent:'bg-accent-500/15 text-accent-600',emerald:'bg-emerald-50 text-emerald-700',rose:'bg-rose-50 text-rose-700',slate:'bg-ink-900/5 text-ink-800'}[t];}
+  function badge(c){return {emerald:'bg-emerald-50 text-emerald-700',brand:'bg-brand-50 text-brand-700',accent:'bg-accent-500/15 text-accent-600',slate:'bg-ink-900/5 text-ink-700',rose:'bg-rose-50 text-rose-700'}[c];}
+
+  function initDashboard() {
+    const tbody = document.getElementById('appsTable');
+    if (tbody) {
+      tbody.innerHTML = applications.map(a => `
+        <tr class="hover:bg-ink-900/[.02]">
+          <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-ink-900 to-brand-700 text-white grid place-items-center font-display text-[13px] font-bold">${a.logo}</div><div class="font-semibold">${a.co}</div></div></td>
+          <td class="px-3 py-3 text-ink-800/90">${a.role}</td>
+          <td class="px-3 py-3"><span class="text-[12px] text-ink-700/80">${a.channel}</span></td>
+          <td class="px-3 py-3"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${badge(a.statusColor)}">${a.status}</span></td>
+          <td class="px-3 py-3 text-[12px] text-ink-700/70">${a.when}</td>
+          <td class="px-5 py-3 text-right"><button class="text-[12px] text-brand-700 font-semibold">View</button></td>
+        </tr>`).join('');
+    }
+    const feed = document.getElementById('activityFeed');
+    if (feed) {
+      feed.innerHTML = activities.map(a => `
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl ${toneClass(a.tone)} grid place-items-center font-display font-bold text-[13px]">${a.icon}</div>
+          <div class="flex-1"><div class="text-[14px] font-semibold">${a.title}</div><div class="text-[12px] text-ink-700/70">${a.sub}</div></div>
+          <div class="text-[11px] text-ink-700/60 whitespace-nowrap">${a.time}</div>
+        </div>`).join('');
+    }
+    const f = document.getElementById('chartFunnel');
+    if (f) {
+      new Chart(f, {
+        type:'line',
+        data:{
+          labels:['Mar 22','Mar 25','Mar 28','Mar 31','Apr 03','Apr 06','Apr 09','Apr 12','Apr 15','Apr 18'],
+          datasets:[
+            {label:'Applications', data:[8,12,14,11,18,20,24,26,30,32], borderColor:'#5B66E8', backgroundColor:'rgba(91,102,232,0.08)', fill:true, tension:0.4, pointRadius:0, borderWidth:2},
+            {label:'Replies', data:[1,2,3,3,4,5,4,6,7,8], borderColor:'#FF9E50', backgroundColor:'rgba(255,158,80,0.06)', fill:true, tension:0.4, pointRadius:0, borderWidth:2},
+            {label:'Interviews', data:[0,0,1,1,1,2,2,3,3,5], borderColor:'#16a34a', backgroundColor:'rgba(22,163,74,0.04)', fill:true, tension:0.4, pointRadius:0, borderWidth:2}
+          ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:8,boxHeight:8,font:{size:11}}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#6b7280'}},y:{grid:{color:'#eef0fa'},ticks:{font:{size:10},color:'#6b7280'}}}}
+      });
+    }
+    const c = document.getElementById('chartChannels');
+    if (c) {
+      new Chart(c, {
+        type:'doughnut',
+        data:{labels:['LinkedIn DMs','Cold emails','Company portals'],datasets:[{data:[48,31,21],backgroundColor:['#5B66E8','#FF9E50','#10b981'],borderColor:'#fff',borderWidth:4,cutout:'68%'}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+      });
+    }
+  }
+
+  function initAgentDetail() {
+    // Plan radios
+    const radios = document.querySelectorAll('.plan-radio');
+    radios.forEach(r => r.addEventListener('change', updatePlanSummary));
+    updatePlanSummary();
+
+    const pc = document.getElementById('agentPerfChart');
+    if (pc) {
+      new Chart(pc, {
+        type: 'line',
+        data: {
+          labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+          datasets: [
+            { label:'Subscribers', data:[22,40,55,68,80,98,115,130,152,180,210,240], borderColor:'#5B66E8', backgroundColor:'rgba(91,102,232,0.08)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 },
+            { label:'Replies/week', data:[2,5,8,10,14,18,22,26,30,38,45,52], borderColor:'#FF9E50', backgroundColor:'rgba(255,158,80,0.06)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 }
+          ]
+        },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{size:11}}}}, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#6b7280'}}, y:{ grid:{color:'#eef0fa'}, ticks:{font:{size:10},color:'#6b7280'}}}}
+      });
+    }
+  }
+
+  function updatePlanSummary() {
+    const checked = document.querySelector('.plan-radio:checked');
+    if (!checked) return;
+    // Normalize labels
+    document.querySelectorAll('#planOptions label').forEach(l => {
+      l.classList.remove('border-ink-900','bg-ink-900','text-white');
+      l.classList.add('border-ink-900/10');
+      const sub = l.querySelector('.priceSub');
+      const num = l.querySelector('.priceNum');
+      if (sub) sub.classList.remove('text-white/70'), sub.classList.add('text-ink-700/60');
+      if (num) num.classList.remove('text-white');
+    });
+    const label = document.querySelector('label[for="' + checked.id + '"]');
+    label.classList.add('border-ink-900','bg-ink-900','text-white');
+    label.classList.remove('border-ink-900/10');
+    const sub = label.querySelector('.priceSub');
+    const num = label.querySelector('.priceNum');
+    if (sub) sub.classList.remove('text-ink-700/60'), sub.classList.add('text-white/70');
+    if (num) num.classList.add('text-white');
+
+    const months = parseInt(checked.dataset.months, 10);
+    const total = parseInt(checked.dataset.total, 10);
+    const perMonth = total / months;
+    const gst = Math.round(total * 0.18);
+    const due = total + gst;
+
+    selectedPlan = { months: months, amount: total, due: due };
+
+    const map = {1:'1 Month', 3:'3 Months', 6:'6 Months'};
+    document.getElementById('selDuration').textContent = map[months];
+    document.getElementById('selPerMonth').textContent = '₹' + perMonth.toLocaleString('en-IN');
+    document.getElementById('selGst').textContent = '₹' + gst.toLocaleString('en-IN');
+    document.getElementById('selTotal').textContent = '₹' + due.toLocaleString('en-IN');
+  }
+
+  function initPayment() {
+    isCouponApplied = false;
+    const months = selectedPlan.months;
+    const subtotal = selectedPlan.amount;
+    const due = selectedPlan.due;
+    const gst = Math.round(subtotal * 0.18);
+    const perMonth = subtotal / months;
+
+    const savingsMap = { 1: 0, 3: 1500, 6: 6000 };
+    const savings = savingsMap[months] || 0;
+
+    // Ends Date calculation (months ahead)
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const planEndsDateStr = `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+
+    // Update SPA payment UI elements
+    const paymentPlanHeader = document.getElementById('paymentPlanHeader');
+    const summaryPlanText = document.getElementById('summaryPlanText');
+    const summarySubtotal = document.getElementById('summarySubtotal');
+    const summaryGst = document.getElementById('summaryGst');
+    const summaryTotal = document.getElementById('summaryTotal');
+    const summaryEndsText = document.getElementById('summaryEndsText');
+    const summarySavings = document.getElementById('summarySavings');
+    const savingsAmountText = document.getElementById('savingsAmountText');
+    const payLabel = document.getElementById('payLabel');
+
+    if (paymentPlanHeader) paymentPlanHeader.textContent = `Job Seeker Agent · ${months}-month plan`;
+    if (summaryPlanText) summaryPlanText.textContent = `${months}-month plan · ₹${perMonth.toLocaleString('en-IN')}/mo`;
+    if (summarySubtotal) summarySubtotal.textContent = `₹${subtotal.toLocaleString('en-IN')}.00`;
+    if (summaryGst) summaryGst.textContent = `₹${gst.toLocaleString('en-IN')}.00`;
+    if (summaryTotal) summaryTotal.textContent = `₹${due.toLocaleString('en-IN')}.00`;
+    if (summaryEndsText) summaryEndsText.textContent = `Plan ends ${planEndsDateStr}. Auto-renews monthly unless cancelled.`;
+
+    if (summarySavings) {
+      if (savings > 0) {
+        summarySavings.style.display = '';
+        if (savingsAmountText) savingsAmountText.textContent = `₹${savings.toLocaleString('en-IN')}`;
+      } else {
+        summarySavings.style.display = 'none';
+      }
+    }
+
+    if (payLabel) payLabel.textContent = `Pay ₹${due.toLocaleString('en-IN')} · Activate agent`;
+  }
+
+  function applyCoupon() {
+    const input = document.getElementById('couponInput');
+    const status = document.getElementById('couponStatus');
+    const discountRow = document.getElementById('discountRow');
+    const discountAmountEl = document.getElementById('summaryDiscount');
+    const totalEl = document.getElementById('summaryTotal');
+    const labelEl = document.getElementById('payLabel');
+    
+    const code = (input.value || '').trim().toUpperCase();
+    const totalAmount = selectedPlan.due;
+
+    if (code === 'IIT99') {
+      isCouponApplied = true;
+      discountRow.classList.remove('hidden');
+      const discountAmount = totalAmount - 1;
+      discountAmountEl.textContent = `–₹${discountAmount.toLocaleString('en-IN')}.00`;
+      totalEl.textContent = '₹1.00';
+      if (labelEl) {
+        labelEl.textContent = 'Pay ₹1 · Activate agent';
+      }
+      status.textContent = 'Coupon applied successfully! 100% discount applied.';
+      status.className = 'mt-1 text-[11px] font-medium text-emerald-600';
+      status.classList.remove('hidden');
+    } else if (code === '') {
+      isCouponApplied = false;
+      discountRow.classList.add('hidden');
+      totalEl.textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
+      if (labelEl) {
+        labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
+      }
+      status.classList.add('hidden');
+    } else {
+      isCouponApplied = false;
+      discountRow.classList.add('hidden');
+      totalEl.textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
+      if (labelEl) {
+        labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
+      }
+      status.textContent = 'Invalid coupon code.';
+      status.className = 'mt-1 text-[11px] font-medium text-rose-600';
+      status.classList.remove('hidden');
+    }
+  }
+
+  // ── Google OAuth ──────────────────────────────────────────────────────────
+  // Builds the Google authorization URL from ENV_CONFIG and redirects.
+  // On return, handleOAuthCallback() reads the ?code= param and exchanges it.
+  function startGoogleOAuth() {
+    const cfg = window.ENV_CONFIG || {};
+    if (!cfg.GOOGLE_CLIENT_ID || cfg.GOOGLE_CLIENT_ID.startsWith('REPLACE_')) {
+      alert('Google OAuth is not configured yet.\n\nOpen the HTML file, find window.ENV_CONFIG, and replace REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID with your actual Client ID from Google Cloud Console.\n\nSee .env.example for full instructions.');
+      return;
+    }
+    // Save a random state value to localStorage to prevent CSRF
+    const state = Math.random().toString(36).slice(2) + Date.now();
+    localStorage.setItem('oauth_state', state);
+
+    const params = new URLSearchParams({
+      client_id:     cfg.GOOGLE_CLIENT_ID,
+      redirect_uri:  cfg.GOOGLE_REDIRECT_URI,
+      response_type: 'code',
+      scope:         cfg.GOOGLE_OAUTH_SCOPES || 'openid email profile',
+      state,
+      access_type:   'offline',   // gets a refresh_token
+      prompt:        'select_account',
+    });
+    window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+  }
+
+  // ── OAuth Callback Handler ────────────────────────────────────────────────
+  // Called on page load if URL contains ?code= or ?oauth_ok= (Google
+  // redirected back to Flask /auth/google/callback, which then redirected
+  // back here with the user's profile already resolved server-side).
+  function handleOAuthCallback() {
+    const params = new URLSearchParams(window.location.search);
+
+    // ── Error case ───────────────────────────────────────────────────────────
+    const oauthError = params.get('oauth_error');
+    if (oauthError) {
+      const msg = {
+        'access_denied':    'You cancelled the Google sign-in.',
+        'exchange_failed':  'Could not verify your Google account. Please try again.',
+        'no_code':          'No authorisation code received from Google.',
+      }[oauthError] || `Google sign-in failed (${oauthError}).`;
+      window.history.replaceState({}, '', window.location.pathname);
+      alert(msg);
+      return;
+    }
+
+    // ── Server-side exchange succeeded (Flask returned name + email) ─────────
+    const oauthOk = params.get('oauth_ok');
+    if (oauthOk === '1') {
+      const name    = params.get('name')    || '';
+      const email   = params.get('email')   || '';
+      const picture = params.get('picture') || '';
+      const state   = params.get('state')   || '';
+
+      // CSRF check
+      const savedState = localStorage.getItem('oauth_state');
+      if (state && savedState && state !== savedState) {
+        window.history.replaceState({}, '', window.location.pathname);
+        alert('OAuth state mismatch — possible CSRF attack. Please try again.');
+        return;
+      }
+      localStorage.removeItem('oauth_state');
+      window.history.replaceState({}, '', window.location.pathname);
+
+      console.log('[OAuth] Server-side exchange OK  name=' + name + '  email=' + email);
+
+      // Pre-fill Step 1 form fields with Google profile data
+      const parts = name.trim().split(' ');
+      const firstName = document.getElementById('signupFirst');
+      const lastName  = document.getElementById('signupLast');
+      const emailFld  = document.getElementById('signupEmail');
+      if (firstName) firstName.value = parts[0] || '';
+      if (lastName)  lastName.value  = parts.slice(1).join(' ') || '';
+      if (emailFld)  emailFld.value  = email;
+
+      // Show a small "Connected via Google" badge if the avatar element exists
+      const avatarEl = document.getElementById('signupGoogleAvatar');
+      if (avatarEl && picture) {
+        avatarEl.src   = picture;
+        avatarEl.style.display = 'inline-block';
+      }
+
+      // Navigate to signup and skip to Step 2 (LinkedIn verification)
+      navigate('signup');
+      setTimeout(() => showSignupStep(2), 100);
+      return;
+    }
+
+    // ── Fallback: raw code forwarded (no client secret configured) ───────────
+    const code  = params.get('code');
+    const state = params.get('state');
+    if (!code) return; // normal page load, nothing to do
+
+    // CSRF check
+    const savedState = localStorage.getItem('oauth_state');
+    if (state !== savedState) {
+      alert('OAuth state mismatch — possible CSRF attack. Please try again.');
+      return;
+    }
+    localStorage.removeItem('oauth_state');
+    window.history.replaceState({}, '', window.location.pathname);
+
+    console.log('[OAuth] Received code (no server secret configured):', code.slice(0, 12) + '...');
+    // Advance to signup Step 2 — form fields will need manual entry
+    navigate('signup');
+    setTimeout(() => showSignupStep(2), 100);
+  }
+
+  // Run callback check on every page load
+  handleOAuthCallback();
+
+  // Init
+  navigate('landing');
+</script>
+
+</body>
+</html>
