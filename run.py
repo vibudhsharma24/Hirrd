@@ -23,6 +23,7 @@ except ImportError:
 # Signal that we're using the app factory
 os.environ["_APP_FACTORY_USED"] = "1"
 
+import job_seeker_agent.runner
 from core.app import create_app
 
 app = create_app()

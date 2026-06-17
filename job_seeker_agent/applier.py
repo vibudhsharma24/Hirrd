@@ -39,9 +39,13 @@ except ImportError:
     pass
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+if os.path.dirname(__file__) not in sys.path:
+    sys.path.insert(0, os.path.dirname(__file__))
 
-import database as db
+import core.database as db
 from ats_detector import detect_ats, detect_ats_with_browser, extract_hostname
 from browser_manager import create_session, get_browser_mode
 from resume_generator import get_resume_for_application, get_cover_letter

@@ -302,6 +302,8 @@ def init_db():
             # ── Gmail credential columns ──────────────────────────────
             ("users", "gmail_username",      "TEXT DEFAULT ''"),
             ("users", "gmail_password",      "TEXT DEFAULT ''"),
+            # ── LinkedIn profile name column ──────────────────────────
+            ("users", "linkedin_profile_name", "TEXT DEFAULT ''"),
         ]
         for table, col, typedef in _migrate_columns:
             try:
@@ -936,7 +938,7 @@ def get_posts_stats() -> dict:
 
 def update_post_status(post_id: int, status: str) -> bool:
     """Update the status of a scraped post in jobs.db."""
-    valid = {"new", "reviewed", "applied", "dismissed"}
+    valid = {"new", "reviewed", "applied", "dismissed", "pending"}
     if status not in valid:
         raise ValueError(f"Invalid status '{status}'. Must be one of: {valid}")
     with _connect_jobs() as conn:

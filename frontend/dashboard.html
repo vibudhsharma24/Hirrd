@@ -165,6 +165,22 @@ let activeStoreStatus = 'All';
 let agentPrefs = {};
 let activeAgentTab = 'overview';
 let agentPollInterval = null;
+let connectionsPreview = null;
+let logInterval = null;
+
+async function loadConnectionsPreview() {
+  try {
+    const res = await fetch('/api/user/connections-preview');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ok) {
+        connectionsPreview = data;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load connections preview:', e);
+  }
+}
 
 function formatLastRunTime(isoStr) {
   if (!isoStr) return "never";
@@ -785,7 +801,9 @@ function handleRouting() {
       agentNav.classList.add('active');
       agentNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
     }
-    renderAgent();
+    loadConnectionsPreview().finally(() => {
+      renderAgent();
+    });
     agentPollInterval = setInterval(pollAgentData, 5000);
   } else if (hash === '#store') {
     const storeNav = document.getElementById('storeNavLink');
@@ -803,7 +821,9 @@ function handleRouting() {
       settingsNav.classList.add('active');
       settingsNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
     }
-    renderSettings();
+    loadConnectionsPreview().finally(() => {
+      renderSettings();
+    });
   } else if (hash === '#billing') {
     const billingNav = document.getElementById('billingNavLink');
     if (billingNav) {
@@ -1144,31 +1164,80 @@ function renderSettings() {
           
           <div class="mt-6 divide-y divide-ink-900/5">
             <!-- LinkedIn account -->
-            <div class="py-4 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#0A66C2]/10 text-[#0A66C2] font-display font-bold text-base grid place-items-center shrink-0 font-sans">in</div>
-                <div>
-                  <div class="text-xs font-bold text-ink-900">LinkedIn - ${U.linkedin_username || (U.full_name ? U.full_name.toLowerCase().replace(' ', '-') : 'username')}</div>
-                  <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Connected 12 Apr &middot; DMs + Easy Apply enabled</div>
+            <div class="py-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-[#0A66C2]/10 text-[#0A66C2] font-display font-bold text-base grid place-items-center shrink-0 font-sans">in</div>
+                  <div>
+                    <div class="text-xs font-bold text-ink-900">LinkedIn</div>
+                    <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">
+                      ${U.has_linkedin_creds 
+                        ? `Connected as <span class="font-bold text-brand-600">${(connectionsPreview && connectionsPreview.linkedin_profile_name) || U.linkedin_username || 'LinkedIn Account'}</span> (${(connectionsPreview && connectionsPreview.linkedin_username) || U.linkedin_username})`
+                        : 'Not connected'
+                      }
+                    </div>
+                  </div>
                 </div>
+                <button onclick="toggleConnectedAccount('linkedin')" class="px-4 py-2 text-xs font-bold rounded-xl transition ${U.linkedin_connected ? 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white' : 'bg-ink-900 text-white hover:bg-brand-700'}">
+                  ${U.linkedin_connected ? 'Disconnect' : 'Connect'}
+                </button>
               </div>
-              <button onclick="toggleConnectedAccount('linkedin')" class="px-4 py-2 text-xs font-bold rounded-xl transition ${U.linkedin_connected ? 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white' : 'bg-ink-900 text-white hover:bg-brand-700'}">
-                ${U.linkedin_connected ? 'Disconnect' : 'Connect'}
-              </button>
+              ${U.has_linkedin_creds && U.linkedin_connected ? `
+                <div class="mt-2 ml-13 text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  LinkedIn connected successfully!
+                </div>
+              ` : ''}
             </div>
 
             <!-- Gmail account -->
-            <div class="py-4 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 font-display font-bold text-sm grid place-items-center shrink-0">@</div>
-                <div>
-                  <div class="text-xs font-bold text-ink-900">Gmail - ${U.email || 'aarav.k@iitb.ac.in'}</div>
-                  <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">Connected 12 Apr &middot; send + read replies</div>
+            <div class="py-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 font-display font-bold text-sm grid place-items-center shrink-0">@</div>
+                  <div>
+                    <div class="text-xs font-bold text-ink-900">Gmail</div>
+                    <div class="text-[11px] text-ink-700/60 font-semibold mt-0.5">
+                      ${U.has_gmail_creds 
+                        ? `Connected inbox: <span class="font-bold text-rose-600">${(connectionsPreview && connectionsPreview.gmail_username) || U.gmail_username || U.email}</span>`
+                        : 'Not connected'
+                      }
+                    </div>
+                  </div>
                 </div>
+                <button onclick="toggleConnectedAccount('gmail')" class="px-4 py-2 text-xs font-bold rounded-xl transition ${U.gmail_connected ? 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white' : 'bg-ink-900 text-white hover:bg-brand-700'}">
+                  ${U.gmail_connected ? 'Disconnect' : 'Connect'}
+                </button>
               </div>
-              <button onclick="toggleConnectedAccount('gmail')" class="px-4 py-2 text-xs font-bold rounded-xl transition ${U.gmail_connected ? 'border border-ink-900/10 text-ink-900 hover:bg-ink-900/5 bg-white' : 'bg-ink-900 text-white hover:bg-brand-700'}">
-                ${U.gmail_connected ? 'Disconnect' : 'Connect'}
-              </button>
+              ${U.has_gmail_creds && U.gmail_connected ? `
+                <div class="mt-2 ml-13 text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  Gmail connected successfully!
+                </div>
+                
+                <!-- Inbox Preview -->
+                <div class="mt-3 ml-13 p-4 bg-ink-900/[0.02] border border-ink-900/5 rounded-2xl max-w-xl">
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] font-bold text-ink-700/50 uppercase tracking-widest">Inbox Preview (Active IMAP Connection)</span>
+                    <span class="flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>live
+                    </span>
+                  </div>
+                  <div class="space-y-2.5 divide-y divide-ink-900/5">
+                    ${((connectionsPreview && connectionsPreview.email_preview) || []).length > 0 ? connectionsPreview.email_preview.map((item, idx) => `
+                      <div class="${idx > 0 ? 'pt-2.5' : ''}">
+                        <div class="flex justify-between items-start gap-2">
+                          <span class="text-[11px] font-bold text-ink-900 truncate flex-1">${item.subject}</span>
+                          <span class="text-[9px] text-ink-700/40 shrink-0 font-medium">${item.date}</span>
+                        </div>
+                        <div class="text-[10px] text-ink-700/60 truncate mt-0.5">From: ${item.from}</div>
+                      </div>
+                    `).join('') : `
+                      <div class="text-xs text-ink-700/40 py-2">No emails found in the inbox.</div>
+                    `}
+                  </div>
+                </div>
+              ` : ''}
             </div>
 
             <!-- Calendly account -->
@@ -1466,12 +1535,27 @@ function renderAgentTabContent() {
               <div class="text-[12px] font-semibold tracking-widest text-brand-700">LIVE ACTIVITY</div>
               <h3 class="font-display font-bold text-lg mt-0.5">Real-time Outreach Logs</h3>
             </div>
-            <span class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+            <span id="agentStreamingStatus" class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
               <span class="pulse-dot"></span>streaming
             </span>
           </div>
-          <div class="mt-4 space-y-4" id="agentActivityFeed">
-            <!-- Renders dynamically -->
+          
+          <!-- Interactive Terminal Console -->
+          <div class="mt-4 border border-ink-900/10 rounded-2xl overflow-hidden bg-[#0c0f12] text-zinc-100 font-mono text-xs shadow-lg">
+            <div class="bg-[#161b22] px-4 py-2.5 border-b border-ink-900/10 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span class="text-[11px] font-semibold text-zinc-400 ml-2">agent-session.log</span>
+              </div>
+              <button onclick="clearTerminalLogs()" class="text-[10px] text-zinc-400 hover:text-white px-2 py-0.5 rounded bg-[#21262d] hover:bg-[#30363d] transition">
+                Clear
+              </button>
+            </div>
+            <div class="p-4 h-64 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-700" id="agentTerminalLogs">
+              <div class="text-zinc-500">// Waiting for logs... Click "Run now" or "Resume agent" to start.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1922,71 +2006,88 @@ async function saveFullAgentPrefs() {
   }
 }
 
-function renderAgentLogsFeed() {
-  const feed = document.getElementById('agentActivityFeed');
-  if (!feed) return;
+async function renderAgentLogsFeed() {
+  const term = document.getElementById('agentTerminalLogs');
+  if (!term) return;
 
-  if (subLogs.length === 0) {
-    feed.innerHTML = `
-      <div class="flex items-start gap-3">
-        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 border border-brand-100 grid place-items-center font-display font-bold text-[12px] shrink-0">in</div>
-        <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-semibold truncate capitalize">Sent LinkedIn DM to Priya R. @ Stripe — Sr. PM Payments</div>
-          <div class="text-[11px] text-ink-700/60 truncate">"Hi Priya — I'm Aarav, IIT-B '22 PM at Razorpay. Saw your post on async checkout flows..."</div>
-        </div>
-        <div class="text-[11px] text-ink-700/50 shrink-0">11:42 AM</div>
-      </div>
-      <div class="flex items-start gap-3 mt-3">
-        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 border border-brand-100 grid place-items-center font-display font-bold text-[12px] shrink-0">@</div>
-        <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-semibold truncate capitalize">Cold email to Rohan S. @ Razorpay</div>
-          <div class="text-[11px] text-ink-700/60 truncate">Drafted and sent custom cold email pitch and resume.</div>
-        </div>
-        <div class="text-[11px] text-ink-700/50 shrink-0">11:28 AM</div>
-      </div>
-      <div class="flex items-start gap-3 mt-3">
-        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 border border-brand-100 grid place-items-center font-display font-bold text-[12px] shrink-0">✓</div>
-        <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-semibold truncate capitalize">Auto-applied on careers.rippling.com — PM, Compensation</div>
-          <div class="text-[11px] text-ink-700/60 truncate">Form filled successfully with ATS details. Confirmation: #RP8832</div>
-        </div>
-        <div class="text-[11px] text-ink-700/50 shrink-0">11:03 AM</div>
-      </div>
-    `;
-  } else {
-    feed.innerHTML = subLogs.slice(0, 5).map(log => {
-      const d = new Date(log.timestamp);
-      const time = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      
-      let stepIcon = '✓';
-      if (log.step_name.toLowerCase().includes('linkedin')) stepIcon = 'in';
-      else if (log.step_name.toLowerCase().includes('email')) stepIcon = '@';
-      else if (log.step_name.toLowerCase().includes('fail') || log.step_name.toLowerCase().includes('error')) stepIcon = '✕';
+  await pollLogs();
 
-      const toneClass = (log.step_name.toLowerCase().includes('fail') || log.step_name.toLowerCase().includes('error'))
-        ? 'bg-rose-50 text-rose-700 border border-rose-100'
-        : 'bg-brand-50 text-brand-700 border border-brand-100';
+  if (logInterval) clearInterval(logInterval);
+  logInterval = setInterval(pollLogs, 1500);
+}
 
-      const logTitle = log.post_company 
-        ? `${log.step_name.replace(/_/g, ' ')} (${log.post_company})` 
-        : log.step_name.replace(/_/g, ' ');
-
-      const subText = log.post_title 
-        ? `${log.post_title} &middot; ${log.page_url || 'No URL'}` 
-        : (log.page_url || 'No page URL recorded');
-
-      return `
-        <div class="flex items-start gap-3">
-          <div class="w-8 h-8 rounded-lg ${toneClass} grid place-items-center font-display font-bold text-[12px] shrink-0">${stepIcon}</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-[13px] font-semibold truncate capitalize">${logTitle}</div>
-            <div class="text-[11px] text-ink-700/60 truncate" title="${log.page_url || ''}">${subText}</div>
-          </div>
-          <div class="text-[11px] text-ink-700/50 shrink-0">${time}</div>
-        </div>
-      `;
-    }).join('');
+async function pollLogs() {
+  const term = document.getElementById('agentTerminalLogs');
+  if (!term) {
+    if (logInterval) {
+      clearInterval(logInterval);
+      logInterval = null;
+    }
+    return;
   }
+  
+  try {
+    const res = await fetch('/api/agent/live-logs');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ok && data.logs && data.logs.trim() !== '') {
+        const lines = data.logs.split('\n');
+        term.innerHTML = lines.map(line => {
+          if (!line.trim()) return '';
+          let colorClass = 'text-zinc-300';
+          if (line.toLowerCase().includes('error') || line.toLowerCase().includes('fail') || line.toLowerCase().includes('exception')) {
+            colorClass = 'text-rose-400 font-semibold';
+          } else if (line.toLowerCase().includes('success') || line.toLowerCase().includes('done') || line.toLowerCase().includes('completed') || line.toLowerCase().includes('successfully') || line.toLowerCase().includes('ready')) {
+            colorClass = 'text-emerald-400 font-semibold';
+          } else if (line.toLowerCase().includes('warning') || line.toLowerCase().includes('checkpoint')) {
+            colorClass = 'text-amber-400';
+          } else if (line.includes('[Agent]') || line.includes('[Connector]') || line.includes('[Scraper]') || line.includes('[API]')) {
+            colorClass = 'text-blue-400';
+          }
+          return `<div class="${colorClass}">${escapeHtml(line)}</div>`;
+        }).join('');
+        term.scrollTop = term.scrollHeight;
+        
+        const streamEl = document.getElementById('agentStreamingStatus');
+        if (streamEl) {
+          streamEl.className = 'flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full';
+          streamEl.innerHTML = '<span class="pulse-dot"></span>streaming';
+        }
+      } else {
+        const agentStatus = U.agent_status || 'inactive';
+        const isActive = U.is_agent_buyer && agentStatus === 'running';
+        if (isActive) {
+          term.innerHTML = `<div class="text-zinc-500">// Agent is active. Waiting for incoming execution log stream...</div>`;
+        } else {
+          term.innerHTML = `<div class="text-zinc-500">// Agent is inactive. Click 'Run now' or 'Resume agent' to start.</div>`;
+        }
+        
+        const streamEl = document.getElementById('agentStreamingStatus');
+        if (streamEl) {
+          streamEl.className = 'flex items-center gap-1.5 text-[11px] font-semibold text-zinc-500 bg-zinc-50 px-2 py-0.5 rounded-full';
+          streamEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>idle';
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error polling agent logs:', e);
+  }
+}
+
+function clearTerminalLogs() {
+  const term = document.getElementById('agentTerminalLogs');
+  if (term) {
+    term.innerHTML = `<div class="text-zinc-500">// Logs cleared.</div>`;
+  }
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function renderAgentFullLogsTable() {
@@ -2916,13 +3017,17 @@ async function saveSetupLinkedin() {
     });
     const data = await res.json();
     if (data.ok) {
+      const profileName = data.profile_name || username;
       statusEl.className = 'text-[12px] text-emerald-700 font-medium';
-      statusEl.textContent = '✓ LinkedIn connected securely!';
+      statusEl.innerHTML = `✓ LinkedIn connected successfully!<br>Connected account: <b>${profileName}</b> (${username})`;
       statusEl.classList.remove('hidden');
       updateCheckIcon('checkLinkedin', true);
       U.has_linkedin_creds = true;
       btn.textContent = '✓ Connected';
       btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+      
+      // Load connections preview in background
+      await loadConnectionsPreview();
     } else {
       statusEl.className = 'text-[12px] text-rose-700 font-medium';
       statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
@@ -2964,12 +3069,33 @@ async function saveSetupEmail() {
     const data = await res.json();
     if (data.ok) {
       statusEl.className = 'text-[12px] text-emerald-700 font-medium';
-      statusEl.textContent = '✓ Email connected securely!';
+      
+      let previewHtml = '';
+      if (data.preview && data.preview.length > 0) {
+        previewHtml = `
+          <div class="mt-3 p-3 bg-ink-900/[0.02] border border-ink-900/5 rounded-xl text-left max-w-md">
+            <div class="text-[9px] font-bold text-ink-700/50 uppercase tracking-widest mb-2">Inbox Preview (Active Connection)</div>
+            <div class="space-y-2">
+              ${data.preview.map(item => `
+                <div class="text-[10px] leading-tight">
+                  <div class="font-bold text-ink-900 truncate">${item.subject}</div>
+                  <div class="text-ink-700/60 truncate mt-0.5">From: ${item.from}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      statusEl.innerHTML = `✓ Email connected successfully!<br>Connected inbox: <b>${email}</b>${previewHtml}`;
       statusEl.classList.remove('hidden');
       updateCheckIcon('checkEmail', true);
       U.has_gmail_creds = true;
       btn.textContent = '✓ Connected';
       btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+      
+      // Load connections preview in background
+      await loadConnectionsPreview();
     } else {
       statusEl.className = 'text-[12px] text-rose-700 font-medium';
       statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');

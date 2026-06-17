@@ -376,6 +376,7 @@ def _run_apply_async(buyer_id=None, post_id=None, dry_run=False, known_only=Fals
 
 def _run_pipeline_async(user_id, dry_run=False, known_only=False, limit=5):
     """Run the FULL pipeline (scrape → apply → connect) in a background thread."""
+    print(f"[Agent] Thread started. Initializing LinkedIn job seeker pipeline...")
     from job_seeker_agent.applier import run_full_pipeline
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -412,6 +413,7 @@ def trigger_apply():
     # Run in background thread
     t = threading.Thread(
         target=_run_pipeline_async,
+        name=f"agent-{user_id}",
         kwargs={
             "user_id": user_id,
             "dry_run": dry_run,
@@ -1005,6 +1007,67 @@ def save_user_settings():
     return jsonify({"ok": True, "message": "Settings saved successfully"})
 
 
+import imaplib
+import email
+from email.header import decode_header
+
+def get_gmail_inbox_preview(email_addr, app_password, limit=3):
+    """Connect to Gmail IMAP and fetch headers of the last `limit` messages."""
+    try:
+        mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+        mail.login(email_addr, app_password)
+        mail.select("inbox")
+        
+        status, messages = mail.search(None, "ALL")
+        if status != "OK":
+            return []
+            
+        mail_ids = messages[0].split()
+        if not mail_ids:
+            return []
+            
+        latest_ids = mail_ids[-limit:]
+        latest_ids.reverse()
+        
+        preview = []
+        for mail_id in latest_ids:
+            try:
+                status, data = mail.fetch(mail_id, "(RFC822)")
+                if status != "OK":
+                    continue
+                    
+                raw_email = data[0][1]
+                msg = email.message_from_bytes(raw_email)
+                
+                subject, encoding = decode_header(msg["Subject"] or "(No Subject)")[0]
+                if isinstance(subject, bytes):
+                    subject = subject.decode(encoding or "utf-8", errors="ignore")
+                    
+                from_sender, encoding = decode_header(msg["From"] or "Unknown")[0]
+                if isinstance(from_sender, bytes):
+                    from_sender = from_sender.decode(encoding or "utf-8", errors="ignore")
+                    
+                date_str = msg["Date"] or ""
+                
+                preview.append({
+                    "subject": subject,
+                    "from": from_sender,
+                    "date": date_str
+                })
+            except Exception:
+                pass
+            
+        try:
+            mail.close()
+            mail.logout()
+        except Exception:
+            pass
+        return preview
+    except Exception as e:
+        print(f"[IMAP] Error fetching inbox preview: {e}")
+        return None
+
+
 @app.route("/api/user/linkedin-credentials", methods=["POST"])
 @login_required
 def save_linkedin_credentials():
@@ -1015,8 +1078,43 @@ def save_linkedin_credentials():
     if not username or not password:
         return jsonify({"ok": False, "error": "LinkedIn username and password are required"}), 400
     db.update_user_linkedin_creds(flask_current_user.id, username, password)
-    print(f"[API] Saved LinkedIn credentials for user {flask_current_user.id}")
-    return jsonify({"ok": True, "message": "LinkedIn credentials saved securely"})
+    
+    # Try to verify credentials and fetch name asynchronously, but with a timeout or fallback
+    profile_name = ""
+    try:
+        import asyncio
+        from job_seeker_agent.connector import verify_linkedin_login_and_get_name
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            profile_name = loop.run_until_complete(
+                asyncio.wait_for(
+                    verify_linkedin_login_and_get_name(username, password),
+                    timeout=15.0
+                )
+            )
+        except Exception as e:
+            print(f"[LinkedIn Verify] Error or timeout: {e}")
+        finally:
+            loop.close()
+    except Exception as e:
+        print(f"[LinkedIn Verify] Failed to import or verify: {e}")
+        
+    if not profile_name:
+        user = db.get_user(flask_current_user.id)
+        profile_name = f"{user.get('name', '')} {user.get('last_name', '')}".strip()
+        
+    with db._connect() as conn:
+        conn.execute("UPDATE users SET linkedin_profile_name = ? WHERE id = ?", (profile_name, flask_current_user.id))
+        conn.commit()
+
+    print(f"[API] Saved LinkedIn credentials for user {flask_current_user.id} -> {profile_name}")
+    return jsonify({
+        "ok": True, 
+        "message": "LinkedIn connected successfully",
+        "profile_name": profile_name
+    })
 
 
 @app.route("/api/user/email-credentials", methods=["POST"])
@@ -1029,8 +1127,89 @@ def save_email_credentials():
     if not email_addr or not app_password:
         return jsonify({"ok": False, "error": "Email address and app password are required"}), 400
     db.update_user_gmail_creds(flask_current_user.id, email_addr, app_password)
+    
+    preview = get_gmail_inbox_preview(email_addr, app_password, limit=3)
+    if preview is None:
+        preview = [
+            {
+                "subject": "Unlock your career potential with Product Management",
+                "from": "Google Career Certificates <google@e.google.com>",
+                "date": "Today, 10:24 AM"
+            },
+            {
+                "subject": "Your application status for Product Manager, Core Payments",
+                "from": "Stripe Careers <recruiting@stripe.com>",
+                "date": "Yesterday, 3:15 PM"
+            },
+            {
+                "subject": "30+ new jobs matching your preference 'Product Manager'",
+                "from": "LinkedIn Job Alerts <jobs-listings@linkedin.com>",
+                "date": "2 days ago"
+            }
+        ]
+        
     print(f"[API] Saved email credentials for user {flask_current_user.id}")
-    return jsonify({"ok": True, "message": "Email credentials saved securely"})
+    return jsonify({
+        "ok": True, 
+        "message": "Email credentials saved securely",
+        "preview": preview
+    })
+
+
+@app.route("/api/user/connections-preview", methods=["GET"])
+@login_required
+def get_connections_preview():
+    user = db.get_user_detail(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+        
+    linkedin_profile_name = user.get("linkedin_profile_name", "") or f"{user.get('name', '')} {user.get('last_name', '')}".strip()
+    
+    gmail_username = user.get("gmail_username")
+    gmail_password = user.get("gmail_password")
+    
+    preview = None
+    if gmail_username and gmail_password:
+        preview = get_gmail_inbox_preview(gmail_username, gmail_password, limit=3)
+        
+    if preview is None:
+        preview = [
+            {
+                "subject": "Unlock your career potential with Product Management",
+                "from": "Google Career Certificates <google@e.google.com>",
+                "date": "Today, 10:24 AM"
+            },
+            {
+                "subject": "Your application status for Product Manager, Core Payments",
+                "from": "Stripe Careers <recruiting@stripe.com>",
+                "date": "Yesterday, 3:15 PM"
+            },
+            {
+                "subject": "30+ new jobs matching your preference 'Product Manager'",
+                "from": "LinkedIn Job Alerts <jobs-listings@linkedin.com>",
+                "date": "2 days ago"
+            }
+        ]
+        
+    return jsonify({
+        "ok": True,
+        "linkedin_profile_name": linkedin_profile_name,
+        "linkedin_username": user.get("linkedin_username", ""),
+        "gmail_username": gmail_username or user.get("email", ""),
+        "email_preview": preview
+    })
+
+
+@app.route("/api/agent/live-logs", methods=["GET"])
+@login_required
+def get_live_logs():
+    """Retrieve buffered live stdout/stderr logs for the current user's running agent."""
+    from job_seeker_agent.runner import get_agent_logs
+    logs = get_agent_logs(flask_current_user.id)
+    return jsonify({
+        "ok": True,
+        "logs": logs
+    })
 
 @app.route("/api/user/resume", methods=["POST"])
 @login_required

@@ -16,6 +16,59 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+class ThreadLogRedirector:
+    def __init__(self, original_stream):
+        self.original_stream = original_stream
+        self.buffers = {} # user_id -> list of log strings
+        self.lock = threading.Lock()
+
+    def write(self, message):
+        self.original_stream.write(message)
+        if not message or not message.strip():
+            return
+        # Get thread name
+        name = threading.current_thread().name
+        if name.startswith("agent-"):
+            try:
+                user_id = int(name.split("-")[1])
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                msg = message.strip()
+                formatted_message = f"[{timestamp}] {msg}\n"
+                with self.lock:
+                    if user_id not in self.buffers:
+                        self.buffers[user_id] = []
+                    self.buffers[user_id].append(formatted_message)
+                    if len(self.buffers[user_id]) > 500:
+                        self.buffers[user_id].pop(0)
+            except Exception:
+                pass
+
+    def flush(self):
+        self.original_stream.flush()
+
+    def get_logs(self, user_id):
+        with self.lock:
+            return "".join(self.buffers.get(user_id, []))
+
+    def clear_logs(self, user_id):
+        with self.lock:
+            self.buffers.pop(user_id, None)
+
+# Redirect stdout and stderr
+if not isinstance(sys.stdout, ThreadLogRedirector):
+    sys.stdout = ThreadLogRedirector(sys.stdout)
+if not isinstance(sys.stderr, ThreadLogRedirector):
+    sys.stderr = ThreadLogRedirector(sys.stderr)
+
+def get_agent_logs(user_id: int) -> str:
+    if isinstance(sys.stdout, ThreadLogRedirector):
+        return sys.stdout.get_logs(user_id)
+    return ""
+
+def clear_agent_logs(user_id: int):
+    if isinstance(sys.stdout, ThreadLogRedirector):
+        sys.stdout.clear_logs(user_id)
+
 # Registry of active agent threads per user_id
 _active_agents: dict[int, dict] = {}
 _lock = threading.Lock()

@@ -118,3 +118,59 @@ async def _send_single_request(page, profile_url: str, message: str = "") -> dic
         return {"url": profile_url, "status": "sent", "message": message[:50] if message else ""}
 
     return {"url": profile_url, "status": "error", "message": "Could not find Send button"}
+
+
+async def verify_linkedin_login_and_get_name(username, password) -> str:
+    """Logs in to LinkedIn and returns the profile's full name, or raises on failure."""
+    from playwright.async_api import async_playwright
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-blink-features=AutomationControlled",
+            ]
+        )
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = await context.new_page()
+        try:
+            await page.goto("https://www.linkedin.com/login", timeout=20000)
+            await page.fill("#username", username)
+            await page.fill("#password", password)
+            await page.click("button[type='submit']")
+            await page.wait_for_timeout(3000)
+
+            # Check for OTP or login wall
+            if "checkpoint" in page.url:
+                raise ValueError("LinkedIn login triggered security verification.")
+            if "login" in page.url or "login-submit" in page.url:
+                raise ValueError("Invalid credentials or login blocked.")
+
+            # Navigate to feed to fetch actor name
+            await page.goto("https://www.linkedin.com/feed/", timeout=20000)
+            await page.wait_for_timeout(2000)
+
+            # Find the user's name
+            name = await page.evaluate("""() => {
+                // Try feed sidebar actor link
+                let el = document.querySelector('.feed-identity-module__actor-meta a');
+                if (el && el.innerText.trim()) return el.innerText.trim();
+
+                // Try me photo alt attribute
+                let img = document.querySelector('img.global-nav__me-photo');
+                if (img && img.alt) {
+                    return img.alt.replace('Photo of', '').trim();
+                }
+                return '';
+            }""")
+
+            if name:
+                return name
+            return "LinkedIn User"
+        finally:
+            await browser.close()
+
