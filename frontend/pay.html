@@ -262,39 +262,26 @@
         <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-ink-900/[.02] transition" onclick="togglePaySection('paySetupEmail')">
           <div class="w-7 h-7 rounded-lg bg-accent-500/10 text-accent-600 border border-accent-400/30 grid place-items-center text-[12px] font-bold shrink-0" id="payCheckEmail">3</div>
           <div class="flex-1">
-            <div class="text-[14px] font-semibold">Connect Email</div>
-            <div class="text-[11px] text-ink-700/60">For cold email outreach to recruiters</div>
+            <div class="text-[14px] font-semibold">Connect Gmail</div>
+            <div class="text-[11px] text-ink-700/60">Connect Gmail to track application responses</div>
           </div>
           <svg class="pay-chevron w-4 h-4 text-ink-700/40 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </div>
         <div class="pay-section-body px-4 pb-4" style="display:none">
           <div class="space-y-3">
-            <div>
-              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Gmail Address</label>
-              <input type="email" id="payEmailAddr" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400" placeholder="your@gmail.com"/>
+            <p class="text-[12px] text-ink-700/70">Connect Gmail to track applications, interview invitations, recruiter responses, assessments, and offers automatically.</p>
+            <div id="payEmailConnectedState" class="hidden">
+              <div class="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
+                <span class="text-[12px] font-semibold text-emerald-800" id="payEmailLabel">Connected as email@gmail.com</span>
+                <button onclick="disconnectPayEmail()" class="text-xs text-rose-600 hover:text-rose-700 font-bold">Disconnect</button>
+              </div>
             </div>
-            <div class="relative">
-              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Google App Password</label>
-              <input type="password" id="payEmailPass" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400 pr-10" placeholder="16-digit app password"/>
-              <button type="button" onclick="togglePayPw('payEmailPass', this)" class="absolute right-3 top-[30px] text-ink-700/40 hover:text-ink-700">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <div id="payEmailDisconnectedState">
+              <button onclick="connectPayEmail()" id="btnPayEmail" class="w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition flex items-center justify-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                Connect Gmail Account
               </button>
             </div>
-            <!-- How to generate app password -->
-            <details class="group">
-              <summary class="text-[12px] font-semibold text-brand-700 cursor-pointer hover:underline">How to generate a Google App Password ↓</summary>
-              <div class="mt-2 p-3.5 rounded-xl bg-ink-900/[.02] border border-ink-900/5 text-[12px] text-ink-700/80 space-y-2">
-                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">1.</span><span>Open your <a href="https://myaccount.google.com/security" target="_blank" class="text-brand-700 underline">Google Account Security</a> page.</span></div>
-                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">2.</span><span>Enable <strong>2-Step Verification</strong> (under "Signing in to Google"). Skip if already on.</span></div>
-                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">3.</span><span>Click on <strong>2-Step Verification</strong>, scroll to the bottom, and select <strong>App passwords</strong>.</span></div>
-                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">4.</span><span>Type a custom name (e.g. "Job Agent") and click <strong>Create</strong>.</span></div>
-                <div class="flex gap-2"><span class="font-bold text-brand-700 shrink-0">5.</span><span>Copy the <strong>16-digit passcode</strong> (without spaces) and paste it above.</span></div>
-              </div>
-            </details>
-            <div class="p-3 rounded-xl bg-brand-50/50 border border-brand-100 text-[11px] text-brand-800">
-              <span class="font-semibold">🔒 Secure:</span> Your app password is encrypted with AES-256-GCM. We never store plaintext credentials.
-            </div>
-            <button onclick="savePayEmail()" id="btnPayEmail" class="w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition">Connect</button>
             <div id="payEmailStatus" class="text-[12px] hidden"></div>
           </div>
         </div>
@@ -465,6 +452,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const endsStr = endsDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
     endsText.textContent = `Plan ends ${endsStr}. Auto-renews monthly unless cancelled.`;
   }
+
+  // Auto-show resumeModal if they have active subscription or returning from Gmail OAuth
+  const gmailSuccess = urlParams.get('gmail_success');
+  const gmailError = urlParams.get('gmail_error');
+  if (gmailSuccess || gmailError) {
+    if (gmailError) {
+      alert('Gmail Connection Error: ' + decodeURIComponent(gmailError));
+    }
+    showResumeModal();
+  } else {
+    try {
+      const meRes = await fetch('/api/me');
+      const meData = await meRes.json();
+      if (meData.ok && meData.user && meData.user.is_agent_buyer) {
+        showResumeModal();
+      }
+    } catch (e) {}
+  }
 });
 
 const statusEl = document.getElementById('status');
@@ -590,10 +595,20 @@ function showResumeModal() {
         payLinkedinDone = true;
         updatePayCheck('payCheckLinkedin', true);
       }
-      if (u.has_gmail_creds) {
+      
+      // Update Gmail connection state
+      if (u.gmail_connected) {
         payEmailDone = true;
         updatePayCheck('payCheckEmail', true);
+        document.getElementById('payEmailConnectedState').classList.remove('hidden');
+        document.getElementById('payEmailDisconnectedState').classList.add('hidden');
+        document.getElementById('payEmailLabel').textContent = 'Connected as ' + (u.gmail_username || 'Gmail Account');
+      } else {
+        payEmailDone = false;
+        document.getElementById('payEmailConnectedState').classList.add('hidden');
+        document.getElementById('payEmailDisconnectedState').classList.remove('hidden');
       }
+
       // If all already done, show run agent modal immediately
       if (payResumeDone && payLinkedinDone && payEmailDone) {
         setTimeout(() => {
@@ -792,53 +807,50 @@ async function savePayLinkedin() {
   }
 }
 
-async function savePayEmail() {
-  const email = document.getElementById('payEmailAddr').value.trim();
-  const appPassword = document.getElementById('payEmailPass').value.trim();
+async function connectPayEmail() {
   const statusEl = document.getElementById('payEmailStatus');
   const btn = document.getElementById('btnPayEmail');
-
-  if (!email || !appPassword) {
-    statusEl.className = 'text-[12px] text-rose-700 font-medium';
-    statusEl.textContent = 'Both fields are required.';
-    statusEl.classList.remove('hidden');
-    return;
-  }
-
   btn.textContent = 'Connecting...';
   btn.disabled = true;
 
   try {
-    const res = await fetch('/api/user/email-credentials', {
+    const res = await fetch('/gmail/connect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, app_password: appPassword })
+      body: JSON.stringify({ source: 'pay' })
     });
     const data = await res.json();
-    if (data.ok) {
-      statusEl.className = 'text-[12px] text-emerald-700 font-medium';
-      statusEl.textContent = '✓ Email connected securely!';
-      statusEl.classList.remove('hidden');
-      updatePayCheck('payCheckEmail', true);
-      btn.textContent = '✓ Connected';
-      btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
-      payEmailDone = true;
-      autoAdvancePaySection();
+    if (data.ok && data.url) {
+      window.location.href = data.url;
     } else {
       statusEl.className = 'text-[12px] text-rose-700 font-medium';
-      statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+      statusEl.textContent = 'Error: ' + (data.error || 'Failed to generate connection URL');
       statusEl.classList.remove('hidden');
-      btn.textContent = 'Connect';
+      btn.textContent = 'Connect Gmail Account';
       btn.disabled = false;
     }
   } catch (err) {
     statusEl.className = 'text-[12px] text-rose-700 font-medium';
     statusEl.textContent = 'Error: ' + err.message;
     statusEl.classList.remove('hidden');
-    btn.textContent = 'Connect';
+    btn.textContent = 'Connect Gmail Account';
     btn.disabled = false;
   }
 }
+
+async function disconnectPayEmail() {
+  if (!confirm('Are you sure you want to disconnect Gmail?')) return;
+  try {
+    const res = await fetch('/gmail/disconnect', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      showResumeModal();
+    }
+  } catch (err) {
+    console.error('Failed to disconnect Gmail:', err);
+  }
+}
+
 
 // Auto-open the first section on modal show
 const _origShowResumeModal = showResumeModal;

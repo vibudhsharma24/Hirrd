@@ -970,13 +970,23 @@ def api_me():
         return jsonify({"ok": False, "error": "User not found"}), 404
     safe = {k: v for k, v in user_dict.items() if k not in ("password_hash", "linkedin_password", "gmail_password")}
     safe["full_name"] = f"{safe.get('name', '')} {safe.get('last_name', '')}".strip()
+    
+    # Check Gmail connection status
+    g_conn = db.get_google_connection(flask_current_user.id)
+    gmail_connected = g_conn is not None
+    
     # Expose boolean flags so frontend knows if credentials are set
     safe["has_linkedin_creds"] = bool(user_dict.get("linkedin_username") and user_dict.get("linkedin_password"))
-    safe["has_gmail_creds"] = bool(user_dict.get("gmail_username") and user_dict.get("gmail_password"))
+    safe["has_gmail_creds"] = bool(user_dict.get("gmail_username") and user_dict.get("gmail_password")) or gmail_connected
+    safe["gmail_connected"] = gmail_connected or bool(user_dict.get("gmail_connected"))
+    if g_conn:
+        safe["gmail_username"] = g_conn["google_email"]
+    
     # Strip password from nested agent_buyer if present
     if safe.get("agent_buyer"):
         safe["agent_buyer"].pop("password_hash", None)
     return jsonify({"ok": True, "user": safe})
+
 
 
 @app.route("/api/set-password", methods=["POST"])
@@ -1079,6 +1089,10 @@ def save_user_settings():
     email_summaries = int(data["email_summaries"]) if "email_summaries" in data else int(user.get("email_summaries") or 0)
     weekly_report = int(data["weekly_report"]) if "weekly_report" in data else int(user.get("weekly_report") or 0)
     human_in_loop = int(data["human_in_loop"]) if "human_in_loop" in data else int(user.get("human_in_loop") or 0)
+
+    # Disconnect Google connection if gmail_connected is set to 0
+    if "gmail_connected" in data and int(data["gmail_connected"]) == 0:
+        db.delete_google_connection(flask_current_user.id)
 
     # Save to database
     with db._connect() as conn:
@@ -1250,6 +1264,144 @@ def save_email_credentials():
     })
 
 
+def get_valid_google_connection(user_id):
+    """Retrieve Google OAuth connection for the user, refreshing the access token if expired."""
+    from datetime import datetime, timezone, timedelta
+    import json
+    import urllib.request
+    import urllib.parse
+    from core.auth import decrypt_credential, encrypt_credential
+    
+    conn_data = db.get_google_connection(user_id)
+    if not conn_data:
+        return None
+        
+    # Check if expired (or expiring in the next 60 seconds)
+    expiry = datetime.fromisoformat(conn_data["token_expiry"])
+    now = datetime.now(timezone.utc)
+    
+    if expiry - now > timedelta(seconds=60):
+        # Still valid, decrypt access token and return
+        try:
+            conn_data["access_token"] = decrypt_credential(conn_data["access_token"])
+            return conn_data
+        except Exception:
+            return None
+            
+    # Expired, refresh it!
+    refresh_token = ""
+    try:
+        refresh_token = decrypt_credential(conn_data["refresh_token"])
+    except Exception:
+        pass
+        
+    if not refresh_token:
+        # Cannot refresh without a refresh token
+        return None
+        
+    client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+    
+    try:
+        data = urllib.parse.urlencode({
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token"
+        }).encode("utf-8")
+        
+        req = urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            token_resp = json.loads(resp.read())
+            
+        new_access = token_resp.get("access_token")
+        if not new_access:
+            return None
+            
+        expires_in = token_resp.get("expires_in", 3600)
+        new_expiry = (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat()
+        
+        enc_access = encrypt_credential(new_access)
+        
+        # Save to database
+        db.save_google_connection(
+            user_id=user_id,
+            google_email=conn_data["google_email"],
+            access_token=enc_access,
+            refresh_token=conn_data["refresh_token"],  # keep same
+            token_expiry=new_expiry,
+            scopes=conn_data["scopes"]
+        )
+        
+        # Return updated connection details
+        conn_data["access_token"] = new_access
+        conn_data["token_expiry"] = new_expiry
+        return conn_data
+    except Exception as exc:
+        print(f"[Google OAuth Token Refresh Error] {exc}")
+        return None
+
+
+def get_oauth_gmail_preview(access_token, limit=3):
+    """Fetch recent email list using Gmail REST API with Bearer token."""
+    import urllib.request
+    import json
+    
+    try:
+        # Get list of messages
+        url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults={limit}"
+        req = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            list_data = json.loads(resp.read())
+            
+        messages = list_data.get("messages", [])
+        preview_list = []
+        for msg in messages:
+            msg_id = msg.get("id")
+            detail_url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{msg_id}"
+            detail_req = urllib.request.Request(
+                detail_url,
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+            with urllib.request.urlopen(detail_req, timeout=10) as detail_resp:
+                msg_detail = json.loads(detail_resp.read())
+                
+            payload = msg_detail.get("payload", {})
+            headers = payload.get("headers", [])
+            
+            subject = "(No Subject)"
+            sender = "(Unknown Sender)"
+            date_str = ""
+            
+            for h in headers:
+                name = h.get("name", "").lower()
+                if name == "subject":
+                    subject = h.get("value", "")
+                elif name == "from":
+                    sender = h.get("value", "")
+                elif name == "date":
+                    date_str = h.get("value", "")
+                    
+            preview_list.append({
+                "subject": subject,
+                "from": sender,
+                "date": date_str
+            })
+            
+        return preview_list
+    except Exception as exc:
+        print(f"[Gmail OAuth Preview Error] {exc}")
+        return None
+
+
 @app.route("/api/user/connections-preview", methods=["GET"])
 @login_required
 def get_connections_preview():
@@ -1262,8 +1414,14 @@ def get_connections_preview():
     gmail_username = user.get("gmail_username")
     gmail_password = user.get("gmail_password")
     
+    # Check Google OAuth connection first!
+    g_conn = get_valid_google_connection(flask_current_user.id)
+    
     preview = None
-    if gmail_username and gmail_password:
+    if g_conn:
+        gmail_username = g_conn["google_email"]
+        preview = get_oauth_gmail_preview(g_conn["access_token"], limit=3)
+    elif gmail_username and gmail_password:
         preview = get_gmail_inbox_preview(gmail_username, gmail_password, limit=3)
         
     if preview is None:
@@ -1502,6 +1660,190 @@ def save_preferences():
         conn.commit()
     print(f"[API] Updated job preferences for user {flask_current_user.id}")
     return jsonify({"ok": True, "message": "Preferences saved successfully"})
+
+
+# --------------------------------------------------------------------------- #
+#  Gmail Integration & OAuth Endpoints                                       #
+# --------------------------------------------------------------------------- #
+@app.route("/gmail/connect", methods=["POST"])
+@login_required
+def gmail_connect():
+    """Build and return the Google OAuth authorization URL for Gmail readonly access."""
+    user = db.get_user(flask_current_user.id)
+    if not user or not user.get("is_agent_buyer"):
+        return jsonify({"ok": False, "error": "Active subscription required to connect Gmail."}), 403
+
+    client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+    if not client_id:
+        return jsonify({"ok": False, "error": "Google OAuth is not configured on the server."}), 500
+
+    data = request.get_json(silent=True) or {}
+    source = data.get("source", "dashboard")
+
+    # Reconstruct/read redirect URI
+    redirect_uri = os.environ.get("GOOGLE_GMAIL_REDIRECT_URI")
+    if not redirect_uri:
+        redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
+
+    scopes = "openid email profile https://www.googleapis.com/auth/gmail.readonly"
+    
+    import json
+    import urllib.parse
+    state_str = urllib.parse.quote(json.dumps({
+        "user_id": flask_current_user.id,
+        "source": source
+    }))
+
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": scopes,
+        "access_type": "offline",
+        "prompt": "consent",
+        "state": state_str
+    }
+    
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+    return jsonify({"ok": True, "url": auth_url})
+
+
+@app.route("/gmail/callback", methods=["GET"])
+def gmail_callback():
+    """Handle OAuth2 authorization code callback and store tokens."""
+    import urllib.request
+    import urllib.parse
+    import json
+    from datetime import datetime, timezone, timedelta
+    from core.auth import encrypt_credential
+
+    params = request.args.to_dict()
+    code = params.get("code", "")
+    state = params.get("state", "")
+
+    # Decode state
+    state_data = {}
+    if state:
+        try:
+            state_data = json.loads(urllib.parse.unquote(state))
+        except Exception:
+            pass
+    user_id = state_data.get("user_id")
+    source = state_data.get("source", "dashboard")
+
+    redirect_target = "/pay" if source == "pay" else "/dashboard"
+
+    if "error" in params:
+        return redirect(f"{redirect_target}?gmail_error={urllib.parse.quote(params['error'])}")
+    if not code:
+        return redirect(f"{redirect_target}?gmail_error=no_code")
+    if not user_id:
+        return redirect(f"{redirect_target}?gmail_error=no_user")
+
+    client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+    
+    redirect_uri = os.environ.get("GOOGLE_GMAIL_REDIRECT_URI")
+    if not redirect_uri:
+        redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
+
+    try:
+        token_data = urllib.parse.urlencode({
+            "code": code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        }).encode("utf-8")
+
+        token_req = urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=token_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        with urllib.request.urlopen(token_req, timeout=10) as resp:
+            token_resp = json.loads(resp.read())
+
+        access_token = token_resp.get("access_token", "")
+        refresh_token = token_resp.get("refresh_token", "")
+        expires_in = token_resp.get("expires_in", 3600)
+        token_scopes = token_resp.get("scope", "")
+
+        if not access_token:
+            raise ValueError("No access_token returned from Google.")
+
+        # Get google email
+        profile_req = urllib.request.Request(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        with urllib.request.urlopen(profile_req, timeout=10) as resp:
+            profile = json.loads(resp.read())
+        google_email = profile.get("email", "")
+
+        if not google_email:
+            raise ValueError("Could not retrieve email from Google userinfo.")
+
+        # Encrypt tokens
+        enc_access = encrypt_credential(access_token)
+        
+        # Preserve refresh token if we already had one and google didn't return a new one
+        existing = db.get_google_connection(user_id)
+        if not refresh_token and existing:
+            enc_refresh = existing["refresh_token"]
+        else:
+            enc_refresh = encrypt_credential(refresh_token or "")
+
+        expiry_time = (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat()
+
+        # Save to database
+        db.save_google_connection(
+            user_id=user_id,
+            google_email=google_email,
+            access_token=enc_access,
+            refresh_token=enc_refresh,
+            token_expiry=expiry_time,
+            scopes=token_scopes
+        )
+
+        # Mark user table gmail_connected as 1
+        with db._connect() as conn:
+            conn.execute("UPDATE users SET gmail_connected = 1 WHERE id = ?", (user_id,))
+            conn.commit()
+
+        return redirect(f"{redirect_target}?gmail_success=1")
+
+    except Exception as exc:
+        print(f"[Gmail Callback Error] {exc}")
+        return redirect(f"{redirect_target}?gmail_error={urllib.parse.quote(str(exc))}")
+
+
+@app.route("/gmail/status", methods=["GET"])
+@login_required
+def gmail_status():
+    """Return whether the current user is connected to Google OAuth."""
+    conn = db.get_google_connection(flask_current_user.id)
+    if conn:
+        return jsonify({
+            "ok": True,
+            "connected": True,
+            "email": conn["google_email"],
+            "connected_at": conn["connected_at"]
+        })
+    return jsonify({"ok": True, "connected": False})
+
+
+@app.route("/gmail/disconnect", methods=["POST"])
+@login_required
+def gmail_disconnect():
+    """Disconnect Gmail OAuth by deleting token record."""
+    db.delete_google_connection(flask_current_user.id)
+    with db._connect() as conn:
+        conn.execute("UPDATE users SET gmail_connected = 0 WHERE id = ?", (flask_current_user.id,))
+        conn.commit()
+    return jsonify({"ok": True, "message": "Gmail disconnected successfully."})
+
 
 
 

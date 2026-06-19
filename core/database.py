@@ -80,6 +80,21 @@ def init_db():
             )
         """)
 
+        # Create google_connections table if it doesn't exist
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS google_connections (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id       INTEGER NOT NULL UNIQUE,
+                google_email  TEXT    NOT NULL,
+                access_token  TEXT    NOT NULL,
+                refresh_token TEXT    NOT NULL,
+                token_expiry  TEXT    NOT NULL,
+                scopes        TEXT    NOT NULL,
+                connected_at  TEXT    NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+
         # Create agent_buyers table if it doesn't already exist (preserves existing buyers)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS agent_buyers (
@@ -2030,4 +2045,29 @@ def get_or_create_portal_credential(buyer_id: int, portal_hostname: str, firstna
         conn.commit()
         
     return {"portal_hostname": portal_hostname, "email": email, "password": password}
+
+
+def save_google_connection(user_id: int, google_email: str, access_token: str, refresh_token: str, token_expiry: str, scopes: str):
+    connected_at = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            """INSERT OR REPLACE INTO google_connections 
+               (user_id, google_email, access_token, refresh_token, token_expiry, scopes, connected_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, google_email, access_token, refresh_token, token_expiry, scopes, connected_at)
+        )
+        conn.commit()
+
+
+def get_google_connection(user_id: int) -> dict | None:
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM google_connections WHERE user_id = ?", (user_id,)).fetchone()
+        return _row_to_dict(row) if row else None
+
+
+def delete_google_connection(user_id: int):
+    with _connect() as conn:
+        conn.execute("DELETE FROM google_connections WHERE user_id = ?", (user_id,))
+        conn.commit()
+
 

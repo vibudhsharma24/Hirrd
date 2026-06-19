@@ -17,5 +17,4 @@ if (-not (Test-Path $activateScript)) {
 & $activateScript
 
 $runScript = Join-Path $PSScriptRoot "run.py"
-python $runScript
-
+python "$runScript"
