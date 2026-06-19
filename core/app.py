@@ -7,7 +7,7 @@ import csv
 import io
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -37,6 +37,10 @@ CORS(app)
 # Limit upload size to 5 MB
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
+# Set session lifespan and remember cookie duration to 15 minutes
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=15)
+app.config["REMEMBER_COOKIE_DURATION"] = timedelta(minutes=15)
+
 # Init Flask-Login
 login_manager.init_app(app)
 
@@ -59,8 +63,6 @@ if not os.environ.get("_APP_FACTORY_USED"):
 # --------------------------------------------------------------------------- #
 @app.route("/")
 def index():
-    if flask_current_user.is_authenticated:
-        return redirect("/dashboard")
     return send_file(os.path.join(FRONTEND_DIR, "index.html"))
 
 
@@ -77,8 +79,9 @@ def signup_page():
 
 
 @app.route("/dashboard")
-@login_required
 def dashboard_page():
+    if not flask_current_user.is_authenticated:
+        return send_file(os.path.join(FRONTEND_DIR, "index.html"))
     return send_file(os.path.join(FRONTEND_DIR, "dashboard.html"))
 
 
@@ -135,7 +138,35 @@ def signup():
         return jsonify({"ok": False, "errors": [str(exc)]}), 400
 
     print(f"[API] New signup saved  id={user['id']}  email={user['email']}")
-    return jsonify({"ok": True, "user": user}), 201
+    
+    # Simulate sending immediate sign-up confirmation email
+    email_body = f"""
+    ======================================================================
+    [EMAIL SERVICE] Sending Sign-up Confirmation Email
+    To: {user['email']}
+    Subject: Welcome to IITIIMJobAssistant!
+    
+    Dear {user['name']},
+    
+    Thank you for registering at IITIIMJobAssistant. Your account is 
+    now created, and our team is manually reviewing your LinkedIn 
+    profile to verify your IIT/IIM status. 
+    
+    We will notify you via another email once your verification request 
+    has been processed.
+    
+    Best regards,
+    The IITIIMJobAssistant Team
+    ======================================================================
+    """
+    print(email_body)
+
+    return jsonify({
+        "ok": True, 
+        "user": user, 
+        "email_sent": True, 
+        "message": "Immediate sign-up confirmation email sent."
+    }), 201
 
 
 # --------------------------------------------------------------------------- #
@@ -423,6 +454,11 @@ def trigger_apply():
         daemon=True,
     )
     t.start()
+
+    try:
+        db.update_user_agent_status(user_id, "running")
+    except Exception as e:
+        print(f"[Agent] Failed to update user agent status to running: {e}")
 
     return jsonify({
         "ok": True,
@@ -909,7 +945,12 @@ def user_login():
     if not user_dict:
         return jsonify({"ok": False, "error": "Invalid email or password"}), 401
     user = User(user_dict)
-    login_user(user, remember=True)
+    
+    remember = bool(data.get("remember", False))
+    from flask import session
+    session.permanent = remember
+    login_user(user, remember=remember)
+    
     safe = user.to_dict()
     return jsonify({"ok": True, "user": safe, "needs_password": not user.password_set})
 
@@ -947,6 +988,59 @@ def set_password():
         return jsonify({"ok": False, "error": "Password must be at least 6 characters"}), 400
     db.update_user_password(flask_current_user.id, password)
     return jsonify({"ok": True, "message": "Password set successfully"})
+
+
+@app.route("/api/check-email", methods=["GET"])
+def check_email():
+    email = request.args.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"ok": False, "error": "Email is required"}), 400
+    user = db.get_user_by_email(email)
+    return jsonify({"ok": True, "available": user is None})
+
+
+@app.route("/api/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return jsonify({"ok": False, "error": "Email is required"}), 400
+    user = db.get_user_by_email(email)
+    if not user:
+        return jsonify({"ok": False, "error": "No account found with this email address"}), 404
+    return jsonify({
+        "ok": True,
+        "message": "A verification code has been sent to your email. (For demo purposes, use code: 123456)"
+    })
+
+
+@app.route("/api/reset-password", methods=["POST"])
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    code = (data.get("code") or "").strip()
+    password = (data.get("password") or "").strip()
+
+    if not email or not code or not password:
+        return jsonify({"ok": False, "error": "Email, verification code, and new password are required"}), 400
+    
+    if len(password) < 6:
+        return jsonify({"ok": False, "error": "Password must be at least 6 characters"}), 400
+
+    if code != "123456":
+        return jsonify({"ok": False, "error": "Invalid verification code"}), 400
+
+    user = db.get_user_by_email(email)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+
+    ok = db.update_user_password(user["id"], password)
+    if not ok:
+        return jsonify({"ok": False, "error": "Failed to update password"}), 500
+
+    print(f"[API] Password reset successfully for user id={user['id']} email={email}")
+    return jsonify({"ok": True, "message": "Password reset successfully"})
+
 
 
 @app.route("/api/user/settings", methods=["POST"])

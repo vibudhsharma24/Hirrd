@@ -309,7 +309,7 @@ function renderSidebar() {
   document.getElementById('headerAvatar').textContent = avatarText;
   
   const agentStatus = U.agent_status || 'inactive';
-  const isActive = U.is_agent_buyer && agentStatus === 'running';
+  const isActive = agentStatus === 'running';
   
   if (U.is_agent_buyer) {
     document.getElementById('agentBadge').classList.replace('hidden', 'inline-flex');
@@ -327,14 +327,23 @@ function renderSidebar() {
     subtitleStr = "IIT Bombay '22";
   }
 
-  let statusText = "Agent offline";
-  let statusDotColor = "bg-ink-700/40";
+  let statusText = "Offline";
+  let statusDotColor = "bg-rose-500";
   if (isActive) {
-    statusText = "Agent running · 3 hrs left today";
+    statusText = "Online";
     statusDotColor = "bg-emerald-500 animate-pulse";
-  } else if (U.is_agent_buyer && agentStatus === 'paused') {
-    statusText = "Agent paused";
+  } else if (agentStatus === 'paused') {
+    statusText = "Paused";
     statusDotColor = "bg-amber-500";
+  }
+
+  const sidebarUser = document.getElementById('sidebarUser');
+  if (sidebarUser) {
+    if (isActive) {
+      sidebarUser.className = "mt-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-100 cursor-pointer hover:bg-emerald-100/50 transition";
+    } else {
+      sidebarUser.className = "mt-4 p-3.5 rounded-xl bg-brand-50/60 border border-brand-100/50 cursor-pointer hover:bg-brand-100/40 transition";
+    }
   }
 
   document.getElementById('sidebarUser').innerHTML = `
@@ -356,7 +365,7 @@ function renderDashboard() {
   const status = U.status || 'pending';
   const statusColor = status === 'approved' ? 'emerald' : status === 'rejected' ? 'rose' : 'amber';
   const agentStatus = U.agent_status || 'inactive';
-  const isActive = U.is_agent_buyer && agentStatus === 'running';
+  const isActive = agentStatus === 'running';
 
   // 1. Calculate stats
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -739,7 +748,11 @@ async function startAgent() {
   try {
     const res = await fetch('/api/agent/start', { method: 'POST' });
     const data = await res.json();
-    if (data.ok) { loadDashboard(); }
+    if (data.ok) {
+      U.agent_status = 'running';
+      renderSidebar();
+      loadDashboard();
+    }
     else { alert(data.error || 'Could not start agent'); }
   } catch (e) { alert('Error: ' + e.message); }
 }
@@ -748,7 +761,11 @@ async function stopAgent() {
   try {
     const res = await fetch('/api/agent/stop', { method: 'POST' });
     const data = await res.json();
-    if (data.ok) { loadDashboard(); }
+    if (data.ok) {
+      U.agent_status = 'inactive';
+      renderSidebar();
+      loadDashboard();
+    }
     else { alert(data.error || 'Could not stop agent'); }
   } catch (e) { alert('Error: ' + e.message); }
 }
@@ -853,7 +870,7 @@ function handleRouting() {
 
 function renderStore() {
   const agentStatus = U.agent_status || 'inactive';
-  const isActive = U.is_agent_buyer && agentStatus === 'running';
+  const isActive = agentStatus === 'running';
 
   // Define our 4 agents
   const agents = [
@@ -1417,7 +1434,7 @@ async function toggleSettingPreference(key, checked) {
 function renderAgent() {
   const status = U.status || 'pending';
   const agentStatus = U.agent_status || 'inactive';
-  const isActive = U.is_agent_buyer && agentStatus === 'running';
+  const isActive = agentStatus === 'running';
   
   let renewsStr = getRenewsStr();
 
@@ -2055,7 +2072,7 @@ async function pollLogs() {
         }
       } else {
         const agentStatus = U.agent_status || 'inactive';
-        const isActive = U.is_agent_buyer && agentStatus === 'running';
+        const isActive = agentStatus === 'running';
         if (isActive) {
           term.innerHTML = `<div class="text-zinc-500">// Agent is active. Waiting for incoming execution log stream...</div>`;
         } else {
@@ -2171,6 +2188,9 @@ async function runAgentNow() {
     const data = await res.json();
     if (data.ok) {
       alert('Agent run successfully triggered in the background!');
+      U.agent_status = 'running';
+      renderSidebar();
+      renderDashboard();
       setTimeout(async () => {
         try {
           const logsRes = await fetch('/api/submission-logs');
@@ -3207,6 +3227,8 @@ async function executeRunAgent() {
     if (data.ok || data.status === 'already_running') {
       btn.innerHTML = '✓ Agent Started!';
       btn.classList.add('bg-emerald-600');
+      U.agent_status = 'running';
+      renderSidebar();
       setTimeout(() => {
         closeRunAgentModal();
         loadDashboard();

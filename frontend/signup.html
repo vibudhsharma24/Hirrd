@@ -87,7 +87,10 @@
     </div>
     <label class="text-[13px] font-medium mt-3 block">Email</label>
     <input id="signupEmail" type="email" placeholder="you@iitb.ac.in" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
-    <label class="text-[13px] font-medium mt-3 block">Password</label>
+    <div class="flex justify-between items-center mt-3">
+      <label class="text-[13px] font-medium">Password</label>
+      <button onclick="showForgotPasswordModal()" class="text-[12px] text-brand-700 font-semibold hover:underline focus:outline-none">Forgot password?</button>
+    </div>
     <input id="signupPassword" type="password" placeholder="Minimum 6 characters" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
     <label class="text-[13px] font-medium mt-3 block">Mobile number</label>
     <input id="signupMobile" type="tel" placeholder="+91 9876543210" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
@@ -187,7 +190,50 @@ function activateStep(n) {
   });
 }
 
-function showStep2() {
+let emailChecking = false;
+async function checkEmailAvailability() {
+  const emailInput = document.getElementById('signupEmail');
+  const email = emailInput.value.trim();
+  const errEl = document.getElementById('errorMsg');
+  
+  if (!email) return true;
+  
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showError(errEl, 'Please enter a valid email address');
+    emailInput.classList.add('border-rose-400');
+    return false;
+  }
+  
+  emailChecking = true;
+  try {
+    const res = await fetch(`/api/check-email?email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (data.ok) {
+      if (!data.available) {
+        showError(errEl, 'This email has already been registered');
+        emailInput.classList.add('border-rose-400');
+        return false;
+      } else {
+        if (errEl.textContent.includes('already been registered') || errEl.textContent.includes('valid email')) {
+          errEl.classList.add('hidden');
+          errEl.textContent = '';
+        }
+        emailInput.classList.remove('border-rose-400');
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to verify email availability', err);
+  } finally {
+    emailChecking = false;
+  }
+  return true;
+}
+
+// Add blur listener to check email availability
+document.getElementById('signupEmail').addEventListener('blur', checkEmailAvailability);
+
+async function showStep2() {
   const first = document.getElementById('signupFirst').value.trim();
   const last = document.getElementById('signupLast').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
@@ -200,11 +246,141 @@ function showStep2() {
   }
   if (pw.length < 6) { showError(errorEl, 'Password must be at least 6 characters'); return; }
 
+  // Check email availability first
+  const step1Btn = document.getElementById('step1Btn');
+  step1Btn.disabled = true;
+  step1Btn.innerHTML = '<div class="loader"></div> Checking...';
+  
+  const emailAvailable = await checkEmailAvailability();
+  
+  step1Btn.disabled = false;
+  step1Btn.innerHTML = 'Continue';
+  
+  if (!emailAvailable) {
+    return;
+  }
+
   // Store for step 2 submission
   window._signupData = { name: first, last_name: last, email, password: pw, mobile_number: mobile };
   document.getElementById('signupStep1').classList.add('hidden');
   document.getElementById('signupStep2').classList.remove('hidden');
   activateStep(1);
+}
+
+// Modal logic for Forgot Password
+function showForgotPasswordModal() {
+  const modal = document.getElementById('forgotPasswordModal');
+  const card = document.getElementById('forgotPasswordCard');
+  
+  document.getElementById('fpStep1').classList.remove('hidden');
+  document.getElementById('fpStep2').classList.add('hidden');
+  document.getElementById('fpStep3').classList.add('hidden');
+  document.getElementById('fpEmail').value = '';
+  document.getElementById('fpCode').value = '';
+  document.getElementById('fpNewPassword').value = '';
+  document.getElementById('fpConfirmPassword').value = '';
+  document.getElementById('fpError1').classList.add('hidden');
+  document.getElementById('fpError2').classList.add('hidden');
+
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    card.classList.remove('scale-95', 'opacity-0');
+    card.classList.add('scale-100', 'opacity-100');
+  }, 10);
+}
+
+function closeForgotPasswordModal() {
+  const modal = document.getElementById('forgotPasswordModal');
+  const card = document.getElementById('forgotPasswordCard');
+  card.classList.remove('scale-100', 'opacity-100');
+  card.classList.add('scale-95', 'opacity-0');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+  }, 300);
+}
+
+async function sendResetCode() {
+  const email = document.getElementById('fpEmail').value.trim();
+  const errEl = document.getElementById('fpError1');
+  errEl.classList.add('hidden');
+  
+  if (!email) {
+    showError(errEl, 'Email is required');
+    return;
+  }
+  
+  const btn = document.getElementById('fpSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader"></div> Sending...';
+  
+  try {
+    const res = await fetch('/api/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('fpStep1').classList.add('hidden');
+      document.getElementById('fpStep2').classList.remove('hidden');
+    } else {
+      showError(errEl, data.error || 'Failed to send verification code');
+    }
+  } catch (err) {
+    showError(errEl, 'Network error — please try again');
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Send Verification Code';
+}
+
+async function fpResetPassword() {
+  const email = document.getElementById('fpEmail').value.trim();
+  const code = document.getElementById('fpCode').value.trim();
+  const password = document.getElementById('fpNewPassword').value;
+  const confirm = document.getElementById('fpConfirmPassword').value;
+  const errEl = document.getElementById('fpError2');
+  errEl.classList.add('hidden');
+  
+  if (!code || !password || !confirm) {
+    showError(errEl, 'Please fill in all fields');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showError(errEl, 'Password must be at least 6 characters');
+    return;
+  }
+  
+  if (password !== confirm) {
+    showError(errEl, 'Passwords do not match');
+    return;
+  }
+  
+  const btn = document.getElementById('fpResetBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader"></div> Resetting...';
+  
+  try {
+    const res = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, password }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('fpStep2').classList.add('hidden');
+      document.getElementById('fpStep3').classList.remove('hidden');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
+    } else {
+      showError(errEl, data.error || 'Failed to reset password');
+    }
+  } catch (err) {
+    showError(errEl, 'Network error — please try again');
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Reset Password';
 }
 
 async function submitForReview() {
@@ -225,14 +401,9 @@ async function submitForReview() {
     });
     const data = await res.json();
     if (data.ok) {
-      // Auto-login
-      await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: payload.email, password: payload.password }),
-      });
       document.getElementById('reviewPending').classList.remove('hidden');
       btn.classList.add('hidden');
+      showSignupSuccessModal();
     } else {
       showError(errEl, (data.errors || [data.error]).join(', '));
     }
@@ -241,6 +412,27 @@ async function submitForReview() {
   }
   btn.disabled = false;
   btn.innerHTML = 'Submit';
+}
+
+function showSignupSuccessModal() {
+  const modal = document.getElementById('signupSuccessModal');
+  const card = document.getElementById('signupSuccessCard');
+  
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    card.classList.remove('scale-95', 'opacity-0');
+  }, 10);
+}
+
+function closeSignupSuccessModal() {
+  const modal = document.getElementById('signupSuccessModal');
+  const card = document.getElementById('signupSuccessCard');
+  
+  card.classList.add('scale-95', 'opacity-0');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    showStep3();
+  }, 300);
 }
 
 function showStep3() {
@@ -281,5 +473,108 @@ async function startGoogleOAuth() {
   }
 }
 </script>
+
+
+<!-- Signup Success Modal -->
+<div id="signupSuccessModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <!-- Backdrop with premium blur -->
+  <div class="absolute inset-0 bg-ink-950/40 backdrop-blur-md transition-opacity duration-300" onclick="closeSignupSuccessModal()"></div>
+  
+  <!-- Modal Card -->
+  <div class="relative w-full max-w-md sm-card shadow-soft p-8 bg-white/95 backdrop-blur-xl border border-white/20 transform scale-95 opacity-0 transition-all duration-300 ease-out" id="signupSuccessCard">
+    <!-- Close button -->
+    <button onclick="closeSignupSuccessModal()" class="absolute top-4 right-4 text-ink-700/50 hover:text-ink-900 transition focus:outline-none">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+
+    <div class="text-center py-2">
+      <div class="w-16 h-16 mx-auto rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
+        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h2 class="font-display text-2xl font-bold">Registration Successful!</h2>
+      <p class="mt-2 text-[14px] text-ink-700/70">Immediate sign-up confirmation email has been sent successfully.</p>
+      
+      <div class="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-left">
+        <div class="flex items-start gap-2.5">
+          <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div>
+            <span class="font-semibold text-amber-800 text-[13px]">Verification Status: Pending Review</span>
+            <p class="text-amber-700 text-[12px] mt-0.5">Our team will manually review your LinkedIn credentials. You will receive another notification email once your access is approved.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex flex-col gap-2">
+        <button onclick="window.location.href='/login'" class="w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 transition focus:outline-none">
+          Proceed to Sign In
+        </button>
+        <button onclick="closeSignupSuccessModal()" class="w-full py-2.5 rounded-xl border border-ink-900/10 font-semibold text-ink-800 hover:bg-ink-900/5 transition focus:outline-none text-[13px]">
+          Got it
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <!-- Backdrop with premium blur -->
+  <div class="absolute inset-0 bg-ink-950/40 backdrop-blur-md transition-opacity duration-300" onclick="closeForgotPasswordModal()"></div>
+  
+  <!-- Modal Card -->
+  <div class="relative w-full max-w-md sm-card shadow-soft p-8 bg-white/95 backdrop-blur-xl border border-white/20 transform scale-95 opacity-0 transition-all duration-300 ease-out" id="forgotPasswordCard">
+    <!-- Close button -->
+    <button onclick="closeForgotPasswordModal()" class="absolute top-4 right-4 text-ink-700/50 hover:text-ink-900 transition focus:outline-none">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+
+    <!-- Step 1: Send OTP -->
+    <div id="fpStep1">
+      <h2 class="font-display text-2xl font-bold">Reset password</h2>
+      <p class="mt-2 text-[14px] text-ink-700/70">Enter your registered email address and we'll send a code to reset your password.</p>
+      
+      <div id="fpError1" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[13px]"></div>
+      
+      <label class="text-[13px] font-medium mt-6 block">Email address</label>
+      <input id="fpEmail" type="email" placeholder="you@iitb.ac.in" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      
+      <button onclick="sendResetCode()" id="fpSendBtn" class="mt-6 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 flex items-center justify-center gap-2 transition focus:outline-none">
+        Send Verification Code
+      </button>
+    </div>
+
+    <!-- Step 2: Verify OTP & Reset -->
+    <div id="fpStep2" class="hidden">
+      <h2 class="font-display text-2xl font-bold">Verify & Reset</h2>
+      <p class="mt-2 text-[14px] text-ink-700/70">Enter the verification code sent to your email and choose a new password.</p>
+      
+      <div id="fpError2" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[13px]"></div>
+      
+      <label class="text-[13px] font-medium mt-4 block">Verification Code</label>
+      <input id="fpCode" type="text" placeholder="Enter 123456" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none text-center font-bold tracking-widest"/>
+      
+      <label class="text-[13px] font-medium mt-4 block">New Password</label>
+      <input id="fpNewPassword" type="password" placeholder="Minimum 6 characters" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      
+      <label class="text-[13px] font-medium mt-4 block">Confirm Password</label>
+      <input id="fpConfirmPassword" type="password" placeholder="Confirm new password" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none"/>
+      
+      <button onclick="fpResetPassword()" id="fpResetBtn" class="mt-6 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 flex items-center justify-center gap-2 transition focus:outline-none">
+        Reset Password
+      </button>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div id="fpStep3" class="hidden text-center py-4">
+      <div class="w-16 h-16 mx-auto rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-4">
+        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h2 class="font-display text-2xl font-bold">Password Reset!</h2>
+      <p class="mt-2 text-[14px] text-ink-700/70">Your password has been successfully updated. Redirecting you to sign in...</p>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
+
