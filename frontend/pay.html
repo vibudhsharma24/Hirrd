@@ -310,6 +310,53 @@
 
 <div id="confettiContainer" class="confetti"></div>
 
+<!-- ── Run Agent Modal (shown after all 3 setup steps complete) ── -->
+<div id="runAgentModal" class="modal-backdrop">
+  <div class="modal-card" style="max-width:480px">
+    <div class="text-center">
+      <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center shadow-lg mb-5" style="animation: pulse 2s infinite">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <h2 class="font-display text-2xl font-bold">You're All Set! 🚀</h2>
+      <p class="text-[13px] text-ink-700/70 mt-2 max-w-sm mx-auto">Your resume, LinkedIn, and email are connected. The agent is ready to start finding and applying to jobs on your behalf.</p>
+
+      <div class="mt-6 flex flex-col gap-3">
+        <button onclick="executeRunAgent()" id="btnExecuteAgent" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 text-white font-bold text-[15px] hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg flex items-center justify-center gap-2.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Run Agent Now
+        </button>
+        <button onclick="skipToAgentDashboard()" class="w-full py-2.5 rounded-xl border border-ink-900/10 text-[13px] text-ink-700/60 font-semibold hover:bg-ink-900/5 transition">
+          Go to Dashboard — I'll run it later
+        </button>
+      </div>
+
+      <div class="mt-5 flex items-center justify-center gap-4 text-[11px] text-ink-700/40">
+        <span class="flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          Resume
+        </span>
+        <span class="flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          LinkedIn
+        </span>
+        <span class="flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          Email
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(91,102,232,0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px 8px rgba(91,102,232,0.15); }
+}
+</style>
+
 <script>
 // Dynamic pricing parameters parsing
 const urlParams = new URLSearchParams(window.location.search);
@@ -424,6 +471,11 @@ const statusEl = document.getElementById('status');
 const btn = document.getElementById('payBtn');
 let selectedFile = null;
 
+// ── Setup completion tracking flags ──────────────────────────────────────────
+let payResumeDone = false;
+let payLinkedinDone = false;
+let payEmailDone = false;
+
 function showStatus(msg, type) {
   statusEl.textContent = msg;
   statusEl.className = `p-3 rounded-xl mb-4 text-[13px] text-center font-medium ${
@@ -525,6 +577,32 @@ function resetBtn() {
 function showResumeModal() {
   document.getElementById('resumeModal').classList.add('active');
   spawnConfetti();
+
+  // Fetch initial user status to pre-fill completion flags
+  fetch('/api/me').then(r => r.json()).then(data => {
+    if (data.ok && data.user) {
+      const u = data.user;
+      if (u.agent_buyer && u.agent_buyer.resume_path) {
+        payResumeDone = true;
+        updatePayCheck('payCheckResume', true);
+      }
+      if (u.has_linkedin_creds) {
+        payLinkedinDone = true;
+        updatePayCheck('payCheckLinkedin', true);
+      }
+      if (u.has_gmail_creds) {
+        payEmailDone = true;
+        updatePayCheck('payCheckEmail', true);
+      }
+      // If all already done, show run agent modal immediately
+      if (payResumeDone && payLinkedinDone && payEmailDone) {
+        setTimeout(() => {
+          document.getElementById('resumeModal').classList.remove('active');
+          showRunAgentModal();
+        }, 600);
+      }
+    }
+  }).catch(() => {});
 }
 
 function skipUpload() {
@@ -591,7 +669,9 @@ async function uploadResume() {
     if (data.ok) {
       uploadBtn.innerHTML = '✓ Resume Uploaded';
       uploadBtn.classList.add('bg-emerald-600');
-      setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
+      payResumeDone = true;
+      updatePayCheck('payCheckResume', true);
+      autoAdvancePaySection();
     } else {
       showUploadError((data.errors || ['Upload failed']).join(', '));
       uploadBtn.disabled = false;
@@ -694,6 +774,8 @@ async function savePayLinkedin() {
       updatePayCheck('payCheckLinkedin', true);
       btn.textContent = '✓ Connected';
       btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+      payLinkedinDone = true;
+      autoAdvancePaySection();
     } else {
       statusEl.className = 'text-[12px] text-rose-700 font-medium';
       statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
@@ -740,6 +822,8 @@ async function savePayEmail() {
       updatePayCheck('payCheckEmail', true);
       btn.textContent = '✓ Connected';
       btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+      payEmailDone = true;
+      autoAdvancePaySection();
     } else {
       statusEl.className = 'text-[12px] text-rose-700 font-medium';
       statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
@@ -760,9 +844,77 @@ async function savePayEmail() {
 const _origShowResumeModal = showResumeModal;
 showResumeModal = function() {
   _origShowResumeModal();
-  // Open the resume upload section by default
-  togglePaySection('paySetupResume');
+  // Open the first incomplete section by default
+  if (!payResumeDone) togglePaySection('paySetupResume');
+  else if (!payLinkedinDone) togglePaySection('paySetupLinkedin');
+  else if (!payEmailDone) togglePaySection('paySetupEmail');
+  else togglePaySection('paySetupResume');
 };
+
+// ── Auto-advance & Run Agent logic ──────────────────────────────────────────
+
+function autoAdvancePaySection() {
+  // Check if all done
+  if (payResumeDone && payLinkedinDone && payEmailDone) {
+    setTimeout(() => {
+      document.getElementById('resumeModal').classList.remove('active');
+      showRunAgentModal();
+    }, 800);
+    return;
+  }
+
+  // Collapse all, open next incomplete
+  setTimeout(() => {
+    ['paySetupResume', 'paySetupLinkedin', 'paySetupEmail'].forEach(id => {
+      const body = document.querySelector('#' + id + ' .pay-section-body');
+      const chevron = document.querySelector('#' + id + ' .pay-chevron');
+      if (body) body.style.display = 'none';
+      if (chevron) chevron.style.transform = '';
+    });
+
+    if (!payResumeDone) togglePaySection('paySetupResume');
+    else if (!payLinkedinDone) togglePaySection('paySetupLinkedin');
+    else if (!payEmailDone) togglePaySection('paySetupEmail');
+  }, 600);
+}
+
+function showRunAgentModal() {
+  document.getElementById('runAgentModal').classList.add('active');
+  spawnConfetti();
+}
+
+async function executeRunAgent() {
+  const btn = document.getElementById('btnExecuteAgent');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader border-white shrink-0" style="width:18px;height:18px"></span> Starting Agent...';
+
+  try {
+    const res = await fetch('/api/agent/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.ok || data.status === 'already_running') {
+      btn.innerHTML = '✓ Agent Started!';
+      btn.classList.remove('from-brand-600', 'to-brand-700');
+      btn.classList.add('bg-emerald-600');
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
+    } else {
+      alert('Error starting agent: ' + (data.error || 'Unknown error'));
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Run Agent Now';
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Run Agent Now';
+  }
+}
+
+function skipToAgentDashboard() {
+  window.location.href = '/dashboard';
+}
 </script>
 </body>
 </html>

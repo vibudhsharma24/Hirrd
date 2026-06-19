@@ -2893,6 +2893,52 @@ loadDashboard();
   </div>
 </div>
 
+<!-- ── Run Agent Modal (shown after setup completes on Dashboard) ── -->
+<div id="runAgentModal" class="setup-backdrop" onclick="if(event.target===this)closeRunAgentModal()">
+  <div class="setup-card text-center" style="max-width:460px">
+    <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center shadow-lg mb-4" style="animation: pulse 2s infinite">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </div>
+    <h2 class="font-display text-xl font-bold">You're All Set! 🚀</h2>
+    <p class="text-[13px] text-ink-700/70 mt-2 max-w-sm mx-auto">Your resume, LinkedIn, and email are fully connected. The agent is ready to start finding and applying to jobs for you.</p>
+
+    <div class="mt-6 flex flex-col gap-3">
+      <button onclick="executeRunAgent()" id="btnExecuteAgent" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 text-white font-bold text-[14px] hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg flex items-center justify-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Run Agent Now
+      </button>
+      <button onclick="closeRunAgentModal()" class="w-full py-2.5 rounded-xl border border-ink-900/10 text-[12px] text-ink-700/60 font-semibold hover:bg-ink-900/5 transition">
+        Go to Dashboard — I'll run it later
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+#runAgentModal {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 13, 31, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+#runAgentModal.active {
+  display: flex;
+  opacity: 1;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(91,102,232,0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px 8px rgba(91,102,232,0.15); }
+}
+</style>
+
 <script>
 // ── Setup Modal Logic ─────────────────────────────────────────────────────────
 
@@ -2982,7 +3028,10 @@ async function handleSetupResume(event) {
       // Refresh user data
       const meRes = await fetch('/api/me');
       const meData = await meRes.json();
-      if (meData.ok) U = meData.user;
+      if (meData.ok) {
+        U = meData.user;
+        checkDashboardSetupComplete();
+      }
     } else {
       statusEl.className = 'mt-2 text-[12px] text-rose-700 font-medium';
       statusEl.textContent = 'Error: ' + ((data.errors || ['Upload failed']).join(', '));
@@ -3028,6 +3077,7 @@ async function saveSetupLinkedin() {
       
       // Load connections preview in background
       await loadConnectionsPreview();
+      checkDashboardSetupComplete();
     } else {
       statusEl.className = 'text-[12px] text-rose-700 font-medium';
       statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
@@ -3096,6 +3146,7 @@ async function saveSetupEmail() {
       
       // Load connections preview in background
       await loadConnectionsPreview();
+      checkDashboardSetupComplete();
     } else {
       statusEl.className = 'text-[12px] text-rose-700 font-medium';
       statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
@@ -3109,6 +3160,66 @@ async function saveSetupEmail() {
     statusEl.classList.remove('hidden');
     btn.textContent = 'Connect Email';
     btn.disabled = false;
+  }
+}
+
+// ── Dashboard Setup Complete & Run Agent logic ────────────────────────────────
+
+function checkDashboardSetupComplete() {
+  const hasResume = !!(U.agent_buyer && U.agent_buyer.resume_path);
+  const hasLinkedin = !!U.has_linkedin_creds;
+  const hasEmail = !!U.has_gmail_creds;
+
+  if (hasResume && hasLinkedin && hasEmail) {
+    setTimeout(() => {
+      closeSetupModal();
+      showRunAgentModal();
+    }, 800);
+  }
+}
+
+function showRunAgentModal() {
+  const modal = document.getElementById('runAgentModal');
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
+function closeRunAgentModal() {
+  const modal = document.getElementById('runAgentModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+async function executeRunAgent() {
+  const btn = document.getElementById('btnExecuteAgent');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader border-white shrink-0" style="width:16px;height:16px"></span> Starting Agent...';
+
+  try {
+    const res = await fetch('/api/agent/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.ok || data.status === 'already_running') {
+      btn.innerHTML = '✓ Agent Started!';
+      btn.classList.add('bg-emerald-600');
+      setTimeout(() => {
+        closeRunAgentModal();
+        loadDashboard();
+      }, 1200);
+    } else {
+      alert('Error starting agent: ' + (data.error || 'Unknown error'));
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Run Agent Now';
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Run Agent Now';
   }
 }
 </script>
