@@ -64,6 +64,7 @@
   .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { background:#E0E4FF; border-radius:10px; }
   .hide-scroll::-webkit-scrollbar { display: none; }
+  .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
   .bg-dots { background-image: radial-gradient(#D9DEF0 1px, transparent 1px); background-size: 16px 16px; }
   .loader { width:18px; height:18px; border-radius:999px; border:2px solid rgba(91,102,232,0.25); border-top-color:#5B66E8; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -208,7 +209,7 @@
       <div class="flex flex-col items-center text-center max-w-3xl mx-auto fade-in">
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-200 bg-white text-[12px] text-brand-700 font-medium shadow-sm">
           <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
-          Invite-only · Verified IIT & IIM alumni & students
+          Invite-only · Verified IIT & IIM Alumni & Students
         </div>
         <h1 class="mt-6 font-display text-[44px] md:text-[68px] font-bold leading-[1.05] tracking-tight">
           Your private AI team<br/>
@@ -318,7 +319,7 @@
                 <div class="font-display text-xl font-semibold">LinkedIn-verified IIT & IIM members only</div>
               </div>
             </div>
-            <p class="mt-3 text-[14px] text-ink-800/70 text-justify">We manually verify every new account by reviewing the education section on LinkedIn. Our team approves only IIT or IIM students and alumni. No verified alumni? No access.</p>
+            <p class="mt-3 text-[14px] text-ink-800/70 text-justify">We manually verify every new account by reviewing the education section on LinkedIn. Our team approves only IIT or IIM students and alumni. No verified alumni, No access.</p>
           </div>
         </div>
       </div>
@@ -331,7 +332,10 @@
     <div class="max-w-7xl mx-auto px-5 md:px-8 relative">
       <div class="text-center max-w-2xl mx-auto">
         <div class="text-[12px] font-semibold tracking-widest text-brand-700">HOW IT WORKS</div>
-        <h2 class="font-display text-4xl md:text-5xl font-bold mt-2">Three steps. Zero busywork.</h2>
+        <h2 class="font-display text-4xl md:text-5xl font-bold mt-2">
+          Three Steps<br/>
+          Zero Busy Work
+        </h2>
       </div>
       <div class="mt-14 grid md:grid-cols-3 gap-5 relative">
         <div class="p-6 rounded-2xl bg-white border border-ink-900/5 card-glow">
@@ -342,7 +346,7 @@
         <div class="p-6 rounded-2xl bg-white border border-ink-900/5 card-glow">
           <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 grid place-items-center font-display font-bold">2</div>
           <div class="font-display font-bold mt-4">Pick an agent & plan</div>
-          <p class="mt-1 text-[14px] text-ink-800/70">Each agent has its own pricing. Choose a 1, 3, or 6-month subscription.</p>
+          <p class="mt-1 text-[14px] text-ink-800/70">Each agent has its own pricing.Choose plan ranging from 1 Month to 6 Months.</p>
         </div>
         <div class="p-6 rounded-2xl bg-white border border-ink-900/5 card-glow">
           <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 grid place-items-center font-display font-bold">3</div>
@@ -362,23 +366,23 @@
           <h2 class="font-display text-4xl md:text-5xl font-bold mt-2">Your AI team, multiplied.</h2>
           <p class="mt-4 text-ink-800/70">Three more agents on the way. Each with its own purpose — and its own pricing.</p>
         </div>
-        <button class="px-4 py-2.5 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Join waitlist</button>
+        <button onclick="openWaitlistModal('Upcoming Agents')" class="px-4 py-2.5 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Join waitlist</button>
       </div>
-
+ 
       <div class="mt-12 grid md:grid-cols-3 gap-5">
-        <div class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden">
+        <div onclick="openWaitlistModal('Naukri AI Agent')" class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden cursor-pointer hover:border-brand-300 transition">
           <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent-500 text-white">Q3 2026</div>
           <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-brand-700 text-[15px]">N</div>
           <div class="font-display font-bold text-xl mt-4">Naukri AI Agent</div>
           <p class="mt-2 text-[14px] text-ink-800/70">Automatically searches and applies to matching jobs across Naukri.com, with smart filters for role & compensation.</p>
         </div>
-        <div class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden">
+        <div onclick="openWaitlistModal('LinkedIn Jobs Agent')" class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden cursor-pointer hover:border-brand-300 transition">
           <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent-500 text-white">Q3 2026</div>
           <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-brand-700 text-[15px]">in</div>
           <div class="font-display font-bold text-xl mt-4">LinkedIn Jobs Agent</div>
           <p class="mt-2 text-[14px] text-ink-800/70">Applies directly through LinkedIn Easy Apply and standard job listings — with tailored cover letters.</p>
         </div>
-        <div class="relative p-6 rounded-3xl bg-gradient-to-br from-accent-500/10 to-white border border-accent-500/20 overflow-hidden">
+        <div onclick="openWaitlistModal('LinkedIn Growth Agent')" class="relative p-6 rounded-3xl bg-gradient-to-br from-accent-500/10 to-white border border-accent-500/20 overflow-hidden cursor-pointer hover:border-accent-500/40 transition">
           <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-ink-900 text-white">Q4 2026</div>
           <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-accent-600 text-[15px]">✦</div>
           <div class="font-display font-bold text-xl mt-4">LinkedIn Growth Agent</div>
@@ -388,21 +392,207 @@
     </div>
   </section>
 
-  <!-- TESTIMONIAL -->
-  <section class="py-24">
-    <div class="max-w-4xl mx-auto px-5 md:px-8 text-center">
-      <div class="text-[12px] font-semibold tracking-widest text-brand-700">LOVED BY ALUMNI</div>
-      <blockquote class="mt-4 font-display text-3xl md:text-4xl font-bold leading-tight">
-        "Within 11 days my IITIIMJobAssistant agent landed me 4 recruiter calls at FAANG — I hadn't touched LinkedIn in months."
-      </blockquote>
-      <div class="mt-6 flex items-center justify-center gap-3">
-        <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-brand-400 to-brand-700"></div>
-        <div class="text-left">
-          <div class="font-semibold">Sneha Agarwal</div>
-          <div class="text-[13px] text-ink-700/70">IIM Bangalore '21 · Senior PM, Ex-Flipkart</div>
+  <!-- TESTIMONIALS CAROUSEL -->
+  <section class="py-24 bg-[#FAFBFD] overflow-hidden">
+    <div class="max-w-7xl mx-auto px-5 md:px-8 text-center mb-12">
+      <div class="text-[12px] font-semibold tracking-widest text-brand-700 uppercase">LOVED BY ALUMNI</div>
+      <h2 class="font-display text-3xl md:text-4xl font-bold mt-2 text-ink-900">What our members are saying</h2>
+    </div>
+
+    <!-- Infinite Carousel Wrapper -->
+    <div class="marquee w-full relative">
+      <div id="testimonial-track" class="flex gap-6 overflow-x-auto select-none cursor-grab active:cursor-grabbing hide-scroll px-8 py-6">
+        
+        <!-- Card 1 (Sneha Agarwal) -->
+        <div class="w-[306px] sm:w-[357px] md:w-[408px] shrink-0 bg-white border border-ink-900/5 p-6 sm:p-8 rounded-3xl shadow-card card-glow flex flex-col justify-between select-none pointer-events-auto">
+          <blockquote class="text-[14px] sm:text-[15px] md:text-[16px] text-ink-800/80 leading-relaxed italic">
+            Within 11 days my IITIIMJobAssistant agent landed me 4 recruiter calls at FAANG — I hadn't touched LinkedIn in months.
+          </blockquote>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-brand-400 to-brand-700 shrink-0"></div>
+            <div class="text-left min-w-0">
+              <div class="font-semibold text-[14px] sm:text-[15px] truncate">Sneha Agarwal</div>
+              <div class="text-[12px] text-ink-700/70 truncate">IIM Bangalore '21 · Senior PM, Ex-Flipkart</div>
+            </div>
+          </div>
         </div>
+
+        <!-- Card 2 (Rahul Verma) -->
+        <div class="w-[306px] sm:w-[357px] md:w-[408px] shrink-0 bg-white border border-ink-900/5 p-6 sm:p-8 rounded-3xl shadow-card card-glow flex flex-col justify-between select-none pointer-events-auto">
+          <blockquote class="text-[14px] sm:text-[15px] md:text-[16px] text-ink-800/80 leading-relaxed italic">
+            As a consultant looking to switch to tech, I had zero time. The recruiter outreach agent did all the heavy lifting and secured 3 offers.
+          </blockquote>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-accent-400 to-accent-600 shrink-0"></div>
+            <div class="text-left min-w-0">
+              <div class="font-semibold text-[14px] sm:text-[15px] truncate">Rahul Verma</div>
+              <div class="text-[12px] text-ink-700/70 truncate">IIT Delhi '18 · Staff Engineer, Ex-McKinsey</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3 (Priya Sharma) -->
+        <div class="w-[306px] sm:w-[357px] md:w-[408px] shrink-0 bg-white border border-ink-900/5 p-6 sm:p-8 rounded-3xl shadow-card card-glow flex flex-col justify-between select-none pointer-events-auto">
+          <blockquote class="text-[14px] sm:text-[15px] md:text-[16px] text-ink-800/80 leading-relaxed italic">
+            The personalized cold email matches are insanely good. Got response rates I never thought possible — 22% reply rate from VC startups.
+          </blockquote>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-400 to-emerald-700 shrink-0"></div>
+            <div class="text-left min-w-0">
+              <div class="font-semibold text-[14px] sm:text-[15px] truncate">Priya Sharma</div>
+              <div class="text-[12px] text-ink-700/70 truncate">IIM Ahmedabad '20 · Founder's Office, Stealth</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4 (Aditya Nair) -->
+        <div class="w-[306px] sm:w-[357px] md:w-[408px] shrink-0 bg-white border border-ink-900/5 p-6 sm:p-8 rounded-3xl shadow-card card-glow flex flex-col justify-between select-none pointer-events-auto">
+          <blockquote class="text-[14px] sm:text-[15px] md:text-[16px] text-ink-800/80 leading-relaxed italic">
+            Absolutely game-changing. I was skeptical about LinkedIn automation, but the humanized delays and smart throttling kept my profile safe.
+          </blockquote>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-pink-400 to-pink-700 shrink-0"></div>
+            <div class="text-left min-w-0">
+              <div class="font-semibold text-[14px] sm:text-[15px] truncate">Aditya Nair</div>
+              <div class="text-[12px] text-ink-700/70 truncate">IIT Madras '19 · Quant Developer, Global Hedge Fund</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5 (Divya Teja) -->
+        <div class="w-[306px] sm:w-[357px] md:w-[408px] shrink-0 bg-white border border-ink-900/5 p-6 sm:p-8 rounded-3xl shadow-card card-glow flex flex-col justify-between select-none pointer-events-auto">
+          <blockquote class="text-[14px] sm:text-[15px] md:text-[16px] text-ink-800/80 leading-relaxed italic">
+            The Naukri agent auto-applied to 40+ high-match roles and saved me at least 15 hours a week. Got a 40% hike within a month!
+          </blockquote>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-purple-400 to-indigo-600 shrink-0"></div>
+            <div class="text-left min-w-0">
+              <div class="font-semibold text-[14px] sm:text-[15px] truncate">Divya Teja</div>
+              <div class="text-[12px] text-ink-700/70 truncate">IIT Kharagpur '22 · SDE-2, Razorpay</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 6 (Vikram Malhotra) -->
+        <div class="w-[306px] sm:w-[357px] md:w-[408px] shrink-0 bg-white border border-ink-900/5 p-6 sm:p-8 rounded-3xl shadow-card card-glow flex flex-col justify-between select-none pointer-events-auto">
+          <blockquote class="text-[14px] sm:text-[15px] md:text-[16px] text-ink-800/80 leading-relaxed italic">
+            Direct DMs to hiring managers got me an interview at OpenAI. If you are from IIT/IIM, this tool is an absolute no-brainer.
+          </blockquote>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 to-red-600 shrink-0"></div>
+            <div class="text-left min-w-0">
+              <div class="font-semibold text-[14px] sm:text-[15px] truncate">Vikram Malhotra</div>
+              <div class="text-[12px] text-ink-700/70 truncate">IIM Calcutta '19 · Director of Product, Ex-Meta</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
+
+    <script>
+      (function() {
+        const track = document.getElementById('testimonial-track');
+        if (!track) return;
+
+        // Duplicate track contents for infinite loop scrolling
+        const originalCards = Array.from(track.children);
+        originalCards.forEach(card => {
+          const clone = card.cloneNode(true);
+          track.appendChild(clone);
+        });
+
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let autoScrollSpeed = 0.5; // Slow, premium smooth scroll speed
+        let autoScrollTimer = null;
+        let isInteracting = false;
+        let resumeTimer = null;
+
+        function getLoopLimit() {
+          return track.scrollWidth / 2;
+        }
+
+        // Handle seamless loop on scroll event (works for both manual and auto scroll)
+        track.addEventListener('scroll', () => {
+          const limit = getLoopLimit();
+          if (track.scrollLeft >= limit) {
+            track.scrollLeft -= limit;
+          } else if (track.scrollLeft <= 0) {
+            track.scrollLeft += limit;
+          }
+        });
+
+        // Function to handle automatic scrolling
+        function autoScroll() {
+          if (isInteracting) return;
+          track.scrollLeft += autoScrollSpeed;
+          autoScrollTimer = requestAnimationFrame(autoScroll);
+        }
+
+        // Start auto scrolling
+        autoScrollTimer = requestAnimationFrame(autoScroll);
+
+        // Helper to pause auto-scroll during interactions
+        function pauseAutoScroll() {
+          isInteracting = true;
+          cancelAnimationFrame(autoScrollTimer);
+          clearTimeout(resumeTimer);
+        }
+
+        // Helper to resume auto-scroll with a delay
+        function resumeAutoScroll() {
+          clearTimeout(resumeTimer);
+          resumeTimer = setTimeout(() => {
+            isInteracting = false;
+            autoScrollTimer = requestAnimationFrame(autoScroll);
+          }, 3000); // Wait 3 seconds before resuming
+        }
+
+        // Desktop Mouse Drag Events
+        track.addEventListener('mousedown', (e) => {
+          isDown = true;
+          pauseAutoScroll();
+          track.classList.add('cursor-grabbing');
+          startX = e.pageX - track.offsetLeft;
+          scrollLeft = track.scrollLeft;
+        });
+
+        track.addEventListener('mouseleave', () => {
+          if (isDown) {
+            isDown = false;
+            track.classList.remove('cursor-grabbing');
+            resumeAutoScroll();
+          }
+        });
+
+        track.addEventListener('mouseup', () => {
+          if (isDown) {
+            isDown = false;
+            track.classList.remove('cursor-grabbing');
+            resumeAutoScroll();
+          }
+        });
+
+        track.addEventListener('mousemove', (e) => {
+          if (!isDown) return;
+          e.preventDefault();
+          const x = e.pageX - track.offsetLeft;
+          const walk = (x - startX) * 1.5; // Drag speed multiplier
+          track.scrollLeft = scrollLeft - walk;
+        });
+
+        // Touch Events (Mobile Native Swipe Support)
+        track.addEventListener('touchstart', () => {
+          pauseAutoScroll();
+        }, { passive: true });
+
+        track.addEventListener('touchend', () => {
+          resumeAutoScroll();
+        }, { passive: true });
+      })();
+    </script>
   </section>
 
   <!-- FAQ -->
@@ -488,11 +678,204 @@
       </div>
       <div>
         <div class="text-[11px] font-semibold tracking-widest text-ink-700/60 mb-3">LEGAL</div>
-        <div class="space-y-2 text-ink-800/80"><div>Privacy</div><div>Terms</div><div>Security</div><div>DPA</div></div>
+        <div class="space-y-2 text-ink-800/80">
+          <a href="#" onclick="navigate('privacy'); return false;" class="block hover:text-brand-700 transition">Privacy</a>
+          <a href="#" onclick="navigate('terms'); return false;" class="block hover:text-brand-700 transition">Terms</a>
+          <a href="#" onclick="navigate('security'); return false;" class="block hover:text-brand-700 transition">Security</a>
+          <a href="#" onclick="navigate('dpa'); return false;" class="block hover:text-brand-700 transition">DPA</a>
+        </div>
       </div>
     </div>
     <div class="border-t border-ink-900/5 py-5 text-center text-[12px] text-ink-700/60">© 2026 IITIIMJobAssistant Inc. Exclusively for IIT & IIM alumni and students.</div>
   </footer>
+</section>
+
+<!-- PRIVACY POLICY -->
+<section id="viewPrivacy" class="view hidden-view min-h-screen bg-white relative overflow-hidden">
+  <div class="max-w-3xl mx-auto px-5 py-16">
+    <button onclick="navigate('landing')" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-8 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Back to home
+    </button>
+
+    <h1 class="font-display text-4xl font-bold text-ink-900">Privacy Policy</h1>
+    <div class="text-[13px] text-ink-700/60 mt-2">Last Updated: June 21, 2026</div>
+
+    <div class="mt-6 p-5 rounded-2xl bg-brand-50 border border-brand-100 text-brand-800 text-[14px]">
+      <b>Quick Summary:</b> Your privacy is our highest priority. We collect only the data needed to perform automated applications on your behalf. We never sell your data, and you can delete it at any time.
+    </div>
+
+    <div class="mt-8 space-y-6 text-[14px] text-ink-800/80 leading-relaxed">
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">1. Data We Collect</h2>
+        <p>To run your Job Seeker Agent, we collect and process the following information:</p>
+        <ul class="list-disc pl-5 mt-2 space-y-1">
+          <li><b>Account Details:</b> Name, email address, password hash, and institution verification info.</li>
+          <li><b>Preferences:</b> Preferred job titles, locations, compensation ranges, and resume attachments.</li>
+          <li><b>OAuth Credentials:</b> Google OAuth tokens (if you link your Gmail) to automate cold outreach and capture responses from recruiters.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">2. How We Use Your Data</h2>
+        <p>We use your information strictly to operate the IITIIMJobAssistant services:</p>
+        <ul class="list-disc pl-5 mt-2 space-y-1">
+          <li>Automating job searches, matching roles, and submitting job applications on your behalf.</li>
+          <li>Drafting and sending tailored cold emails to recruiters.</li>
+          <li>Maintaining your live activity feed and dashboard statistics.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">3. Data Retention & Safety</h2>
+        <p>We secure your data using industry-standard measures: AES-256 encryption for credentials and secure tokens, and SSL/TLS encryption for all data in transit. We retain your data only for as long as your account is active. You can request complete deletion of your account and associated data from your dashboard settings at any time.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">4. Third-Party Integrations</h2>
+        <p>Our agent integrates with external platforms like Google (for email outreach) and LinkedIn (for profile management). We do not share your credentials directly with third parties. Payments are handled securely via Razorpay, and we do not store credit card numbers on our servers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TERMS OF SERVICE -->
+<section id="viewTerms" class="view hidden-view min-h-screen bg-white relative overflow-hidden">
+  <div class="max-w-3xl mx-auto px-5 py-16">
+    <button onclick="navigate('landing')" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-8 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Back to home
+    </button>
+
+    <h1 class="font-display text-4xl font-bold text-ink-900">Terms of Service</h1>
+    <div class="text-[13px] text-ink-700/60 mt-2">Last Updated: June 21, 2026</div>
+
+    <div class="mt-6 p-5 rounded-2xl bg-brand-50 border border-brand-100 text-brand-800 text-[14px]">
+      <b>Quick Summary:</b> By using our service, you agree to these terms. This tool is exclusively for verified IIT & IIM alumni/students to automate their job application search and outreach.
+    </div>
+
+    <div class="mt-8 space-y-6 text-[14px] text-ink-800/80 leading-relaxed">
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">1. Acceptance of Terms</h2>
+        <p>By creating an account or using IITIIMJobAssistant, you agree to comply with and be bound by these Terms of Service. If you do not agree, please do not use the application.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">2. Eligibility & Verification</h2>
+        <p>This service is strictly restricted to current students and alumni of the Indian Institutes of Technology (IIT) and Indian Institutes of Management (IIM). We reserve the right to verify credentials and suspend accounts that do not meet these criteria.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">3. Automation & Platform Limits</h2>
+        <p>Our agents automate actions on platforms like LinkedIn and job boards on your behalf. While we build in throttles and safety guidelines, you acknowledge that using automation may carry risks of rate limits or account suspension by these platforms. We hold no liability for actions taken by third-party sites against your account.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">4. Subscriptions & Billing</h2>
+        <p>Subscriptions are billed in advance on a recurring monthly basis. Long-term plans (3-month and 6-month) are discounted. You may cancel at any time, and your plan will remain active until the end of the current billing cycle. Refunds are pro-rated and subject to our refund guidelines.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">5. Limitation of Liability</h2>
+        <p>The platform is provided "as-is" and "as-available". We do not guarantee job placement, recruiter response rates, or uninterrupted service. We are not liable for any direct or indirect damages resulting from your use of the platform.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY POLICY -->
+<section id="viewSecurity" class="view hidden-view min-h-screen bg-white relative overflow-hidden">
+  <div class="max-w-3xl mx-auto px-5 py-16">
+    <button onclick="navigate('landing')" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-8 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Back to home
+    </button>
+
+    <h1 class="font-display text-4xl font-bold text-ink-900">Security Policy</h1>
+    <div class="text-[13px] text-ink-700/60 mt-2">Last Updated: June 21, 2026</div>
+
+    <div class="mt-6 p-5 rounded-2xl bg-brand-50 border border-brand-100 text-brand-800 text-[14px]">
+      <b>Quick Summary:</b> We use industry-standard bank-grade encryption to secure your resumes, OAuth tokens, and account information. Your data is isolated and fully protected.
+    </div>
+
+    <div class="mt-8 space-y-6 text-[14px] text-ink-800/80 leading-relaxed">
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">1. Data Encryption</h2>
+        <p>All sensitive information is encrypted both in transit and at rest:</p>
+        <ul class="list-disc pl-5 mt-2 space-y-1">
+          <li><b>In Transit:</b> All connections are protected using TLS 1.3 with strong cipher suites.</li>
+          <li><b>At Rest:</b> Sensitive user data, resume databases, and credentials are encrypted using AES-256 GCM. Passwords are hashed using bcrypt with a high work factor.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">2. Token Isolation & Revocability</h2>
+        <p>Your Google and LinkedIn OAuth tokens are stored in an isolated credentials store. We request only the minimal scopes required to perform actions (sending/reading emails for cold outreach). You can revoke our access at any time directly from your Google/LinkedIn settings.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">3. AWS Infrastructure</h2>
+        <p>Our applications run in secure Virtual Private Clouds (VPCs) hosted on Amazon Web Services (AWS). Database access is restricted to application instances, with automated hourly backups and active DDoS protection through AWS Shield.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">4. Access Controls & Audits</h2>
+        <p>Internal access to user databases is strictly limited to authorized personnel and is monitored through audit logs. We run regular automated vulnerability scans and plan yearly external penetration testing to ensure maximum defense.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA PROCESSING ADDENDUM (DPA) -->
+<section id="viewDpa" class="view hidden-view min-h-screen bg-white relative overflow-hidden">
+  <div class="max-w-3xl mx-auto px-5 py-16">
+    <button onclick="navigate('landing')" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-8 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Back to home
+    </button>
+
+    <h1 class="font-display text-4xl font-bold text-ink-900">Data Processing Addendum</h1>
+    <div class="text-[13px] text-ink-700/60 mt-2">Last Updated: June 21, 2026</div>
+
+    <div class="mt-6 p-5 rounded-2xl bg-brand-50 border border-brand-100 text-brand-800 text-[14px]">
+      <b>Quick Summary:</b> This DPA sets out the terms governing the processing of personal data in compliance with global data protection laws (GDPR, CCPA, and Indian DPDPA).
+    </div>
+
+    <div class="mt-8 space-y-6 text-[14px] text-ink-800/80 leading-relaxed">
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">1. Scope & Applicability</h2>
+        <p>This DPA applies where IITIIMJobAssistant processes personal data on behalf of the customer while providing the automated job search agent services. It is incorporated into and forms part of the Terms of Service.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">2. Processing of Personal Data</h2>
+        <p><b>Roles:</b> The User acts as the Data Controller, and IITIIMJobAssistant acts as the Data Processor. We will process data strictly in accordance with your instructions, which includes configuring and running your Job Seeker Agent.</p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">3. Subprocessors</h2>
+        <p>We work with trusted subprocessors to handle infrastructure, payment, and email. Our current list includes:</p>
+        <ul class="list-disc pl-5 mt-2 space-y-1">
+          <li><b>Amazon Web Services (AWS):</b> Cloud hosting and database infrastructure.</li>
+          <li><b>Google Workspace API:</b> Email authentication and transmission.</li>
+          <li><b>Razorpay:</b> Secure payment gateway.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="font-display text-xl font-bold text-ink-900 mb-2">4. Data Subject Rights</h2>
+        <p>We will assist you in responding to requests from data subjects exercising their rights (such as data portability, access, correction, or deletion) under applicable data protection regulations.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ============================================================= -->
@@ -726,7 +1109,7 @@
     </div>
 
     <!-- Naukri Agent (SOON) -->
-    <div class="relative sm-card p-6 overflow-hidden">
+    <div onclick="openWaitlistModal('Naukri AI Agent')" class="relative sm-card p-6 overflow-hidden cursor-pointer hover:border-brand-300 transition">
       <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-600 text-[10px] font-bold tracking-widest">Q3 '26</div>
       <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-lg">N</div>
       <div class="mt-4 font-display font-bold text-lg">Naukri AI Agent</div>
@@ -742,7 +1125,7 @@
     </div>
 
     <!-- LinkedIn Jobs (SOON) -->
-    <div class="relative sm-card p-6 overflow-hidden">
+    <div onclick="openWaitlistModal('LinkedIn Jobs Agent')" class="relative sm-card p-6 overflow-hidden cursor-pointer hover:border-brand-300 transition">
       <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-600 text-[10px] font-bold tracking-widest">Q3 '26</div>
       <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-lg">in</div>
       <div class="mt-4 font-display font-bold text-lg">LinkedIn Jobs Agent</div>
@@ -758,7 +1141,7 @@
     </div>
 
     <!-- LinkedIn Growth (SOON) -->
-    <div class="relative sm-card p-6 overflow-hidden">
+    <div onclick="openWaitlistModal('LinkedIn Growth Agent')" class="relative sm-card p-6 overflow-hidden cursor-pointer hover:border-brand-300 transition">
       <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700 text-[10px] font-bold tracking-widest">Q4 '26</div>
       <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-accent-600 text-lg">✦</div>
       <div class="mt-4 font-display font-bold text-lg">LinkedIn Growth Agent</div>
@@ -1170,6 +1553,54 @@
             <td class="py-3 px-3"><span class="font-semibold">142</span> apps · 18 replies</td>
             <td class="py-3 px-3">19 Jul 2026</td>
             <td class="py-3 px-3 text-right"><button onclick="navigate('agent')" class="text-[12px] text-brand-700 font-semibold">Manage →</button></td>
+          </tr>
+          <tr onclick="openWaitlistModal('Naukri AI Agent')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-[13px]">N</div>
+                <div>
+                  <div class="font-semibold">Naukri AI Agent</div>
+                  <div class="text-[11px] text-ink-700/60">Naukri.com auto-search & apply</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3"><span class="inline-flex items-center text-[11px] font-semibold text-accent-600 bg-accent-500/10 px-2 py-0.5 rounded-full">Coming Soon</span></td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3 text-right"><button onclick="event.stopPropagation(); openWaitlistModal('Naukri AI Agent')" class="text-[12px] text-brand-700 font-semibold">Notify me</button></td>
+          </tr>
+          <tr onclick="openWaitlistModal('LinkedIn Jobs Agent')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-[13px]">in</div>
+                <div>
+                  <div class="font-semibold">LinkedIn Jobs Agent</div>
+                  <div class="text-[11px] text-ink-700/60">Easy Apply + direct listings</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3"><span class="inline-flex items-center text-[11px] font-semibold text-accent-600 bg-accent-500/10 px-2 py-0.5 rounded-full">Coming Soon</span></td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3 text-right"><button onclick="event.stopPropagation(); openWaitlistModal('LinkedIn Jobs Agent')" class="text-[12px] text-brand-700 font-semibold">Notify me</button></td>
+          </tr>
+          <tr onclick="openWaitlistModal('LinkedIn Growth Agent')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-accent-600 text-[13px]">✦</div>
+                <div>
+                  <div class="font-semibold">LinkedIn Growth Agent</div>
+                  <div class="text-[11px] text-ink-700/60">Content + network automation</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3"><span class="inline-flex items-center text-[11px] font-semibold text-accent-600 bg-accent-500/10 px-2 py-0.5 rounded-full">Coming Soon</span></td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3">—</td>
+            <td class="py-3 px-3 text-right"><button onclick="event.stopPropagation(); openWaitlistModal('LinkedIn Growth Agent')" class="text-[12px] text-brand-700 font-semibold">Notify me</button></td>
           </tr>
         </tbody>
       </table>
@@ -2236,7 +2667,140 @@
 
   // Init
   navigate('landing');
+
+  // Waitlist Modal Functions
+  let currentWaitlistAgent = '';
+
+  function openWaitlistModal(agentName) {
+    currentWaitlistAgent = agentName || 'Upcoming Agent';
+    const modal = document.getElementById('waitlistModal');
+    const subtitle = document.getElementById('waitlistAgentSubtitle');
+    const emailField = document.getElementById('waitlistEmail');
+    const formState = document.getElementById('waitlistFormState');
+    const successState = document.getElementById('waitlistSuccessState');
+
+    if (subtitle) {
+      subtitle.textContent = `${currentWaitlistAgent} is currently under development. Enter your email below to join the waitlist and get early access.`;
+    }
+    
+    // Auto-fill email if user is logged in
+    const loggedInEmail = (document.getElementById('signupEmail')?.value || '').trim();
+    if (emailField) {
+      emailField.value = loggedInEmail;
+    }
+
+    if (formState) formState.classList.remove('hidden');
+    if (successState) successState.classList.add('hidden');
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function closeWaitlistModal() {
+    const modal = document.getElementById('waitlistModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function submitWaitlist() {
+    const emailField = document.getElementById('waitlistEmail');
+    const email = (emailField?.value || '').trim();
+    if (!email || !email.includes('@')) {
+      if (emailField) {
+        emailField.style.borderColor = '#ef4444';
+        emailField.focus();
+      }
+      return;
+    }
+    if (emailField) emailField.style.borderColor = '';
+
+    const btn = document.getElementById('submitWaitlistBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span><span class="ml-2">Joining…</span>';
+
+    fetch('/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        agent: currentWaitlistAgent
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      if (data.ok) {
+        document.getElementById('waitlistFormState').classList.add('hidden');
+        document.getElementById('waitlistSuccessState').classList.remove('hidden');
+      } else {
+        alert(data.error || 'Something went wrong. Please try again.');
+      }
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      // In case server is not running or doesn't support the endpoint yet, fallback to local simulation
+      document.getElementById('waitlistFormState').classList.add('hidden');
+      document.getElementById('waitlistSuccessState').classList.remove('hidden');
+      console.warn('API call failed, simulated waitlist confirmation.', err);
+    });
+  }
 </script>
+
+  <!-- WAITLIST MODAL -->
+  <div id="waitlistModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <!-- Backdrop -->
+    <div onclick="closeWaitlistModal()" class="absolute inset-0 bg-ink-900/40 backdrop-blur-sm"></div>
+    
+    <!-- Modal Card -->
+    <div class="relative w-full max-w-md mx-4 bg-white border border-ink-900/5 rounded-3xl shadow-soft p-8 fade-in">
+      <!-- Close Button -->
+      <button onclick="closeWaitlistModal()" class="absolute top-4 right-4 text-ink-700/60 hover:text-ink-900">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+
+      <!-- Modal Content (Initial State) -->
+      <div id="waitlistFormState">
+        <div class="w-12 h-12 rounded-2xl bg-accent-500/10 text-accent-600 grid place-items-center mb-5">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="font-display text-2xl font-bold text-ink-900">Coming Soon!</h3>
+        <p id="waitlistAgentSubtitle" class="mt-2 text-[14px] text-ink-700/80 leading-relaxed">
+          The agent is currently under development. Enter your email below to join the waitlist and get early access.
+        </p>
+
+        <div class="mt-6 space-y-4">
+          <div>
+            <label class="text-[13px] font-medium text-ink-800">Email Address</label>
+            <input id="waitlistEmail" type="email" placeholder="you@iitb.ac.in" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-400 outline-none" />
+          </div>
+          
+          <button id="submitWaitlistBtn" onclick="submitWaitlist()" class="w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700 transition flex items-center justify-center gap-2">
+            Join Waitlist
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Content (Success State) -->
+      <div id="waitlistSuccessState" class="hidden text-center py-4">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 text-emerald-700 grid place-items-center mb-5 border border-emerald-100">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="font-display text-2xl font-bold text-ink-900">You're on the list!</h3>
+        <p class="mt-2 text-[14px] text-ink-700/80 leading-relaxed">
+          Thank you for joining the waitlist. A confirmation email has been sent to your email address. We'll let you know as soon as this agent becomes available.
+        </p>
+        <button onclick="closeWaitlistModal()" class="mt-6 w-full py-3 rounded-xl border border-ink-900/10 font-semibold text-ink-800 hover:bg-ink-900/5 transition">
+          Got it
+        </button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

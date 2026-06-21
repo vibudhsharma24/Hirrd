@@ -169,6 +169,40 @@ def signup():
     }), 201
 
 
+
+@app.route("/api/waitlist", methods=["POST"])
+def join_waitlist():
+    """Accepts JSON: { email, agent } and simulates sending a confirmation email."""
+    data  = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    agent = (data.get("agent") or "").strip() or "Upcoming Agent"
+
+    if not email or "@" not in email:
+        return jsonify({"ok": False, "error": "A valid email is required"}), 400
+
+    email_body = f"""
+    ======================================================================
+    [EMAIL SERVICE] Sending Waitlist Confirmation Email
+    To: {email}
+    Subject: You're on the waitlist for {agent}!
+    
+    Dear Member,
+    
+    We've successfully added your email ({email}) to the waitlist 
+    for the {agent}.
+    
+    Our team is working hard to bring this agent live. We will notify 
+    you as soon as early access opens.
+    
+    Best regards,
+    The IITIIMJobAssistant Team
+    ======================================================================
+    """
+    print(email_body)
+
+    return jsonify({"ok": True, "message": "Successfully joined waitlist."})
+
+
 # --------------------------------------------------------------------------- #
 #  API: Users                                                                  #
 # --------------------------------------------------------------------------- #
