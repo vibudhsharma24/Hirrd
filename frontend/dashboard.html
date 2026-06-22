@@ -350,9 +350,6 @@ function renderSidebar() {
   if (isActive) {
     statusText = "Online";
     statusDotColor = "bg-emerald-500 animate-pulse";
-  } else if (agentStatus === 'paused') {
-    statusText = "Paused";
-    statusDotColor = "bg-amber-500";
   }
 
   const sidebarUser = document.getElementById('sidebarUser');
@@ -542,10 +539,10 @@ function renderDashboard() {
                 <div id="dashUploadStatus" class="mt-3 text-[12px] hidden"></div>
               </div>
             ` : `
-              <div class="flex items-center gap-3 p-3.5 rounded-xl ${isActive ? 'bg-emerald-50 border border-emerald-100' : 'bg-amber-50 border border-amber-100'}">
-                ${isActive ? '<span class="pulse-dot"></span>' : '<span class="w-2 h-2 rounded-full bg-amber-500"></span>'}
+              <div class="flex items-center gap-3 p-3.5 rounded-xl ${isActive ? 'bg-emerald-50 border border-emerald-100' : 'bg-rose-50 border border-rose-100'}">
+                ${isActive ? '<span class="pulse-dot"></span>' : '<span class="w-2 h-2 rounded-full bg-rose-500"></span>'}
                 <div class="flex-1">
-                  <div class="font-semibold text-[13px]">${isActive ? 'Agent is running' : agentStatus === 'paused' ? 'Agent paused' : agentStatus === 'error' ? 'Agent error' : 'Agent inactive'}</div>
+                  <div class="font-semibold text-[13px]">${isActive ? 'Agent is running' : 'Agent offline'}</div>
                   <div class="text-[11px] text-ink-700/60">${isActive ? 'Auto-processing jobs' : 'Press Start to begin'}</div>
                 </div>
                 <button onclick="${isActive ? 'stopAgent()' : 'startAgent()'}" class="px-3.5 py-1.5 rounded-lg text-[12px] font-semibold ${isActive ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'} transition">
@@ -902,8 +899,8 @@ function renderStore() {
                </svg>
              </div>`,
       live: true,
-      badge: U.is_agent_buyer ? (agentStatus === 'running' ? 'LIVE' : 'PAUSED') : 'LIVE',
-      badgeClass: U.is_agent_buyer ? (agentStatus === 'running' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200') : 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      badge: U.is_agent_buyer ? (agentStatus === 'running' ? 'LIVE' : 'OFFLINE') : 'LIVE',
+      badgeClass: U.is_agent_buyer ? (agentStatus === 'running' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200') : 'bg-emerald-50 text-emerald-700 border border-emerald-200',
       subtitle: 'LinkedIn DMs · Email · Portal auto-apply',
       desc: 'Finds roles matching your preferences and applies across 3 channels automatically.',
       categories: ['Most popular', 'Outreach', 'Auto-apply'],
@@ -1521,9 +1518,9 @@ function renderAgent() {
         <div>
           <div class="flex items-center gap-2">
             <h1 class="font-display text-2xl font-bold">Job Seeker Agent</h1>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : agentStatus === 'paused' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-ink-900/5 text-ink-700'}">
-              <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : agentStatus === 'paused' ? 'bg-amber-500' : 'bg-ink-700'}"></span>
-              ${(isActive ? 'ACTIVE' : agentStatus === 'paused' ? 'PAUSED' : 'INACTIVE')}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
+              <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}"></span>
+              ${isActive ? 'ACTIVE' : 'OFFLINE'}
             </span>
           </div>
           <p class="text-[12px] text-ink-700/60 mt-1" id="lastRunText">
@@ -2774,7 +2771,7 @@ async function showPasswordManagerModal() {
             <div class="relative">
               <input type="password" id="pwd_input_${idx}" value="${cred.password}" readonly
                      class="w-36 px-2.5 py-1.5 bg-white border border-ink-900/10 rounded-lg text-xs font-mono font-semibold text-ink-900 focus:outline-none"/>
-              <button onclick="togglePasswordVisibility(this)" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-700/40 hover:text-ink-900">
+              <button onclick="togglePortalPasswordVisibility(this)" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-700/40 hover:text-ink-900">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
@@ -2804,7 +2801,7 @@ function closePasswordManagerModal(event) {
   }
 }
 
-function togglePasswordVisibility(btn) {
+function togglePortalPasswordVisibility(btn) {
   const input = btn.previousElementSibling;
   const path = btn.querySelector('path');
   if (input.type === 'password') {
