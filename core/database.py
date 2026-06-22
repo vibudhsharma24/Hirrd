@@ -319,6 +319,9 @@ def init_db():
             ("users", "gmail_password",      "TEXT DEFAULT ''"),
             # ── LinkedIn profile name column ──────────────────────────
             ("users", "linkedin_profile_name", "TEXT DEFAULT ''"),
+            # ── Password reset code columns ───────────────────────────
+            ("users", "reset_code",          "TEXT DEFAULT ''"),
+            ("users", "reset_code_expires_at", "TEXT DEFAULT ''"),
         ]
         for table, col, typedef in _migrate_columns:
             try:
@@ -547,6 +550,29 @@ def update_user_password(user_id: int, new_password: str) -> bool:
         )
         conn.commit()
     return cur.rowcount > 0
+
+
+def update_user_reset_code(email: str, code: str, expires_at: str) -> bool:
+    """Store verification code and its expiration timestamp for forgot password."""
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE users SET reset_code = ?, reset_code_expires_at = ? WHERE email = ?",
+            (code, expires_at, email.strip().lower()),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
+
+def clear_user_reset_code(email: str) -> bool:
+    """Clear user reset code after successful password reset."""
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE users SET reset_code = '', reset_code_expires_at = '' WHERE email = ?",
+            (email.strip().lower(),),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
 
 
 def save_google_user(name: str, last_name: str, email: str, google_id: str, avatar: str = "") -> dict:

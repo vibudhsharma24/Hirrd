@@ -1043,8 +1043,49 @@ def check_email():
     return jsonify({"ok": True, "available": user is None})
 
 
+def send_smtp_email(to_email: str, subject: str, body: str) -> bool:
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    smtp_host = os.environ.get("SMTP_HOST")
+    smtp_port = os.environ.get("SMTP_PORT")
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    smtp_from = os.environ.get("SMTP_FROM") or smtp_user
+
+    if not smtp_host or not smtp_user or not smtp_password:
+        print(f"[SMTP] Warning: SMTP not configured. Printing email content instead:")
+        print(f"To: {to_email}")
+        print(f"Subject: {subject}")
+        print(f"Body: {body}")
+        return False
+
+    try:
+        port = int(smtp_port) if smtp_port else 587
+        
+        msg = MIMEMultipart()
+        msg['From'] = smtp_from
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Connect to SMTP server
+        server = smtplib.SMTP(smtp_host, port, timeout=10)
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.sendmail(smtp_from, to_email, msg.as_string())
+        server.quit()
+        print(f"[SMTP] Verification email sent to {to_email} successfully.")
+        return True
+    except Exception as e:
+        print(f"[SMTP] Error sending email to {to_email}: {e}")
+        return False
+
+
 @app.route("/api/forgot-password", methods=["POST"])
 def forgot_password():
+    import random
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     if not email:
@@ -1052,9 +1093,40 @@ def forgot_password():
     user = db.get_user_by_email(email)
     if not user:
         return jsonify({"ok": False, "error": "No account found with this email address"}), 404
+
+    # Generate random 6-digit verification code
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+    
+    db.update_user_reset_code(email, code, expires_at)
+    
+    email_subject = "Your IITIIMJobAssistant Password Reset Verification Code"
+    email_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333;">
+        <h2>Password Reset Request</h2>
+        <p>You requested to reset your password. Use the following 6-digit verification code to complete your password reset:</p>
+        <p style="font-size: 24px; font-weight: bold; color: #2563eb; letter-spacing: 2px;">{code}</p>
+        <p>This code will expire in 15 minutes. If you did not request this, please ignore this email.</p>
+        <br/>
+        <p>Best regards,<br/>The IITIIMJobAssistant Team</p>
+      </body>
+    </html>
+    """
+    
+    # Try sending email
+    sent = send_smtp_email(email, email_subject, email_body)
+    
+    # Also log to server output so developers can see it in development/testing without real SMTP
+    print(f"============================================================")
+    print(f"  [FORGOT PASSWORD] Generated reset code for {email}")
+    print(f"  Code: {code}")
+    print(f"  SMTP Delivery Status: {'SUCCESS' if sent else 'SKIPPED/FAILED'}")
+    print(f"============================================================")
+
     return jsonify({
         "ok": True,
-        "message": "A verification code has been sent to your email. (For demo purposes, use code: 123456)"
+        "message": "A verification code has been sent to your email."
     })
 
 
@@ -1071,19 +1143,44 @@ def reset_password():
     if len(password) < 6:
         return jsonify({"ok": False, "error": "Password must be at least 6 characters"}), 400
 
-    if code != "123456":
-        return jsonify({"ok": False, "error": "Invalid verification code"}), 400
-
     user = db.get_user_by_email(email)
     if not user:
         return jsonify({"ok": False, "error": "User not found"}), 404
+
+    # Verify reset code
+    stored_code = user.get("reset_code")
+    stored_expires_at = user.get("reset_code_expires_at")
+
+    if not stored_code or stored_code != code:
+        return jsonify({"ok": False, "error": "Invalid verification code"}), 400
+
+    if stored_expires_at:
+        try:
+            expires_dt = datetime.fromisoformat(stored_expires_at)
+            # handle timezone-naive or timezone-aware comparison
+            if expires_dt.tzinfo is None:
+                # assume UTC
+                expires_dt = expires_dt.replace(tzinfo=timezone.utc)
+            
+            now_dt = datetime.now(timezone.utc)
+            if now_dt > expires_dt:
+                return jsonify({"ok": False, "error": "Verification code has expired. Please request a new one."}), 400
+        except Exception as e:
+            print(f"[API] Error parsing reset_code_expires_at: {e}")
+            return jsonify({"ok": False, "error": "Verification code expired or invalid"}), 400
+    else:
+        return jsonify({"ok": False, "error": "Verification code expired or invalid"}), 400
 
     ok = db.update_user_password(user["id"], password)
     if not ok:
         return jsonify({"ok": False, "error": "Failed to update password"}), 500
 
+    # Clear code after successful use
+    db.clear_user_reset_code(email)
+
     print(f"[API] Password reset successfully for user id={user['id']} email={email}")
     return jsonify({"ok": True, "message": "Password reset successfully"})
+
 
 
 
