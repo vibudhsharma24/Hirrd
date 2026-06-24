@@ -1,7 +1,7 @@
 # deploy_ec2.ps1
 # Automates the deployment of IITIIM Job Assistant to AWS EC2
 
-$IP = "3.110.173.160"
+$IP = "3.110.197.3"
 $User = "ubuntu"
 $Key = "iitiim-key.pem"
 $RemoteDir = "/home/ubuntu/iitiim"
