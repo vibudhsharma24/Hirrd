@@ -1815,6 +1815,8 @@ def gmail_connect():
     redirect_uri = os.environ.get("GOOGLE_GMAIL_REDIRECT_URI")
     if not redirect_uri:
         redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
+    if "127.0.0.1" in redirect_uri:
+        redirect_uri = redirect_uri.replace("127.0.0.1", "localhost")
 
     scopes = "openid email profile https://www.googleapis.com/auth/gmail.readonly"
     
@@ -1877,6 +1879,8 @@ def gmail_callback():
     redirect_uri = os.environ.get("GOOGLE_GMAIL_REDIRECT_URI")
     if not redirect_uri:
         redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
+    if "127.0.0.1" in redirect_uri:
+        redirect_uri = redirect_uri.replace("127.0.0.1", "localhost")
 
     try:
         token_data = urllib.parse.urlencode({

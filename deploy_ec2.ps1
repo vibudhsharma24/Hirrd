@@ -13,14 +13,14 @@ if (Test-Path app.tar.gz) { Remove-Item app.tar.gz -Force }
 tar -czf app.tar.gz core frontend job_seeker_agent requirements.txt run.py users.db jobs.db linkedin-cookies.json linkedin-config.yml
 
 Write-Host "2. Backing up existing database on EC2..." -ForegroundColor Cyan
-ssh -i $Key -o StrictHostKeyChecking=no "${User}@${IP}" 'mkdir -p /home/ubuntu/iitiim_backups && TS=$(date +%Y%m%d%H%M%S) && [ -f /home/ubuntu/iitiim/users.db ] && cp /home/ubuntu/iitiim/users.db /home/ubuntu/iitiim_backups/users.db.bak.$TS || true && [ -f /home/ubuntu/iitiim/jobs.db ] && cp /home/ubuntu/iitiim/jobs.db /home/ubuntu/iitiim_backups/jobs.db.bak.$TS || true'
+ssh -n -i $Key -o StrictHostKeyChecking=no "${User}@${IP}" 'mkdir -p /home/ubuntu/iitiim_backups && TS=$(date +%Y%m%d%H%M%S) && [ -f /home/ubuntu/iitiim/users.db ] && cp /home/ubuntu/iitiim/users.db /home/ubuntu/iitiim_backups/users.db.bak.$TS || true && [ -f /home/ubuntu/iitiim/jobs.db ] && cp /home/ubuntu/iitiim/jobs.db /home/ubuntu/iitiim_backups/jobs.db.bak.$TS || true'
 
 Write-Host "3. Uploading app.tar.gz to EC2..." -ForegroundColor Cyan
 $remoteDest = "${User}@${IP}:/home/ubuntu/app.tar.gz"
 scp -i $Key -o StrictHostKeyChecking=no app.tar.gz $remoteDest
 
 Write-Host "4. Extracting app.tar.gz on EC2..." -ForegroundColor Cyan
-ssh -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "tar -xzf /home/ubuntu/app.tar.gz -C $RemoteDir"
+ssh -n -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "tar -xzf /home/ubuntu/app.tar.gz -C $RemoteDir"
 
 Write-Host "5. Configuring production .env on EC2..." -ForegroundColor Cyan
 # Read local .env and replace local redirect URI with production redirect URI
@@ -34,10 +34,10 @@ scp -i $Key -o StrictHostKeyChecking=no .env.production $remoteEnvDest
 Remove-Item .env.production -Force
 
 Write-Host "6. Installing Python dependencies in virtual environment..." -ForegroundColor Cyan
-ssh -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "$RemoteDir/venv/bin/pip install --upgrade pip && $RemoteDir/venv/bin/pip install -r $RemoteDir/requirements.txt gunicorn"
+ssh -n -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "$RemoteDir/venv/bin/pip install --upgrade pip && $RemoteDir/venv/bin/pip install -r $RemoteDir/requirements.txt gunicorn"
 
 Write-Host "7. Installing Playwright browsers and dependencies on EC2..." -ForegroundColor Cyan
-ssh -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "sudo DEBIAN_FRONTEND=noninteractive apt-get update && $RemoteDir/venv/bin/playwright install --with-deps"
+ssh -n -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "sudo DEBIAN_FRONTEND=noninteractive apt-get update && $RemoteDir/venv/bin/playwright install --with-deps"
 
 Write-Host "8. Updating systemd service configuration..." -ForegroundColor Cyan
 $ServiceFileContent = @"
@@ -64,10 +64,10 @@ scp -i $Key -o StrictHostKeyChecking=no iitiim.service.temp $remoteServiceDest
 Remove-Item iitiim.service.temp -Force
 
 # Move service file to systemd and reload
-ssh -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "sudo mv /home/ubuntu/iitiim.service /etc/systemd/system/iitiim.service && sudo systemctl daemon-reload && sudo systemctl restart iitiim && sudo systemctl enable iitiim"
+ssh -n -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "sudo mv /home/ubuntu/iitiim.service /etc/systemd/system/iitiim.service && sudo systemctl daemon-reload && sudo systemctl restart iitiim && sudo systemctl enable iitiim"
 
 Write-Host "9. Cleaning up temporary archive files..." -ForegroundColor Cyan
 Remove-Item app.tar.gz -Force
-ssh -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "rm -f /home/ubuntu/app.tar.gz"
+ssh -n -i $Key -o StrictHostKeyChecking=no "$User`@$IP" "rm -f /home/ubuntu/app.tar.gz"
 
 Write-Host "Deployment completed successfully!" -ForegroundColor Green

@@ -1,4 +1,4 @@
-# start_server.ps1
+﻿# start_server.ps1
 # Run this to activate the virtual environment and start the Flask server.
 # Usage: Right-click → Run with PowerShell  OR  .\start_server.ps1
 
