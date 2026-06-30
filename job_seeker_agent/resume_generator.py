@@ -87,7 +87,7 @@ The cover letter should:
 Output ONLY the cover letter text. No greeting or sign-off needed."""
 
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-4-6",
                 max_tokens=300,
                 messages=[{"role": "user", "content": prompt}],
             )

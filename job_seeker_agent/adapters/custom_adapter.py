@@ -147,7 +147,7 @@ IMPORTANT RULES:
 - Report what you did at the end
 """
 
-            llm = ChatAnthropic(model="claude-sonnet-4-20250514")
+            llm = ChatAnthropic(model="claude-sonnet-4-6")
 
             # browser-use 0.1.x uses Browser(config=BrowserConfig(...))
             from browser_use.browser.browser import BrowserConfig

@@ -201,7 +201,12 @@ def decrypt_credential(encrypted: str) -> str:
         return ""
     try:
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-        raw = base64.b64decode(encrypted)
+        try:
+            raw = base64.b64decode(encrypted)
+        except Exception:
+            return encrypted
+        if len(raw) < 12:
+            return encrypted
         key = _get_encryption_key()
         nonce = raw[:12]
         ciphertext = raw[12:]
@@ -210,5 +215,5 @@ def decrypt_credential(encrypted: str) -> str:
     except ImportError:
         return encrypted
     except Exception:
-        return ""
+        return encrypted
 

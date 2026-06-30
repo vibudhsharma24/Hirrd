@@ -621,32 +621,15 @@ async def run_full_pipeline(
     else:
         print("  ⚠️ No LinkedIn credentials — skipping scrape")
 
-    # ── Step 2 & 3: Process posts ─────────────────────────────────
-    all_posts = db.get_all_posts(status="new")
-    posts_with_links = [p for p in all_posts if (p.get("apply_link") or p.get("apply_url") or "").strip()]
-    posts_without_links = [p for p in all_posts if not (p.get("apply_link") or p.get("apply_url") or "").strip()]
-
-    print(f"\n  Total new posts: {len(all_posts)}")
-    print(f"  With apply links: {len(posts_with_links)}")
-    print(f"  Without apply links (connection requests): {len(posts_without_links)}")
-
-    # ── Step 2: Auto-apply to posts with links ────────────────────
-    if posts_with_links:
-        print("\n━━━ Step 2: Auto-Apply to Job Posts ━━━")
-        await run_auto_apply(
-            buyer_id=buyer["id"],
-            dry_run=dry_run,
-            headed=headed,
-            known_only=known_only,
-            limit=limit,
-        )
-
-    # ── Step 3: Send connection requests for posts without links ──
-    if posts_without_links and li_user and li_pass and not dry_run:
-        print("\n━━━ Step 3: Send Connection Requests ━━━")
+    # ── Step 1.5: Send connection requests to ALL new posters ─────
+    # Immediately after scraping, send connection requests to every poster
+    # whose profile URL we discovered — regardless of whether the post
+    # has an apply link or not.
+    if new_posts and li_user and li_pass and not dry_run:
+        print("\n━━━ Step 1.5: Send Connection Requests to Posters ━━━")
         poster_urls = []
         poster_map = {}  # url → post
-        for p in posts_without_links[:limit]:
+        for p in new_posts:
             poster_url = (p.get("poster_url") or "").strip()
             if poster_url and poster_url not in poster_map:
                 poster_urls.append(poster_url)
@@ -662,37 +645,55 @@ async def run_full_pipeline(
                     linkedin_password=li_pass,
                     target_urls=poster_urls,
                     message_template=msg,
-                    limit=min(len(poster_urls), 5),
+                    limit=min(len(poster_urls), 10),
                 )
+                sent_count = 0
                 for r in results:
                     url = r.get("url", "")
                     post = poster_map.get(url)
                     if post and r.get("status") == "sent":
-                        db.update_post_status(post["id"], "pending")
-                        # Create an application record for tracking
-                        db.create_application(
-                            buyer_id=buyer["id"],
-                            post_id=post["id"],
-                            portal_hostname="linkedin.com",
-                            ats_type="connection_request",
-                            resume_used="",
-                            notes=f"Connection request sent to {post.get('poster_name', '')}",
-                        )
-                        db.update_application_status(
-                            db.get_all_applications(buyer_id=buyer["id"])[-1]["id"],
-                            "pending",
-                            notes="connection_request_sent",
-                        )
+                        # Update post status to 'pending' for posts without apply link
+                        if not (post.get("apply_link") or post.get("apply_url") or "").strip():
+                            try:
+                                db.update_post_status(post["id"], "pending")
+                            except Exception:
+                                pass  # post may not have id yet if freshly scraped
                         poster_nm = post.get('poster_name', '') or url[:40]
                         print(f"  ✅ Connection request sent → {poster_nm}")
+                        sent_count += 1
+                    elif r.get("status") == "already_connected":
+                        poster_nm = (post.get('poster_name', '') if post else '') or url[:40]
+                        print(f"  ✔️  Already connected → {poster_nm}")
                     elif post:
                         print(f"  ⏭  {r.get('status', 'error')}: {url[:50]}")
+                print(f"  Connection requests: {sent_count} sent, {len(poster_urls)} total")
             except Exception as e:
                 print(f"  ⚠️ Connection requests error: {e}")
         else:
             print("  No poster URLs to connect with")
-    elif posts_without_links and dry_run:
-        print(f"\n━━━ Step 3: [DRY RUN] Would send {len(posts_without_links)} connection requests ━━━")
+    elif new_posts and dry_run:
+        poster_count = len(set(p.get("poster_url", "") for p in new_posts if p.get("poster_url")))
+        print(f"\n━━━ Step 1.5: [DRY RUN] Would send {poster_count} connection requests ━━━")
+
+    # ── Step 2 & 3: Process posts ─────────────────────────────────
+    all_posts = db.get_all_posts(status="new")
+    posts_with_links = [p for p in all_posts if (p.get("apply_link") or p.get("apply_url") or "").strip()]
+    posts_without_links = [p for p in all_posts if not (p.get("apply_link") or p.get("apply_url") or "").strip()]
+
+    print(f"\n  Total new posts: {len(all_posts)}")
+    print(f"  With apply links: {len(posts_with_links)}")
+    print(f"  Without apply links: {len(posts_without_links)}")
+
+    # ── Step 2: Auto-apply to posts with links ────────────────────
+    if posts_with_links:
+        print("\n━━━ Step 2: Auto-Apply to Job Posts ━━━")
+        await run_auto_apply(
+            buyer_id=buyer["id"],
+            dry_run=dry_run,
+            headed=headed,
+            known_only=known_only,
+            limit=limit,
+        )
 
     print("\n━━━ Pipeline Complete ━━━\n")
 

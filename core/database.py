@@ -923,7 +923,8 @@ def init_posts_table():
                 status           TEXT    NOT NULL DEFAULT 'new',
                 post_urn         TEXT    UNIQUE DEFAULT NULL,
                 post_url         TEXT    NOT NULL DEFAULT '',
-                apply_url        TEXT    NOT NULL DEFAULT ''
+                apply_url        TEXT    NOT NULL DEFAULT '',
+                apply_method     TEXT    NOT NULL DEFAULT ''
             )
         """)
         # Idempotently add post_url column if it doesn't exist
@@ -934,6 +935,11 @@ def init_posts_table():
         # Idempotently add apply_url column if it doesn't exist
         try:
             conn.execute("ALTER TABLE posts ADD COLUMN apply_url TEXT NOT NULL DEFAULT ''")
+        except Exception:
+            pass
+        # Idempotently add apply_method column if it doesn't exist
+        try:
+            conn.execute("ALTER TABLE posts ADD COLUMN apply_method TEXT NOT NULL DEFAULT ''")
         except Exception:
             pass
         conn.commit()
@@ -1064,29 +1070,57 @@ def get_application(app_id: int) -> dict | None:
     """Get a single application by ID from jobs.db."""
     with _connect_jobs() as conn:
         row = conn.execute(
-            "SELECT * FROM applications WHERE id = ?", (app_id,)
+            """
+            SELECT a.*, 
+                   p.company AS post_company, p.title AS post_title,
+                   j.company AS job_company, j.title AS job_title
+            FROM applications a
+            LEFT JOIN posts p ON a.post_id = p.id
+            LEFT JOIN jobs j ON a.job_id = j.id
+            WHERE a.id = ?
+            """,
+            (app_id,),
         ).fetchone()
-    return _row_to_dict(row) if row else None
+    if not row:
+        return None
+    d = _row_to_dict(row)
+    d["company"] = d.get("post_company") or d.get("job_company") or d.get("portal_hostname") or "Direct Apply"
+    d["title"] = d.get("post_title") or d.get("job_title") or d.get("ats_type") or "Application"
+    return d
 
 
 def get_all_applications(buyer_id: int | None = None, status: str | None = None) -> list[dict]:
     """Return applications, optionally filtered by buyer and/or status."""
-    query = "SELECT * FROM applications"
+    query = """
+        SELECT a.*, 
+               p.company AS post_company, p.title AS post_title,
+               j.company AS job_company, j.title AS job_title
+        FROM applications a
+        LEFT JOIN posts p ON a.post_id = p.id
+        LEFT JOIN jobs j ON a.job_id = j.id
+    """
     params = []
     conditions = []
     if buyer_id is not None:
-        conditions.append("buyer_id = ?")
+        conditions.append("a.buyer_id = ?")
         params.append(buyer_id)
     if status:
-        conditions.append("status = ?")
+        conditions.append("a.status = ?")
         params.append(status)
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
-    query += " ORDER BY created_at DESC"
+    query += " ORDER BY a.created_at DESC"
 
     with _connect_jobs() as conn:
         rows = conn.execute(query, params).fetchall()
-    return [_row_to_dict(r) for r in rows]
+    
+    res = []
+    for r in rows:
+        d = _row_to_dict(r)
+        d["company"] = d.get("post_company") or d.get("job_company") or d.get("portal_hostname") or "Direct Apply"
+        d["title"] = d.get("post_title") or d.get("job_title") or d.get("ats_type") or "Application"
+        res.append(d)
+    return res
 
 
 def update_application_status(

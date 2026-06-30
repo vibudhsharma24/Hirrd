@@ -607,7 +607,9 @@ function initDashboardCharts() {
       tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-ink-700/40">No applications recorded yet</td></tr>`;
     } else {
       tbody.innerHTML = myApps.slice(0, 5).map(a => {
-        const logo = (a.portal_hostname || '?').charAt(0).toUpperCase();
+        const companyName = a.company || a.portal_hostname || 'Direct Apply';
+        const jobTitle = a.title || a.ats_type || 'web';
+        const logo = companyName.charAt(0).toUpperCase();
         const statusColors = {
           'applied': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
           'failed': 'bg-rose-50 text-rose-700 border border-rose-100',
@@ -617,8 +619,8 @@ function initDashboardCharts() {
         const date = a.created_at ? new Date(a.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : '—';
         return `
           <tr class="hover:bg-ink-900/[.01] transition-colors">
-            <td class="py-3.5"><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg bg-gradient-to-br from-ink-800 to-brand-700 text-white grid place-items-center font-semibold text-xs">${logo}</div><div class="font-semibold">${a.portal_hostname || 'Direct Apply'}</div></div></td>
-            <td class="py-3.5 text-ink-700 font-mono text-xs">${a.ats_type || 'web'}</td>
+            <td class="py-3.5"><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg bg-gradient-to-br from-ink-800 to-brand-700 text-white grid place-items-center font-semibold text-xs">${logo}</div><div class="font-semibold">${companyName}</div></div></td>
+            <td class="py-3.5 text-ink-700 font-mono text-xs">${jobTitle}</td>
             <td class="py-3.5"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${color}">${a.status}</span></td>
             <td class="py-3.5 text-ink-700">${date}</td>
             <td class="py-3.5 text-right"><button onclick="viewApplicationDetail(${a.id})" class="text-[12px] text-brand-700 font-semibold hover:underline">View</button></td>
@@ -750,7 +752,7 @@ function initDashboardCharts() {
 function viewApplicationDetail(appId) {
   const app = myApps.find(a => a.id === appId);
   if (!app) return;
-  alert(`Application Details\n---------------------------------\nCompany: ${app.portal_hostname}\nATS Type: ${app.ats_type}\nStatus: ${app.status}\nCreated: ${new Date(app.created_at).toLocaleString()}\nNotes/Logs: ${app.notes || 'None'}`);
+  alert(`Application Details\n---------------------------------\nCompany: ${app.company || app.portal_hostname || 'Direct Apply'}\nRole/ATS: ${app.title || app.ats_type || 'web'}\nStatus: ${app.status}\nCreated: ${new Date(app.created_at).toLocaleString()}\nNotes/Logs: ${app.notes || 'None'}`);
 }
 
 async function logout() {

@@ -51,3 +51,6 @@ Thumbs.db
 
 # Screenshots directory
 /screenshots/
+
+# Scraper session cookies
+job_seeker_agent/sessions/

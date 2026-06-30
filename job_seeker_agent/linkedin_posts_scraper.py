@@ -68,7 +68,7 @@ def _save_cookies(user_id: int, cookies: list[dict]):
     path = _cookies_path(user_id)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(cookies, f, indent=2)
-    print(f"  [LI Scraper] Cookies saved → {path}")
+    print(f"  [LI Scraper] Cookies saved -> {path}")
 
 
 def _load_cookies(user_id: int) -> list[dict] | None:
@@ -265,6 +265,116 @@ def passes_title_filter(title: str) -> bool:
     return not any(kw in lower for kw in NEGATIVE_TITLE_KEYWORDS)
 
 
+# ── Claude AI Post Refinement ────────────────────────────────────────────────
+
+CLAUDE_MODEL = "claude-sonnet-4-6"
+
+
+async def refine_posts_with_claude(posts: list[dict]) -> list[dict]:
+    """Use Claude AI to extract clean, structured fields from raw scraped posts.
+
+    This prevents issues like company being saved as 'lnkd.in' or 'linkedin.com'
+    by having Claude read the post text and extract the actual company name,
+    job title, location, and apply method.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        print("  [LI Scraper] WARNING: No ANTHROPIC_API_KEY -- skipping Claude refinement")
+        return posts
+
+    try:
+        import anthropic
+    except ImportError:
+        print("  [LI Scraper] WARNING: anthropic package not installed -- skipping refinement")
+        return posts
+
+    print(f"  [LI Scraper] [AI] Refining {len(posts)} posts with Claude AI...")
+
+    client = anthropic.AsyncAnthropic(api_key=api_key)
+    semaphore = asyncio.Semaphore(5)  # Max 5 concurrent API calls
+
+    async def refine_single(post: dict) -> dict:
+        async with semaphore:
+            prompt = f"""You are a professional recruitment data cleaner. Analyze the following LinkedIn post and extract accurate job details.
+
+RAW POST DATA:
+- Post Text: {post.get('post_text', '')}
+- Poster Name: {post.get('poster_name', '')}
+- Poster URL: {post.get('poster_url', '')}
+- Current Title: {post.get('title', '')}
+- Current Company: {post.get('company', '')}
+- Current Location: {post.get('location', '')}
+- Current Apply Link: {post.get('apply_link', '')}
+- Post URL: {post.get('post_url', '')}
+
+Extract and return these fields:
+
+1. "title" — The clean job title (e.g. "Senior Backend Developer", "Product Manager"). Remove noise words like "hiring", "urgent", etc.
+2. "company" — The ACTUAL hiring company name.
+   CRITICAL: NEVER use domain names as company. Never output "linkedin.com", "linkd.in", "lnkd.in", "google.com", "docs.google.com", "forms.gle" or any URL/domain as the company name.
+   Look at the post text for mentions like "at CompanyName", "join CompanyName", or the poster's headline.
+   If truly unknown, return empty string.
+3. "location" — Job location (e.g. "Remote", "Bangalore, India", "Hybrid - Mumbai").
+4. "apply_link" — The best external application URL. Keep as-is if it's a valid external link.
+5. "apply_method" — How the candidate should apply. Examples:
+   - "Apply via link" (if there's a direct application URL)
+   - "Message poster on LinkedIn" (if the post says to DM/message)
+   - "Email resume to hr@company.com" (if email is mentioned)
+   - "Apply via Google Form" (if it's a Google Forms link)
+   - "Comment on post" (if that's the instruction)
+   - "Send connection request" (if no other method is clear)
+6. "poster_name" — Clean poster name.
+7. "poster_url" — Poster's LinkedIn profile URL.
+
+Return ONLY a JSON object with these 7 keys. No markdown, no code blocks, no explanation."""
+
+            try:
+                response = await client.messages.create(
+                    model=CLAUDE_MODEL,
+                    max_tokens=500,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                raw_text = response.content[0].text.strip()
+
+                # Strip markdown fences if Claude wraps in ```json
+                if raw_text.startswith("```"):
+                    parts = raw_text.split("```")
+                    content = parts[1] if len(parts) >= 2 else raw_text
+                    if content.startswith("json"):
+                        content = content[4:]
+                    raw_text = content.strip()
+
+                data = json.loads(raw_text)
+
+                # Merge refined fields back, keeping original as fallback
+                refined = dict(post)
+                refined["title"] = data.get("title") or post.get("title") or "Untitled"
+                refined["company"] = data.get("company") or ""
+                refined["location"] = data.get("location") or post.get("location") or ""
+                refined["poster_name"] = data.get("poster_name") or post.get("poster_name") or ""
+                refined["poster_url"] = data.get("poster_url") or post.get("poster_url") or ""
+                refined["apply_link"] = data.get("apply_link") or post.get("apply_link") or ""
+                refined["apply_url"] = refined["apply_link"]
+                refined["apply_method"] = data.get("apply_method") or ""
+
+                # Safety: reject if Claude still returned a domain as company
+                bad_company = ["linkedin.com", "lnkd.in", "linkd.in", "google.com",
+                               "docs.google.com", "forms.gle", "bit.ly"]
+                if refined["company"].lower().strip() in bad_company:
+                    refined["company"] = ""
+
+                return refined
+
+            except Exception as e:
+                print(f"  [LI Scraper] WARNING: Claude refinement failed for one post: {e}")
+                return post
+
+    tasks = [refine_single(p) for p in posts]
+    refined_posts = await asyncio.gather(*tasks)
+    print(f"  [LI Scraper] Claude refinement complete")
+    return list(refined_posts)
+
+
 # ── Main scraper ─────────────────────────────────────────────────────────────
 
 async def scrape_linkedin_posts(
@@ -355,7 +465,7 @@ async def scrape_linkedin_posts(
         if not cached_cookies:
             logged_in = await _login(page, linkedin_username, linkedin_password)
             if not logged_in:
-                print("  [LI Scraper] ❌ Login failed")
+                print("  [LI Scraper] Login failed")
                 await browser.close()
                 return []
             cookies = await context.cookies()
@@ -419,7 +529,7 @@ async def scrape_linkedin_posts(
                         "apply_link": apply_link,
                         "poster_name": raw.get("posterName", ""),
                         "poster_url": raw.get("posterUrl", ""),
-                        "post_text": post_text[:600],
+                        "post_text": post_text[:1200],
                         "source": "linkedin-posts",
                         "keywords": query,
                         "scraped_at": scraped_at,
@@ -427,6 +537,7 @@ async def scrape_linkedin_posts(
                         "post_urn": urn or None,
                         "post_url": raw.get("directPostUrl", ""),
                         "apply_url": apply_link,
+                        "apply_method": "",
                     }
                     all_posts.append(post_record)
 
@@ -440,6 +551,16 @@ async def scrape_linkedin_posts(
             pass
 
         await browser.close()
+
+    # ── Claude AI Refinement Layer ────────────────────────────────────
+    # Process all scraped posts through Claude to extract clean fields:
+    # proper company names, titles, locations, and apply methods.
+    if all_posts:
+        try:
+            all_posts = await refine_posts_with_claude(all_posts)
+        except Exception as e:
+            print(f"  [LI Scraper] WARNING: Claude refinement layer error: {e}")
+            print(f"  [LI Scraper]   -> Saving posts with regex-extracted fields")
 
     # Save to database
     if all_posts:
@@ -456,11 +577,36 @@ async def _login(page, email: str, password: str) -> bool:
     print("  [LI Scraper] Logging in to LinkedIn...")
     try:
         await page.goto("https://www.linkedin.com/login", wait_until="domcontentloaded", timeout=30000)
-        await page.wait_for_timeout(1500)
+        
+        # Wait dynamically for either the login inputs OR redirect to feed/search
+        try:
+            await page.wait_for_function(
+                """() => {
+                    const emailInput = document.querySelector('input[type="email"], input#username, input[name="session_key"]');
+                    const isEmailVisible = emailInput && (emailInput.offsetWidth > 0 || emailInput.offsetHeight > 0);
+                    const isFeedOrSearch = window.location.href.includes('/feed') || window.location.href.includes('/search');
+                    return isEmailVisible || isFeedOrSearch;
+                }""",
+                timeout=15000
+            )
+        except Exception:
+            pass
+        
+        # Check if already logged in via redirect
+        if "/feed" in page.url or "/search" in page.url:
+            print("  [LI Scraper] Already logged in (auto-redirected)")
+            return True
 
-        await page.fill("#username", email)
-        await page.fill("#password", password)
-        await page.click('button[type="submit"]')
+        email_selector = 'input[type="email"]:visible, input#username:visible, input[name="session_key"]:visible'
+        await page.wait_for_selector(email_selector, state="visible", timeout=5000)
+
+        email_input = page.locator(email_selector).first
+        password_input = page.locator('input[type="password"]:visible, input#password:visible, input[name="session_password"]:visible').first
+        submit_btn = page.locator('button:has-text("Sign in"):not(:has-text("Apple")):not(:has-text("Microsoft")):visible').first
+
+        await email_input.fill(email)
+        await password_input.fill(password)
+        await submit_btn.click()
 
         # Wait for redirect away from /login
         try:
@@ -475,15 +621,22 @@ async def _login(page, email: str, password: str) -> bool:
 
         current_url = page.url
         if "/login" in current_url or "/checkpoint" in current_url:
-            print("  [LI Scraper] ⚠️ Login failed or 2FA required")
-            print("  [LI Scraper]   → Run with --headed to complete 2FA manually")
+            print("  [LI Scraper] WARNING: Login failed or 2FA required")
+            print("  [LI Scraper]   -> Run with --headed to complete 2FA manually")
             return False
 
-        print("  [LI Scraper] ✅ Logged in successfully")
+        print("  [LI Scraper] Logged in successfully")
         return True
 
     except Exception as e:
         print(f"  [LI Scraper] Login error: {e}")
+        print(f"  [LI Scraper] Page URL at error: {page.url}")
+        try:
+            os.makedirs("scratch", exist_ok=True)
+            await page.screenshot(path="scratch/login_failure.png")
+            print("  [LI Scraper] Saved failure screenshot to scratch/login_failure.png")
+        except Exception as se:
+            print(f"  [LI Scraper] Failed to save screenshot: {se}")
         return False
 
 
@@ -527,6 +680,7 @@ async def _extract_posts_from_page(page, url: str) -> list[dict]:
             const results = [];
 
             const containerSelectors = [
+                'div[role="listitem"]',
                 '.search-results__list .entity-result',
                 '.search-results-container .entity-result',
                 '[data-chameleon-result-urn]',
@@ -542,23 +696,20 @@ async def _extract_posts_from_page(page, url: str) -> list[dict]:
             }
 
             for (const card of cards) {
-                // Poster name
-                const nameEl = card.querySelector(
-                    '.entity-result__title-text a span[aria-hidden="true"],' +
-                    '.update-components-actor__name span[aria-hidden="true"],' +
-                    '.feed-shared-actor__name,' +
-                    '.app-aware-link .ember-view'
-                );
-                const posterName = nameEl?.innerText?.trim() || '';
-
-                // Poster profile URL
-                const profileLinkEl = card.querySelector(
-                    '.entity-result__title-text a[href*="/in/"],' +
-                    '.update-components-actor__container-link,' +
-                    '.feed-shared-actor__container-link,' +
-                    'a[href*="linkedin.com/in/"]'
-                );
-                let posterUrl = profileLinkEl?.href || '';
+                // Poster name & URL (handle both /in/ and /company/)
+                const profileLinks = Array.from(card.querySelectorAll('a[href*="/in/"], a[href*="/company/"], a[href*="linkedin.com/in/"], a[href*="linkedin.com/company/"]'));
+                
+                let posterUrl = '';
+                let posterName = '';
+                
+                if (profileLinks.length > 0) {
+                    posterUrl = profileLinks[0].href;
+                    const nameLink = profileLinks.find(a => a.innerText.trim().length > 0);
+                    if (nameLink) {
+                        posterName = nameLink.innerText.split('\\n')[0].trim();
+                    }
+                }
+                
                 if (posterUrl) {
                     try {
                         const p = new URL(posterUrl);
@@ -566,13 +717,22 @@ async def _extract_posts_from_page(page, url: str) -> list[dict]:
                     } catch (_) {}
                 }
 
-                // Poster headline
+                // Poster headline fallback
                 const headlineEl = card.querySelector(
                     '.entity-result__primary-subtitle,' +
                     '.update-components-actor__description,' +
                     '.feed-shared-actor__description'
                 );
-                const posterHeadline = headlineEl?.innerText?.trim() || '';
+                let posterHeadline = headlineEl?.innerText?.trim() || '';
+                if (!posterHeadline && profileLinks.length > 0) {
+                    const nameLink = profileLinks.find(a => a.innerText.trim().length > 0);
+                    if (nameLink) {
+                        const parts = nameLink.innerText.split('\\n').map(x => x.trim()).filter(Boolean);
+                        if (parts.length > 1) {
+                            posterHeadline = parts.slice(1).join(' ');
+                        }
+                    }
+                }
 
                 // Post text
                 const textEl = card.querySelector(
@@ -581,7 +741,18 @@ async def _extract_posts_from_page(page, url: str) -> list[dict]:
                     '.feed-shared-text,' +
                     '.break-words'
                 );
-                const postText = textEl?.innerText?.trim() || '';
+                let postText = textEl?.innerText?.trim() || '';
+                if (!postText) {
+                    // Fallback: find the span/div with longest text that doesn't contain "Follow"
+                    const allTextElements = Array.from(card.querySelectorAll('span, div')).filter(el => {
+                        const text = el.innerText || '';
+                        return text.length > 100 && !text.includes('Follow');
+                    });
+                    if (allTextElements.length > 0) {
+                        allTextElements.sort((a, b) => b.innerText.length - a.innerText.length);
+                        postText = allTextElements[0].innerText.trim();
+                    }
+                }
 
                 // All links in the card
                 const linkEls = Array.from(card.querySelectorAll('a[href]'));
@@ -618,7 +789,7 @@ async def _extract_posts_from_page(page, url: str) -> list[dict]:
 # ── Database save ────────────────────────────────────────────────────────────
 
 def _save_posts_to_db(posts: list[dict]):
-    """Save discovered posts to jobs.db → posts table."""
+    """Save discovered posts to jobs.db -> posts table."""
     try:
         from core.database import init_posts_table, _connect_jobs, _row_to_dict
 
@@ -631,8 +802,8 @@ def _save_posts_to_db(posts: list[dict]):
                         """INSERT OR IGNORE INTO posts
                            (title, company, location, apply_link, poster_name,
                             poster_url, post_text, source, keywords, scraped_at,
-                            status, post_urn, post_url, apply_url)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            status, post_urn, post_url, apply_url, apply_method)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         (
                             post["title"], post["company"], post["location"],
                             post["apply_link"], post["poster_name"], post["poster_url"],
@@ -640,6 +811,7 @@ def _save_posts_to_db(posts: list[dict]):
                             post["scraped_at"], post["status"],
                             post.get("post_urn"), post.get("post_url", ""),
                             post.get("apply_url", ""),
+                            post.get("apply_method", ""),
                         ),
                     )
                 except Exception:
@@ -665,13 +837,13 @@ async def _cli_main():
     from core.database import get_user
     user = get_user(args.user_id)
     if not user:
-        print(f"❌ User {args.user_id} not found")
+        print(f"ERROR: User {args.user_id} not found")
         return
 
     li_user = user.get("linkedin_username", "")
     li_pass = user.get("linkedin_password", "")
     if not li_user or not li_pass:
-        print("❌ LinkedIn credentials not set for this user")
+        print("ERROR: LinkedIn credentials not set for this user")
         return
 
     prefs_str = user.get("job_preferences", "{}")
@@ -692,7 +864,7 @@ async def _cli_main():
         max_pages=args.max_pages,
         headed=args.headed,
     )
-    print(f"\n✅ Scraped {len(posts)} posts total")
+    print(f"\n[OK] Scraped {len(posts)} posts total")
 
 
 if __name__ == "__main__":
