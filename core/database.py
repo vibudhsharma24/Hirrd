@@ -9,6 +9,7 @@ import sqlite3
 import hashlib
 import os
 import re
+import json
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -328,6 +329,17 @@ def init_db():
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typedef}")
             except Exception:
                 pass  # column already exists
+
+        # ── Master CV table ─────────────────────────────────────────
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS master_cv (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id       INTEGER NOT NULL UNIQUE,
+                cv_data       TEXT    NOT NULL,
+                updated_at    TEXT    NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
 
         conn.commit()
 
@@ -2131,3 +2143,33 @@ def delete_google_connection(user_id: int):
         conn.commit()
 
 
+# ── Master CV helpers ──────────────────────────────────────────────────────────
+
+def get_master_cv(user_id: int) -> dict | None:
+    """Return the master CV data dict for a user, or None if not set."""
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT cv_data, updated_at FROM master_cv WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        if not row:
+            return None
+        try:
+            return json.loads(row["cv_data"])
+        except (json.JSONDecodeError, TypeError):
+            return None
+
+
+def save_master_cv(user_id: int, cv_data: dict) -> bool:
+    """Insert or replace the master CV for a user. Returns True on success."""
+    now = datetime.now(timezone.utc).isoformat()
+    data_json = json.dumps(cv_data, ensure_ascii=False)
+    with _connect() as conn:
+        conn.execute(
+            """INSERT INTO master_cv (user_id, cv_data, updated_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(user_id) DO UPDATE SET cv_data = excluded.cv_data, updated_at = excluded.updated_at""",
+            (user_id, data_json, now),
+        )
+        conn.commit()
+    return True

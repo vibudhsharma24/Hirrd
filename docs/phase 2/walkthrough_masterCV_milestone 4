@@ -1,0 +1,39 @@
+# Walkthrough — Exposing Master CV to All Users
+
+The Master CV Builder module has been updated to be fully accessible to all registered users (including free tier accounts) rather than being restricted only to users with `is_agent_buyer` active.
+
+## Changes Made
+
+### 1. Database Module
+#### [MODIFY] [database.py](file:///c:/Users/VIBUDH/Desktop/projects/job%20assistant/core/database.py)
+* Added `import json` globally at the top level of `database.py` to fix a potential runtime `NameError` in `get_master_cv` and `save_master_cv`.
+
+### 2. Backend Routing
+#### [MODIFY] [app.py](file:///c:/Users/VIBUDH/Desktop/projects/job%20assistant/core/app.py)
+Removed the `is_agent_buyer` check from all five Master CV-related endpoints:
+* **GET `/api/user/master-cv`** (Retrieves Master CV JSON template/content)
+* **POST `/api/user/master-cv`** (Saves Master CV JSON data)
+* **POST `/api/user/master-cv/parse-resume`** (Parses PDF/DOCX to JSON via Claude)
+* **POST `/api/user/master-cv/generate-headline`** (Generates career summary via Claude)
+* **POST `/api/user/master-cv/generate-tailored`** (Generates target tailored PDF)
+
+### 3. Frontend Dashboard
+#### [MODIFY] [dashboard.html](file:///c:/Users/VIBUDH/Desktop/projects/job%20assistant/frontend/dashboard.html)
+* **Sidebar Tab Visibility**: Modified `renderSidebar()` so the `#cvNavLink` (Master CV tab) is always rendered and never hidden based on user subscription level.
+* **Navigation Router**: Removed the redirection check in the hash router that previously sent non-paying users visiting `#cv` back to the `#store` page.
+
+---
+
+## Verification Results
+
+### 1. Registration & Navigation
+* Registered a new user `freeuser@example.com` (free plan).
+* Verified the **Master CV Builder** tab was immediately visible and clickable.
+* Successfully loaded the form at `/dashboard#cv` without any redirections.
+
+### 2. Form Submission & DB Verification
+* Filled the Personal Details section in the builder.
+* Clicked **Save CV** and verified the success alert notification: `✓ Master CV saved successfully!`.
+* Reloaded the dashboard page and returned to `#cv` tab to verify that the entered data was persisted and correctly re-fetched from the database.
+
+![Master CV Builder Screenshot](file:///C:/Users/VIBUDH/.gemini/antigravity/brain/152a11ae-b8a5-485d-a20a-101d2093aa55/.system_generated/click_feedback/click_feedback_1783154238600.png)

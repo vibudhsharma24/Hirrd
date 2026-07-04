@@ -271,11 +271,29 @@ async def apply_to_post(
             "name": buyer.get("name", ""),
             "last_name": buyer.get("last_name", ""),
             "email": buyer.get("email", ""),
-            "phone": "",  # Not stored in current schema
+            "phone": "",
             "linkedin_url": "",
             "github_url": "",
             "current_company": "",
         }
+
+        # Enrich profile from Master CV if available
+        try:
+            from core.database import get_master_cv, get_user_by_email
+            user_row = get_user_by_email(buyer.get("email", ""))
+            if user_row:
+                mcv = get_master_cv(user_row["id"])
+                if mcv and mcv.get("personal"):
+                    mp = mcv["personal"]
+                    profile["phone"] = mp.get("phone", "") or profile["phone"]
+                    profile["linkedin_url"] = mp.get("linkedin_url", "") or profile["linkedin_url"]
+                    profile["github_url"] = mp.get("github_url", "") or profile["github_url"]
+                    # Current company = most recent experience entry
+                    exps = mcv.get("experience", [])
+                    if exps:
+                        profile["current_company"] = exps[0].get("company", "")
+        except Exception as e:
+            print(f"  [Profile] Could not enrich from master CV: {e}")
 
         # Log the adapter selection
         db.add_submission_log(

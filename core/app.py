@@ -1664,6 +1664,354 @@ def upload_user_resume():
     return jsonify({"ok": True, "message": "Resume uploaded successfully", "filename": resume_filename})
 
 
+# ── Master CV endpoints ────────────────────────────────────────────────────────
+
+@app.route("/api/user/master-cv", methods=["GET"])
+@login_required
+def get_master_cv_endpoint():
+    """Fetch the user's Master CV JSON. Returns a default template if none exists."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+
+    cv_data = db.get_master_cv(flask_current_user.id)
+    if cv_data is None:
+        # Return a default empty template
+        user = db.get_user(flask_current_user.id)
+        cv_data = {
+            "personal": {
+                "name": user.get("name", "") if user else "",
+                "last_name": user.get("last_name", "") if user else "",
+                "email": user.get("email", "") if user else "",
+                "phone": "",
+                "headline": user.get("headline", "") if user else "",
+                "linkedin_url": "",
+                "github_url": "",
+                "portfolio_url": "",
+                "summary": ""
+            },
+            "education": [],
+            "experience": [],
+            "internships": [],
+            "coursework": [],
+            "positions_of_responsibility": [],
+            "certifications": [],
+            "hobbies": []
+        }
+    return jsonify({"ok": True, "cv": cv_data})
+
+
+@app.route("/api/user/master-cv", methods=["POST"])
+@login_required
+def save_master_cv_endpoint():
+    """Save the user's Master CV JSON."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+
+    data = request.get_json(silent=True)
+    if not data or "cv" not in data:
+        return jsonify({"ok": False, "error": "Missing 'cv' payload"}), 400
+    cv_data = data["cv"]
+    db.save_master_cv(flask_current_user.id, cv_data)
+    return jsonify({"ok": True, "message": "Master CV saved successfully"})
+
+
+@app.route("/api/user/master-cv/parse-resume", methods=["POST"])
+@login_required
+def parse_resume_to_cv():
+    """Upload a resume file, parse it with Claude, and return structured JSON for pre-fill."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+
+    import pdfplumber
+    from docx import Document as DocxDocument
+
+    resume_file = request.files.get("resume")
+    if not resume_file or not resume_file.filename:
+        return jsonify({"ok": False, "error": "Resume file is required"}), 400
+
+    original_filename = resume_file.filename or ""
+    ext = os.path.splitext(original_filename)[1].lower()
+    if ext not in (".pdf", ".doc", ".docx"):
+        return jsonify({"ok": False, "error": f"Unsupported format '{ext}'. Use PDF or DOCX."}), 400
+
+    # Save to a temp location
+    import tempfile
+    tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "resumes", "tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    tmp_path = os.path.join(tmp_dir, f"parse_{flask_current_user.id}{ext}")
+    resume_file.save(tmp_path)
+
+    # Extract text
+    resume_text = ""
+    try:
+        if ext == ".pdf":
+            with pdfplumber.open(tmp_path) as pdf:
+                for page in pdf.pages:
+                    resume_text += (page.extract_text() or "") + "\n"
+        elif ext in (".doc", ".docx"):
+            doc = DocxDocument(tmp_path)
+            resume_text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Failed to extract text: {str(e)[:200]}"}), 500
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+
+    if not resume_text.strip():
+        return jsonify({"ok": False, "error": "Could not extract any text from the resume"}), 400
+
+    # Parse with Claude
+    try:
+        import anthropic
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return jsonify({"ok": False, "error": "Anthropic API key not configured. Add ANTHROPIC_API_KEY to your .env file."}), 500
+
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = f"""You are a resume parser. Extract ALL information from this resume and return it as a JSON object matching this EXACT schema:
+
+{{
+  "personal": {{
+    "name": "",
+    "last_name": "",
+    "email": "",
+    "phone": "",
+    "headline": "",
+    "linkedin_url": "",
+    "github_url": "",
+    "portfolio_url": "",
+    "summary": ""
+  }},
+  "education": [
+    {{
+      "degree": "",
+      "field_of_study": "",
+      "institute": "",
+      "gpa_or_percentage": "",
+      "start_year": "",
+      "end_year": ""
+    }}
+  ],
+  "experience": [
+    {{
+      "company": "",
+      "role": "",
+      "project_title": "",
+      "start_date": "",
+      "end_date": "",
+      "responsibilities": ["bullet point 1", "bullet point 2"]
+    }}
+  ],
+  "internships": [
+    {{
+      "company": "",
+      "role": "",
+      "project_title": "",
+      "start_date": "",
+      "end_date": "",
+      "responsibilities": ["bullet point 1"]
+    }}
+  ],
+  "coursework": ["Course 1", "Course 2"],
+  "positions_of_responsibility": [
+    {{
+      "title": "",
+      "organization": "",
+      "start_date": "",
+      "end_date": "",
+      "bullets": ["bullet 1"]
+    }}
+  ],
+  "certifications": [
+    {{
+      "title": "",
+      "issuer": "",
+      "date": "",
+      "description": ""
+    }}
+  ],
+  "hobbies": ["Hobby 1"]
+}}
+
+Rules:
+- Fill ONLY fields you can find evidence for in the resume text.
+- For missing fields, use empty strings or empty arrays.
+- Keep bullet points concise and professional.
+- Return ONLY valid JSON. No markdown, no explanation.
+
+RESUME TEXT:
+{resume_text[:8000]}"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
+        # Strip markdown fences if present
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        import json as _json
+        cv_data = _json.loads(raw.strip())
+        return jsonify({"ok": True, "cv": cv_data})
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"AI parsing failed: {str(e)[:300]}"}), 500
+
+
+@app.route("/api/user/master-cv/generate-headline", methods=["POST"])
+@login_required
+def generate_master_cv_headline():
+    """Use Claude to generate a professional headline based on all info in user's Master CV."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+
+    cv_data = db.get_master_cv(flask_current_user.id)
+    if not cv_data:
+        return jsonify({"ok": False, "error": "No Master CV found. Please fill out your details first."}), 400
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"ok": False, "error": "Anthropic API key not configured."}), 500
+
+    try:
+        import json as _json
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = f"""You are a career adviser and professional resume writer.
+Given the candidate's CV details below, generate a compelling professional headline/summary that represents their key value proposition, core strengths, and qualifications.
+
+Rules:
+1. The output must be maximum 50-75 words.
+2. It should be written in a professional, punchy style suitable for a resume header.
+3. Use active, value-oriented language.
+4. Output ONLY the raw headline text. No quotes, no markdown, no greetings, no introductory words.
+
+CANDIDATE CV DETAILS:
+{_json.dumps(cv_data, indent=2)[:6000]}"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        headline = response.content[0].text.strip()
+        
+        if "personal" not in cv_data:
+            cv_data["personal"] = {}
+        cv_data["personal"]["headline"] = headline
+        db.save_master_cv(flask_current_user.id, cv_data)
+        
+        return jsonify({"ok": True, "headline": headline})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Failed to generate headline: {str(e)[:300]}"}), 500
+
+
+@app.route("/api/user/master-cv/generate-tailored", methods=["POST"])
+@login_required
+def generate_tailored_resume():
+    """Generate a tailored resume PDF from the user's Master CV + a target JD."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+
+    import json as _json
+
+    data = request.get_json(silent=True) or {}
+    jd_text = (data.get("jd_text") or "").strip()
+
+    # Load the user's master CV
+    cv_data = db.get_master_cv(flask_current_user.id)
+    if not cv_data:
+        return jsonify({"ok": False, "error": "No Master CV found. Please fill out your CV first."}), 400
+
+    # If JD provided, tailor the CV using Claude
+    tailored_cv = cv_data
+    if jd_text:
+        try:
+            import anthropic
+            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            if api_key:
+                client = anthropic.Anthropic(api_key=api_key)
+                prompt = f"""You are a resume tailoring expert. Given a candidate's full CV data and a target job description, produce a TAILORED version of the CV.
+
+Rules:
+1. Keep all personal details unchanged.
+2. Select and reorder the MOST RELEVANT experiences, projects, and skills for this role.
+3. Rephrase bullet points to highlight keywords and achievements matching the JD.
+4. Keep education, certifications, and coursework relevant to the role. Remove irrelevant coursework.
+5. Limit experience entries to the 3-4 most relevant.
+6. Limit internships to 2 most relevant.
+7. Keep bullet points concise (one line each).
+8. Return the SAME JSON schema as the input. No extra fields.
+9. Return ONLY valid JSON. No markdown, no explanation.
+
+CANDIDATE CV:
+{_json.dumps(cv_data, indent=2)[:6000]}
+
+TARGET JOB DESCRIPTION:
+{jd_text[:3000]}"""
+
+                response = client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=4000,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                raw = response.content[0].text.strip()
+                if raw.startswith("```"):
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"):
+                        raw = raw[4:]
+                tailored_cv = _json.loads(raw.strip())
+        except Exception as e:
+            print(f"[CV] Tailoring failed, using raw CV: {e}")
+            # Fall through with untailored CV
+
+    # Generate HTML resume
+    try:
+        # Add project root to path for resume_generator imports
+        import sys
+        agent_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "job_seeker_agent")
+        if agent_dir not in sys.path:
+            sys.path.insert(0, agent_dir)
+
+        from resume_generator import render_resume_html, generate_pdf_from_html
+
+        html = render_resume_html(tailored_cv)
+
+        # Output path
+        out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "resumes", "generated")
+        os.makedirs(out_dir, exist_ok=True)
+        import time
+        pdf_filename = f"tailored_{flask_current_user.id}_{int(time.time())}.pdf"
+        pdf_path = os.path.join(out_dir, pdf_filename)
+
+        generate_pdf_from_html(html, pdf_path)
+
+        if not os.path.exists(pdf_path):
+            return jsonify({"ok": False, "error": "PDF generation failed — file not created"}), 500
+
+        return send_file(
+            pdf_path,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=pdf_filename,
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": f"PDF generation failed: {str(e)[:300]}"}), 500
+
+
 @app.route("/api/agent-status/<int:user_id>", methods=["GET"])
 @login_required
 def agent_status(user_id):
