@@ -108,8 +108,22 @@
         Exit app
       </a>
     </nav>
+    <!-- Resume Tracker Block -->
+    <div id="sidebarResumeTracker" onclick="showResumeTrackerModal()" class="mt-4 p-3.5 rounded-xl bg-emerald-50/30 border border-emerald-100/30 cursor-pointer hover:bg-emerald-50/60 transition mb-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white grid place-items-center font-semibold text-xs shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[13px] font-semibold text-ink-900 leading-tight">Resume Tracker</div>
+          <div class="text-[11px] text-emerald-700/60 truncate leading-normal">Resumes sent per application</div>
+        </div>
+      </div>
+    </div>
     <!-- Password Manager Block -->
-    <div id="sidebarPasswordManager" onclick="showPasswordManagerModal()" class="mt-4 p-3.5 rounded-xl bg-indigo-50/30 border border-indigo-100/30 cursor-pointer hover:bg-indigo-50/60 transition mb-2">
+    <div id="sidebarPasswordManager" onclick="showPasswordManagerModal()" class="p-3.5 rounded-xl bg-indigo-50/30 border border-indigo-100/30 cursor-pointer hover:bg-indigo-50/60 transition mb-2">
       <div class="flex items-center gap-2.5">
         <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white grid place-items-center font-semibold text-xs shrink-0">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -2816,6 +2830,81 @@ function closePasswordManagerModal(event) {
   }
 }
 
+async function showResumeTrackerModal() {
+  const modal = document.getElementById('resumeTrackerModal');
+  if (!modal) return;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  const listEl = document.getElementById('resumeTrackerList');
+  if (!listEl) return;
+  
+  try {
+    const res = await fetch('/api/my-applications');
+    if (!res.ok) {
+      listEl.innerHTML = `<div class="text-center py-8 text-rose-600 font-semibold text-xs">Failed to load resume applications.</div>`;
+      return;
+    }
+    const data = await res.json();
+    if (data.length === 0) {
+      listEl.innerHTML = `
+        <div class="text-center py-10">
+          <svg class="w-12 h-12 text-ink-700/20 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+          <div class="text-ink-700/50 text-xs font-medium">No resumes submitted yet.</div>
+          <p class="text-[11px] text-ink-700/40 mt-1 max-w-[280px] mx-auto">Applications and their submitted resumes will appear here once the agent starts submitting applications.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    listEl.innerHTML = data.map((app, idx) => {
+      let resumeName = 'Default Resume';
+      if (app.resume_used) {
+        const parts = app.resume_used.split(/[/\\]/);
+        resumeName = parts[parts.length - 1];
+      }
+      
+      const appliedDate = app.applied_at ? new Date(app.applied_at).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }) : 'Pending';
+
+      return `
+        <div class="p-3.5 rounded-xl border border-ink-900/5 bg-ink-900/[0.01] flex items-center justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-ink-900 text-[13px] truncate" title="${app.company}">${app.company}</div>
+            <div class="text-[11px] text-ink-700/60 truncate mt-0.5" title="${app.title}">${app.title}</div>
+            <div class="text-[10px] text-ink-700/40 mt-1">Applied: ${appliedDate}</div>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-semibold rounded-full border border-emerald-100/50 max-w-[180px] truncate" title="${resumeName}">
+              <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+              ${resumeName}
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    listEl.innerHTML = `<div class="text-center py-8 text-rose-600 font-semibold text-xs">Error loading resume data: ${e.message}</div>`;
+  }
+}
+
+function closeResumeTrackerModal(event) {
+  if (event && event.target !== document.getElementById('resumeTrackerModal')) return;
+  const modal = document.getElementById('resumeTrackerModal');
+  if (modal) {
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+}
+
 function togglePortalPasswordVisibility(btn) {
   const input = btn.previousElementSibling;
   const path = btn.querySelector('path');
@@ -2845,6 +2934,34 @@ async function copyToClipboard(text, btn) {
 
 loadDashboard();
 </script>
+
+<!-- ── Resume Tracker Modal ────────────────────────────────────────── -->
+<div id="resumeTrackerModal" class="fixed inset-0 bg-ink-900/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden" onclick="closeResumeTrackerModal(event)">
+  <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-ink-900/5 overflow-hidden slide-in" onclick="event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="px-6 py-5 border-b border-ink-900/5 flex items-center justify-between">
+      <div>
+        <h3 class="font-display font-bold text-base text-ink-900 flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+          Resume Tracker
+        </h3>
+        <p class="text-[11px] text-ink-700/60 mt-0.5">Tracking which resume was submitted to each company.</p>
+      </div>
+      <button onclick="closeResumeTrackerModal(null)" class="w-8 h-8 rounded-full border border-ink-900/10 hover:bg-ink-900/5 grid place-items-center text-ink-700 transition">
+        ✕
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+      <div id="resumeTrackerList" class="space-y-3">
+        <div class="text-center py-8 text-ink-700/40 text-xs">Loading resumes...</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── Password Manager Modal ────────────────────────────────────────── -->
 <div id="passwordManagerModal" class="fixed inset-0 bg-ink-900/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden" onclick="closePasswordManagerModal(event)">
