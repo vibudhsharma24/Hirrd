@@ -59,15 +59,66 @@
   .setup-check.pending{background:#fef3c7;color:#d97706;border:1px solid #fde68a}
   .setup-input{width:100%;padding:10px 14px;border:1px solid rgba(15,16,51,0.1);border-radius:12px;font-size:13px;outline:none;background:#FAFBFD;transition:border-color .2s}
   .setup-input:focus{border-color:#5B66E8}
+
+  /* Collapsible Sidebar Styles */
+  #sidebar-toggle {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    #sidebar-toggle {
+      display: flex;
+    }
+    #sidebar {
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s;
+    }
+    main {
+      transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar-collapsed #sidebar {
+      width: 0 !important;
+      padding: 0 !important;
+      border-color: transparent !important;
+      overflow: hidden !important;
+    }
+    .sidebar-collapsed #sidebar-content {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sidebar-collapsed main {
+      padding-left: 0 !important;
+    }
+    .sidebar-collapsed #sidebar-toggle {
+      left: 16px !important;
+    }
+    .sidebar-collapsed #sidebar-toggle-icon {
+      transform: rotate(180deg);
+    }
+    .sidebar-collapsed header > div {
+      padding-left: 64px !important;
+    }
+  }
 </style>
 </head>
 <body class="antialiased text-ink-900 min-h-screen">
+<script>
+  if (localStorage.getItem('sidebarCollapsed') === 'true') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+</script>
 
 <!-- App Shell -->
 <div class="min-h-screen bg-[#FAFBFD]">
   <!-- Sidebar -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-ink-900/5 p-5 flex-col z-30 hidden md:flex">
-    <a href="/" class="flex items-center gap-2 mb-8">
+    <!-- Collapse Sidebar Button -->
+    <button id="sidebar-toggle" onclick="toggleSidebarCollapse()" class="fixed top-4 left-[240px] z-40 w-8 h-8 rounded-full bg-white border border-ink-900/10 shadow-soft items-center justify-center cursor-pointer hover:bg-brand-50 hover:text-brand-600 transition-all duration-300">
+      <svg id="sidebar-toggle-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+    
+    <div id="sidebar-content" class="flex flex-col h-full w-full">
+      <a href="/" class="flex items-center gap-2 mb-8">
       <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
         <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center"><span class="font-display text-white text-[13px] font-bold">I²</span></div>
       </div>
@@ -144,6 +195,7 @@
           <div id="sidebarSub" class="text-[11px] text-ink-700/70 truncate">Free plan</div>
         </div>
       </div>
+    </div>
     </div>
   </aside>
 
@@ -275,6 +327,11 @@ async function pollAgentData() {
   } catch (e) {
     console.error('Failed to poll agent data:', e);
   }
+}
+
+function toggleSidebarCollapse() {
+  const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
 }
 
 async function loadDashboard() {

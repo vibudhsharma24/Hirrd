@@ -40,6 +40,11 @@
   <link rel="stylesheet" href="/static/admin.css"/>
 </head>
 <body class="grain">
+<script>
+  if (localStorage.getItem('sidebarCollapsed') === 'true') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+</script>
 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  LOGIN                                          -->
@@ -99,7 +104,15 @@
 
   <!-- SIDEBAR -->
   <aside id="sidebar">
-    <div class="flex items-center gap-2.5 px-3 py-5 border-b mb-3" style="border-color:rgba(15,16,51,0.07);">
+    <!-- Collapse Sidebar Button -->
+    <button id="sidebar-toggle" onclick="toggleSidebarCollapse()" class="fixed top-3 left-[240px] z-40 w-8 h-8 rounded-full bg-white border border-ink-900/10 shadow-soft items-center justify-center cursor-pointer hover:bg-brand-50 hover:text-brand-600 transition-all duration-300">
+      <svg id="sidebar-toggle-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+    
+    <div id="sidebar-content" class="flex flex-col h-full w-full">
+      <div class="flex items-center gap-2.5 px-3 py-5 border-b mb-3" style="border-color:rgba(15,16,51,0.07);">
       <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px] flex-shrink-0">
         <div class="w-full h-full rounded-[7px] bg-white flex items-center justify-center font-display font-bold text-brand-900 text-xs">I²</div>
       </div>
@@ -146,6 +159,7 @@
           <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
+    </div>
     </div>
   </aside>
 

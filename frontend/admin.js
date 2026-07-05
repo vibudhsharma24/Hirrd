@@ -1003,3 +1003,8 @@ document.addEventListener('click', e => {
   if (e.target.id === 'reject-modal') closeRejectModal();
   if (e.target.id === 'user-modal') closeUserModal();
 });
+
+function toggleSidebarCollapse() {
+  const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
+}

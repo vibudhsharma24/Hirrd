@@ -99,3 +99,42 @@ select.inp{cursor:pointer}
 .leading-tight{line-height:1.25}
 .select-none{user-select:none}
 .cursor-pointer{cursor:pointer}
+
+/* Collapsible Sidebar Styles */
+#sidebar-toggle {
+  display: none;
+}
+@media (min-width: 768px) {
+  #sidebar-toggle {
+    display: flex;
+  }
+  #sidebar {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s;
+  }
+  #main-wrap {
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar-collapsed #sidebar {
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border-color: transparent !important;
+    overflow: hidden !important;
+  }
+  .sidebar-collapsed #sidebar-content {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .sidebar-collapsed #main-wrap {
+    margin-left: 0 !important;
+  }
+  .sidebar-collapsed #sidebar-toggle {
+    left: 16px !important;
+  }
+  .sidebar-collapsed #sidebar-toggle-icon {
+    transform: rotate(180deg);
+  }
+  .sidebar-collapsed header {
+    padding-left: 64px !important;
+  }
+}
