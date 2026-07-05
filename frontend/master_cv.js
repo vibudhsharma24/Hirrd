@@ -236,46 +236,94 @@ async function _saveMasterCVQuietly() {
 }
 
 function _renderGenerateResume(el) {
+  const sections = [
+    { name: 'Personal Details', idx: 0 },
+    { name: 'Education', idx: 1 },
+    { name: 'Experience', idx: 2 },
+    { name: 'Internships', idx: 3 },
+    { name: 'Coursework / Skills', idx: 4 },
+    { name: 'Positions of Responsibility', idx: 5 },
+    { name: 'Certifications', idx: 6 },
+    { name: 'Hobbies', idx: 7 }
+  ];
+  const incomplete = sections.filter(s => !_isTabValid(s.idx));
+  const isComplete = incomplete.length === 0;
+
   const headline = (_cvData.personal || {}).headline || '';
-  el.innerHTML = `
-    <div class="text-center py-6 border-b border-ink-900/5 mb-6">
-      <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+  
+  let headerHtml = '';
+  if (isComplete) {
+    headerHtml = `
+      <div class="text-center py-6 border-b border-ink-900/5 mb-6 animate-fade-in">
+        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-ink-900">Your Master CV is Ready!</h3>
+        <p class="text-[12px] text-ink-700/60 mt-1 font-medium">you have filled the datails now you can proceed to make the CV</p>
       </div>
-      <h3 class="font-display font-bold text-lg text-ink-900">Your Master CV is Complete!</h3>
-      <p class="text-[12px] text-ink-700/60 mt-1">All sections have been successfully filled out. You are now ready to generate tailored resumes.</p>
-    </div>
+    `;
+  } else {
+    headerHtml = `
+      <div class="text-center py-6 border-b border-ink-900/5 mb-6">
+        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-ink-900">Your Master CV is Incomplete</h3>
+        <p class="text-[12px] text-ink-700/60 mt-1">Please fill out all required sections to generate tailored resumes.</p>
+        
+        <div class="mt-5 max-w-md mx-auto text-left bg-amber-50/50 border border-amber-100 rounded-xl p-4">
+          <h4 class="text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">Pending Sections:</h4>
+          <ul class="text-[11px] text-ink-800 space-y-2">
+            ${incomplete.map(s => `
+              <li class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  <span>${s.name}</span>
+                </div>
+                <button onclick="_switchCVTab(${s.idx})" class="text-[10px] text-brand-600 font-bold hover:underline">Go to section &rarr;</button>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  el.innerHTML = `
+    ${headerHtml}
 
     <!-- AI Headline Container -->
-    <div class="mb-6 p-4 bg-brand-50/50 border border-brand-100 rounded-xl text-left">
+    <div class="mb-6 p-4 bg-brand-50/50 border border-brand-100 rounded-xl text-left ${!isComplete ? 'opacity-60 pointer-events-none' : ''}">
       <div class="flex justify-between items-center mb-2 gap-3 flex-wrap">
         <div>
           <h4 class="text-xs font-bold text-brand-800 uppercase tracking-wide">AI-Generated Professional Headline</h4>
           <p class="text-[11px] text-ink-700/60 mt-0.5">Auto-generated summary based on your details (max 50-75 words).</p>
         </div>
-        <button onclick="_generateHeadline()" id="cvGenHeadlineBtn" class="px-3 py-1.5 bg-white border border-brand-200 text-brand-700 text-[11px] font-bold rounded-lg hover:bg-brand-50 transition shrink-0">
+        <button onclick="_generateHeadline()" id="cvGenHeadlineBtn" ${!isComplete ? 'disabled' : ''} class="px-3 py-1.5 bg-white border border-brand-200 text-brand-700 text-[11px] font-bold rounded-lg hover:bg-brand-50 transition shrink-0 ${!isComplete ? 'opacity-50 cursor-not-allowed' : ''}">
           Regenerate
         </button>
       </div>
       <div id="cvHeadlineVal" class="text-xs text-ink-900 font-medium leading-relaxed bg-white/60 p-3 rounded-lg border border-brand-100/30 italic">
-        ${headline ? _esc(headline) : '<span class="text-ink-700/40">Generating headline...</span>'}
+        ${headline ? _esc(headline) : (isComplete ? '<span class="text-ink-700/40">Generating headline...</span>' : '<span class="text-ink-700/40">Headline will generate when profile is complete.</span>')}
       </div>
     </div>
 
-    <div>
+    <div class="${!isComplete ? 'opacity-60 pointer-events-none' : ''}">
       <h3 class="font-display font-bold text-sm mb-1 text-ink-900">Tailor for a Specific Job Description</h3>
       <p class="text-[12px] text-ink-700/60 mb-4">Paste a job description below and our AI will generate a custom PDF resume optimized specifically for that role.</p>
-      <textarea id="cvJdInput" rows="5" class="w-full px-4 py-3 border border-ink-900/10 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/30 resize-none bg-ink-900/[0.01]" placeholder="Paste the full job description here…"></textarea>
+      <textarea id="cvJdInput" rows="5" ${!isComplete ? 'disabled' : ''} class="w-full px-4 py-3 border border-ink-900/10 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/30 resize-none bg-ink-900/[0.01] ${!isComplete ? 'cursor-not-allowed' : ''}" placeholder="${isComplete ? 'Paste the full job description here…' : 'Complete details to enable tailoring…'}"></textarea>
       
       <div class="flex items-center gap-3 mt-4">
-        <button onclick="_generateTailoredPDF()" id="cvGenBtn" class="px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-xs font-bold rounded-xl hover:from-brand-700 hover:to-brand-800 transition flex items-center gap-1.5">
+        <button onclick="_generateTailoredPDF()" id="cvGenBtn" ${!isComplete ? 'disabled' : ''} class="px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-xs font-bold rounded-xl hover:from-brand-700 hover:to-brand-800 transition flex items-center gap-1.5 ${!isComplete ? 'opacity-50 cursor-not-allowed' : ''}">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Generate Tailored PDF
         </button>
         
-        <button onclick="_generateBasePDF()" id="cvGenBaseBtn" class="px-5 py-2.5 bg-white border border-ink-900/10 text-ink-700 text-xs font-bold rounded-xl hover:bg-ink-900/5 transition flex items-center gap-1.5">
+        <button onclick="_generateBasePDF()" id="cvGenBaseBtn" ${!isComplete ? 'disabled' : ''} class="px-5 py-2.5 bg-white border border-ink-900/10 text-ink-700 text-xs font-bold rounded-xl hover:bg-ink-900/5 transition flex items-center gap-1.5 ${!isComplete ? 'opacity-50 cursor-not-allowed' : ''}">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4-4 4m0 0-4-4m4 4V4"/></svg>
           Download Base Resume PDF
         </button>
@@ -285,8 +333,8 @@ function _renderGenerateResume(el) {
     </div>
   `;
 
-  // Auto-generate if empty
-  if (!headline) {
+  // Auto-generate if empty and complete
+  if (isComplete && !headline) {
     _generateHeadline();
   }
 }
