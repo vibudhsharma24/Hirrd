@@ -290,7 +290,7 @@
             <div class="mt-6 flex gap-3">
               <button onclick="navigate('agentDetail')" class="px-4 py-2.5 rounded-lg bg-white text-ink-900 font-semibold text-[14px] hover:bg-brand-50">View agent & pricing</button>
             </div>
-            <div class="mt-4 text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹2,000/month</span> (6-month plan)</div>
+            <div class="mt-4 text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹1,200/month</span> (5-month plan)</div>
           </div>
         </div>
 
@@ -776,7 +776,7 @@
 
       <div>
         <h2 class="font-display text-xl font-bold text-ink-900 mb-2">4. Subscriptions & Billing</h2>
-        <p>Subscriptions are billed in advance on a recurring monthly basis. Long-term plans (3-month and 6-month) are discounted. You may cancel at any time, and your plan will remain active until the end of the current billing cycle. Refunds are pro-rated and subject to our refund guidelines.</p>
+        <p>Subscriptions are billed in advance on a recurring monthly basis. Long-term plans (3-month and 5-month) are discounted. You may cancel at any time, and your plan will remain active until the end of the current billing cycle. Refunds are pro-rated and subject to our refund guidelines.</p>
       </div>
 
       <div>
@@ -1303,7 +1303,7 @@
           </details>
           <details class="py-3 group">
             <summary class="flex items-center justify-between font-semibold text-[14px]">Do I get a refund if I cancel early?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
-            <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
+            <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 5-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
           </details>
         </div>
       </div>
@@ -1317,47 +1317,47 @@
         <p class="text-[12px] text-ink-700/60 mt-0.5">Longer the plan, lower the monthly cost. Cancel anytime.</p>
 
         <div class="mt-5 space-y-3" id="planOptions">
-          <input type="radio" name="plan" id="plan1" class="plan-radio hidden" value="1" data-total="3000" data-months="1">
+          <input type="radio" name="plan" id="plan1" class="plan-radio hidden" value="1" data-total="1500" data-months="1">
           <label for="plan1" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
             <div class="flex items-center justify-between">
               <div>
                 <div class="font-semibold">1 Month</div>
-                <div class="text-[11px] text-ink-700/60 priceSub">₹3,000 / month</div>
+                <div class="text-[11px] text-ink-700/60 priceSub">₹1,500 / month</div>
               </div>
               <div class="text-right">
-                <div class="font-display font-bold text-lg priceNum">₹3,000</div>
+                <div class="font-display font-bold text-lg priceNum">₹1,500</div>
               </div>
             </div>
           </label>
 
-          <input type="radio" name="plan" id="plan3" class="plan-radio hidden" value="3" data-total="7500" data-months="3" checked>
+          <input type="radio" name="plan" id="plan3" class="plan-radio hidden" value="3" data-total="4000" data-months="3" checked>
           <label for="plan3" class="block p-4 rounded-2xl border-2 border-ink-900 bg-ink-900 text-white cursor-pointer transition">
             <div class="flex items-center justify-between">
               <div>
                 <div class="font-semibold flex items-center gap-2">
                   3 Months
-                  <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500 text-ink-900 px-1.5 py-0.5 rounded-full">SAVE ₹1,500</span>
+                  <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500 text-ink-900 px-1.5 py-0.5 rounded-full">SAVE ₹500</span>
                 </div>
-                <div class="text-[11px] priceSub text-white/70">₹2,500 / month</div>
+                <div class="text-[11px] priceSub text-white/70">₹1,333 / month</div>
               </div>
               <div class="text-right">
-                <div class="font-display font-bold text-lg priceNum text-white">₹7,500</div>
+                <div class="font-display font-bold text-lg priceNum text-white">₹4,000</div>
               </div>
             </div>
           </label>
 
-          <input type="radio" name="plan" id="plan6" class="plan-radio hidden" value="6" data-total="12000" data-months="6">
-          <label for="plan6" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
+          <input type="radio" name="plan" id="plan5" class="plan-radio hidden" value="5" data-total="6000" data-months="5">
+          <label for="plan5" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
             <div class="flex items-center justify-between">
               <div>
                 <div class="font-semibold flex items-center gap-2">
-                  6 Months
+                  5 Months
                   <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500/15 text-accent-600 px-1.5 py-0.5 rounded-full">BEST VALUE</span>
                 </div>
-                <div class="text-[11px] priceSub text-ink-700/60">₹2,000 / month · save ₹6,000</div>
+                <div class="text-[11px] priceSub text-ink-700/60">₹1,200 / month · save ₹1,500</div>
               </div>
               <div class="text-right">
-                <div class="font-display font-bold text-lg priceNum">₹12,000</div>
+                <div class="font-display font-bold text-lg priceNum">₹6,000</div>
               </div>
             </div>
           </label>
@@ -1365,10 +1365,10 @@
 
         <div class="mt-5 text-[12px] text-ink-700/70 space-y-2">
           <div class="flex justify-between"><span>Selected</span><span id="selDuration" class="font-semibold text-ink-900">3 Months</span></div>
-          <div class="flex justify-between"><span>Monthly rate</span><span id="selPerMonth" class="font-semibold text-ink-900">₹2,500</span></div>
-          <div class="flex justify-between"><span>GST (18%)</span><span id="selGst" class="font-semibold text-ink-900">₹1,350</span></div>
+          <div class="flex justify-between"><span>Monthly rate</span><span id="selPerMonth" class="font-semibold text-ink-900">₹1,333</span></div>
+          <div class="flex justify-between"><span>GST (18%)</span><span id="selGst" class="font-semibold text-ink-900">₹720</span></div>
           <div class="dashed-divider"></div>
-          <div class="flex justify-between font-display text-base font-bold text-ink-900"><span>Due today</span><span id="selTotal">₹8,850</span></div>
+          <div class="flex justify-between font-display text-base font-bold text-ink-900"><span>Due today</span><span id="selTotal">₹4,720</span></div>
         </div>
 
         <button onclick="navigate('payment')" class="mt-5 w-full py-3 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Subscribe & activate</button>
@@ -2102,7 +2102,7 @@
   // Protected views require authentication. Onboarding/payment are reached post-signup,
   // so we allow them through the signup flow via setAuthenticated().
   const protectedViews = ['dashboard','agent','settings','store','agentDetail','billing'];
-  let selectedPlan = { months: 3, amount: 7500, due: 8850 };
+  let selectedPlan = { months: 3, amount: 4000, due: 4720 };
   let isCouponApplied = false;
 
   // Auth state (in-memory only)
@@ -2479,13 +2479,13 @@
 
     const months = parseInt(checked.dataset.months, 10);
     const total = parseInt(checked.dataset.total, 10);
-    const perMonth = total / months;
+    const perMonth = Math.round(total / months);
     const gst = Math.round(total * 0.18);
     const due = total + gst;
 
     selectedPlan = { months: months, amount: total, due: due };
 
-    const map = {1:'1 Month', 3:'3 Months', 6:'6 Months'};
+    const map = {1:'1 Month', 3:'3 Months', 5:'5 Months'};
     document.getElementById('selDuration').textContent = map[months];
     document.getElementById('selPerMonth').textContent = '₹' + perMonth.toLocaleString('en-IN');
     document.getElementById('selGst').textContent = '₹' + gst.toLocaleString('en-IN');
@@ -2498,9 +2498,9 @@
     const subtotal = selectedPlan.amount;
     const due = selectedPlan.due;
     const gst = Math.round(subtotal * 0.18);
-    const perMonth = subtotal / months;
+    const perMonth = Math.round(subtotal / months);
 
-    const savingsMap = { 1: 0, 3: 1500, 6: 6000 };
+    const savingsMap = { 1: 0, 3: 500, 5: 1500 };
     const savings = savingsMap[months] || 0;
 
     // Ends Date calculation (months ahead)
