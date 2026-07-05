@@ -140,9 +140,6 @@ function _isTabValid(idx) {
 }
 
 function _canAccessTab(idx) {
-  for (let i = 0; i < idx; i++) {
-    if (!_isTabValid(i)) return false;
-  }
   return true;
 }
 
@@ -153,14 +150,11 @@ function _renderTabHeaders() {
 
   tabsContainer.innerHTML = tabsList.map((t, i) => {
     const isActive = i === _currentCVTab;
-    const isEnabled = _canAccessTab(i);
     
     if (isActive) {
       return `<button class="cv-tab px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition bg-ink-900 text-white" disabled>${t}</button>`;
-    } else if (isEnabled) {
-      return `<button onclick="_switchCVTab(${i})" class="cv-tab px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition bg-ink-900/5 text-ink-700 hover:bg-ink-900/10">${t}</button>`;
     } else {
-      return `<button class="cv-tab px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition bg-ink-900/5 text-ink-700/30 cursor-not-allowed" disabled title="Please complete previous sections first">${t}</button>`;
+      return `<button onclick="_switchCVTab(${i})" class="cv-tab px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition bg-ink-900/5 text-ink-700 hover:bg-ink-900/10">${t}</button>`;
     }
   }).join('');
 }
@@ -200,11 +194,9 @@ function _appendWizardFooter(el, idx) {
   }
 
   if (!isLast) {
-    const valid = _isTabValid(idx);
     footerHtml += `
       <div class="flex items-center gap-3">
-        ${!valid ? `<span id="cvValidationMsg" class="text-[11px] text-rose-600 font-semibold">Please fill all required details in this section</span>` : ''}
-        <button onclick="_nextCVTab()" id="cvNextBtn" ${valid ? '' : 'disabled'} class="px-5 py-2 bg-ink-900 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onclick="_nextCVTab()" id="cvNextBtn" class="px-5 py-2 bg-ink-900 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition">
           Next
         </button>
       </div>`;
@@ -218,10 +210,8 @@ function _appendWizardFooter(el, idx) {
 
 function _nextCVTab() {
   _readCurrentTab();
-  if (_isTabValid(_currentCVTab)) {
-    _saveMasterCVQuietly();
-    _switchCVTab(_currentCVTab + 1);
-  }
+  _saveMasterCVQuietly();
+  _switchCVTab(_currentCVTab + 1);
 }
 
 function _prevCVTab() {
@@ -230,20 +220,6 @@ function _prevCVTab() {
 }
 
 function _updateWizardButtons() {
-  const nextBtn = document.getElementById('cvNextBtn');
-  if (!nextBtn) return;
-  const valid = _isTabValid(_currentCVTab);
-  nextBtn.disabled = !valid;
-  
-  let msg = document.getElementById('cvValidationMsg');
-  if (valid) {
-    if (msg) msg.remove();
-  } else {
-    if (!msg) {
-      nextBtn.insertAdjacentHTML('beforebegin', `<span id="cvValidationMsg" class="text-[11px] text-rose-600 font-semibold mr-3">Please fill all required details in this section</span>`);
-    }
-  }
-
   _renderTabHeaders();
 }
 
