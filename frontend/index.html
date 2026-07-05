@@ -290,7 +290,7 @@
             <div class="mt-6 flex gap-3">
               <button onclick="navigate('agentDetail')" class="px-4 py-2.5 rounded-lg bg-white text-ink-900 font-semibold text-[14px] hover:bg-brand-50">View agent & pricing</button>
             </div>
-            <div class="mt-4 text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹1,200/month</span> (5-month plan)</div>
+            <div class="mt-4 text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹1,000/month</span> (6-month plan)</div>
           </div>
         </div>
 
@@ -776,7 +776,7 @@
 
       <div>
         <h2 class="font-display text-xl font-bold text-ink-900 mb-2">4. Subscriptions & Billing</h2>
-        <p>Subscriptions are billed in advance on a recurring monthly basis. Long-term plans (3-month and 5-month) are discounted. You may cancel at any time, and your plan will remain active until the end of the current billing cycle. Refunds are pro-rated and subject to our refund guidelines.</p>
+        <p>Subscriptions are billed in advance on a recurring monthly basis. Long-term plans (3-month and 6-month) are discounted. You may cancel at any time, and your plan will remain active until the end of the current billing cycle. Refunds are pro-rated and subject to our refund guidelines.</p>
       </div>
 
       <div>
@@ -1303,7 +1303,7 @@
           </details>
           <details class="py-3 group">
             <summary class="flex items-center justify-between font-semibold text-[14px]">Do I get a refund if I cancel early?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
-            <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 5-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
+            <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
           </details>
         </div>
       </div>
@@ -1346,15 +1346,15 @@
             </div>
           </label>
 
-          <input type="radio" name="plan" id="plan5" class="plan-radio hidden" value="5" data-total="6000" data-months="5">
-          <label for="plan5" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
+          <input type="radio" name="plan" id="plan6" class="plan-radio hidden" value="6" data-total="6000" data-months="6">
+          <label for="plan6" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
             <div class="flex items-center justify-between">
               <div>
                 <div class="font-semibold flex items-center gap-2">
-                  5 Months
+                  6 Months
                   <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500/15 text-accent-600 px-1.5 py-0.5 rounded-full">BEST VALUE</span>
                 </div>
-                <div class="text-[11px] priceSub text-ink-700/60">₹1,200 / month · save ₹1,500</div>
+                <div class="text-[11px] priceSub text-ink-700/60">₹1,000 / month · save ₹3,000</div>
               </div>
               <div class="text-right">
                 <div class="font-display font-bold text-lg priceNum">₹6,000</div>
@@ -2485,7 +2485,7 @@
 
     selectedPlan = { months: months, amount: total, due: due };
 
-    const map = {1:'1 Month', 3:'3 Months', 5:'5 Months'};
+    const map = {1:'1 Month', 3:'3 Months', 6:'6 Months'};
     document.getElementById('selDuration').textContent = map[months];
     document.getElementById('selPerMonth').textContent = '₹' + perMonth.toLocaleString('en-IN');
     document.getElementById('selGst').textContent = '₹' + gst.toLocaleString('en-IN');
@@ -2500,7 +2500,7 @@
     const gst = Math.round(subtotal * 0.18);
     const perMonth = Math.round(subtotal / months);
 
-    const savingsMap = { 1: 0, 3: 500, 5: 1500 };
+    const savingsMap = { 1: 0, 3: 500, 6: 3000 };
     const savings = savingsMap[months] || 0;
 
     // Ends Date calculation (months ahead)

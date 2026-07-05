@@ -2410,7 +2410,7 @@ function renderAgentDetail() {
             </details>
             <details class="py-3 group">
               <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">Do I get a refund if I cancel early?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
-              <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 5-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
+              <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
             </details>
           </div>
         </div>
@@ -2453,15 +2453,15 @@ function renderAgentDetail() {
               </div>
             </label>
 
-            <input type="radio" name="plan" id="plan5" class="plan-radio hidden" value="5" data-total="6000" data-months="5">
-            <label for="plan5" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
+            <input type="radio" name="plan" id="plan6" class="plan-radio hidden" value="6" data-total="6000" data-months="6">
+            <label for="plan6" class="block p-4 rounded-2xl border-2 border-ink-900/10 cursor-pointer transition">
               <div class="flex items-center justify-between">
                 <div>
                   <div class="font-semibold flex items-center gap-2">
-                    5 Months
+                    6 Months
                     <span class="tagSave text-[10px] font-bold tracking-widest bg-accent-500/15 text-accent-600 px-1.5 py-0.5 rounded-full">BEST VALUE</span>
                   </div>
-                  <div class="text-[11px] priceSub text-ink-700/60">₹1,200 / month · save ₹1,500</div>
+                  <div class="text-[11px] priceSub text-ink-700/60">₹1,000 / month · save ₹3,000</div>
                 </div>
                 <div class="text-right">
                   <div class="font-display font-bold text-lg priceNum">₹6,000</div>
@@ -2540,7 +2540,7 @@ function updateAgentDetailPlanSummary() {
   const gst = Math.round(total * 0.18);
   const due = total + gst;
 
-  const map = {1:'1 Month', 3:'3 Months', 5:'5 Months'};
+  const map = {1:'1 Month', 3:'3 Months', 6:'6 Months'};
   const selDuration = document.getElementById('selDuration');
   const selPerMonth = document.getElementById('selPerMonth');
   const selGst = document.getElementById('selGst');
