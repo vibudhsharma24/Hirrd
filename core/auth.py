@@ -154,6 +154,16 @@ def super_admin_required(f):
     return decorated
 
 
+def restricted_admin_block(f):
+    """Decorator: block restricted admin users (officishiv582@gmail.com) from accessing specific endpoints."""
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if hasattr(request, "admin") and request.admin.get("email") == "officishiv582@gmail.com":
+            return jsonify({"ok": False, "error": "Insufficient permissions"}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+
 # ── AES-256-GCM Encryption for LinkedIn Credentials ───────────────────────────
 #
 # HOW IT WORKS:

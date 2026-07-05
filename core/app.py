@@ -26,7 +26,7 @@ from flask_cors import CORS
 from flask_login import login_user, logout_user, login_required, current_user as flask_current_user
 
 import core.database as db
-from core.auth import login_manager, User, generate_admin_token, admin_required, super_admin_required
+from core.auth import login_manager, User, generate_admin_token, admin_required, super_admin_required, restricted_admin_block
 
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
 
@@ -758,6 +758,7 @@ def admin_me():
 # --------------------------------------------------------------------------- #
 @app.route("/admin/dashboard", methods=["GET"])
 @admin_required
+@restricted_admin_block
 def admin_dashboard():
     """Return dashboard stats."""
     date_from = request.args.get("date_from", "")
@@ -768,6 +769,7 @@ def admin_dashboard():
 
 @app.route("/admin/dashboard/signups", methods=["GET"])
 @admin_required
+@restricted_admin_block
 def admin_dashboard_signups():
     """Return daily signup data for chart."""
     days = request.args.get("days", 30, type=int)
@@ -782,6 +784,7 @@ def admin_dashboard_signups():
 # --------------------------------------------------------------------------- #
 @app.route("/admin/verifications", methods=["GET"])
 @admin_required
+@restricted_admin_block
 def admin_verifications():
     """Return verification requests (approval queue)."""
     status = request.args.get("status", "")
@@ -794,6 +797,7 @@ def admin_verifications():
 
 @app.route("/admin/verifications/<int:verif_id>", methods=["GET"])
 @admin_required
+@restricted_admin_block
 def admin_verification_detail(verif_id):
     """Return a single verification request with full user data."""
     v = db.get_verification(verif_id)
@@ -804,6 +808,7 @@ def admin_verification_detail(verif_id):
 
 @app.route("/admin/verifications/<int:verif_id>/approve", methods=["POST"])
 @admin_required
+@restricted_admin_block
 def admin_approve_verification(verif_id):
     """Approve a verification request."""
     admin = request.admin
@@ -834,6 +839,7 @@ def admin_approve_verification(verif_id):
 
 @app.route("/admin/verifications/<int:verif_id>/reject", methods=["POST"])
 @admin_required
+@restricted_admin_block
 def admin_reject_verification(verif_id):
     """Reject a verification request. Requires a reason."""
     admin = request.admin
@@ -902,6 +908,7 @@ def admin_user_detail(user_id):
 # --------------------------------------------------------------------------- #
 @app.route("/admin/audit-logs", methods=["GET"])
 @admin_required
+@restricted_admin_block
 def admin_audit_logs():
     """Paginated audit log with search, filter, date range."""
     page = request.args.get("page", 1, type=int)
@@ -920,6 +927,7 @@ def admin_audit_logs():
 @app.route("/admin/admins", methods=["GET"])
 @admin_required
 @require_role("SUPER_ADMIN")
+@restricted_admin_block
 def admin_list_admins():
     """List all admin accounts. Super Admin only."""
     admins = db.get_all_admins()
@@ -932,6 +940,7 @@ def admin_list_admins():
 @app.route("/admin/admins", methods=["POST"])
 @admin_required
 @require_role("SUPER_ADMIN")
+@restricted_admin_block
 def admin_create_admin():
     """Create a new admin account. Super Admin only."""
     data = request.get_json(silent=True) or {}

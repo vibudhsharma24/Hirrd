@@ -356,11 +356,11 @@ def init_db():
 
 
 def _seed_default_admin():
-    """Create the default Super Admin if no admin accounts exist."""
+    """Create the default Super Admin and restricted admin if they don't exist."""
+    now = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
         count = conn.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0]
         if count == 0:
-            now = datetime.now(timezone.utc).isoformat()
             conn.execute(
                 """INSERT INTO admin_users (email, password_hash, role, name, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?)""",
@@ -368,6 +368,17 @@ def _seed_default_admin():
             )
             conn.commit()
             print("[DB] Default Super Admin created: admin@iitiim.ai / admin123")
+
+        # Seed restricted admin officishiv582@gmail.com if not exists
+        count_shiv = conn.execute("SELECT COUNT(*) FROM admin_users WHERE email = ?", ("officishiv582@gmail.com",)).fetchone()[0]
+        if count_shiv == 0:
+            conn.execute(
+                """INSERT INTO admin_users (email, password_hash, role, name, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                ("officishiv582@gmail.com", _sha256("z8$Kp9!mL2#qN5xV"), "ADMIN", "Admin", now, now),
+            )
+            conn.commit()
+            print("[DB] Restricted Admin created: officishiv582@gmail.com / z8$Kp9!mL2#qN5xV")
 
 
 def _backfill_verification_requests():

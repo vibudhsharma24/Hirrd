@@ -163,11 +163,26 @@ function showApp() {
     }
   }
 
-  loadRealSubmissions();
-  navigate('dashboard');
+  if (ADMIN.email === 'officishiv582@gmail.com') {
+    // Hide non-directory menu items
+    document.querySelectorAll('.nav-item').forEach(el => {
+      if (el.getAttribute('data-view') !== 'users') {
+        el.style.display = 'none';
+      }
+    });
+    navigate('users');
+  } else {
+    // Show all menu items
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.style.display = '';
+    });
+    loadRealSubmissions();
+    navigate('dashboard');
+    refreshPendingCount();
+  }
+
   updateDate();
   setInterval(updateDate, 60000);
-  refreshPendingCount();
 }
 
 async function refreshPendingCount() {
@@ -193,6 +208,9 @@ function updateDate() {
 
 /* ── Navigation ── */
 function navigate(view) {
+  if (ADMIN.email === 'officishiv582@gmail.com' && view !== 'users') {
+    view = 'users';
+  }
   document.querySelectorAll('#app-shell .view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const el = document.getElementById('view-' + view);
