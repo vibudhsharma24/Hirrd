@@ -739,7 +739,8 @@ def admin_login():
                         action="ADMIN_LOGIN", ip_address=_get_client_ip())
     return jsonify({"ok": True, "token": token, "admin": {
         "id": admin["id"], "email": admin["email"],
-        "role": admin["role"], "name": admin["name"]}})
+        "role": admin["role"], "name": admin["name"],
+        "permissions": admin.get("permissions", "")}})
 
 
 @app.route("/admin/me", methods=["GET"])
@@ -750,10 +751,11 @@ def admin_me():
     return jsonify({
         "ok": True,
         "admin": {
-            "id": a["id"],
-            "email": a["email"],
-            "role": a["role"],
-            "name": a["name"],
+            "id": a.get("admin_id"),
+            "email": a.get("email"),
+            "role": a.get("role"),
+            "name": a.get("name"),
+            "permissions": a.get("permissions", ""),
             "last_login_at": a.get("last_login_at", ""),
         },
     })
