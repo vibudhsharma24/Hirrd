@@ -985,25 +985,28 @@ def admin_create_admin():
         "users": "User Directory",
         "database": "User Database",
         "audit": "Audit Log",
+        "admins": "Admin Accounts",
     }
     perm_list = [p.strip() for p in permissions.split(",") if p.strip()]
-    perm_display = ", ".join(perm_labels.get(p, p) for p in perm_list) or "All sections"
+    perm_display = ", ".join(perm_labels.get(p, p) for p in perm_list)
+    if not perm_display:
+        if role == "SUPER_ADMIN":
+            perm_display = "all modules (Super Admin)"
+        else:
+            perm_display = "no modules assigned yet"
 
     email_subject = "Your IITIIMJobAssistant Admin Access Credentials"
     email_body = f"""
     <html>
-      <body style="font-family: Arial, sans-serif; color: #333;">
-        <h2>Admin Access Granted</h2>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #2563eb; margin-top: 0;">Admin Access Granted</h2>
         <p>Hello {name},</p>
-        <p>You have been granted admin access to the <strong>IITIIMJobAssistant Admin Console</strong>.</p>
-        <table style="margin: 16px 0; border-collapse: collapse;">
-          <tr><td style="padding: 8px 16px; font-weight: bold; background: #f5f5f5;">Email</td><td style="padding: 8px 16px;">{email}</td></tr>
-          <tr><td style="padding: 8px 16px; font-weight: bold; background: #f5f5f5;">Password</td><td style="padding: 8px 16px; font-family: monospace; font-size: 16px; color: #2563eb;">{generated_password}</td></tr>
-          <tr><td style="padding: 8px 16px; font-weight: bold; background: #f5f5f5;">Allowed Sections</td><td style="padding: 8px 16px;">{perm_display}</td></tr>
-        </table>
-        <p style="color: #b91c1c;"><strong>Important:</strong> Please keep your credentials secure and do not share them with anyone.</p>
-        <br/>
-        <p>Best regards,<br/>The IITIIMJobAssistant Team</p>
+        <p>You have been given admin access to the iitiimjob assistant website. Log in now with your email ID (<strong>{email}</strong>) and your password is: <strong style="font-family: monospace; font-size: 16px; color: #b91c1c; background: #fef2f2; padding: 4px 8px; border-radius: 4px;">{generated_password}</strong>.</p>
+        <p>You have been given access to view the: <strong>{perm_display}</strong>.</p>
+        <p style="margin-top: 30px; font-size: 14px; color: #666; border-top: 1px solid #eee; padding-top: 15px;">
+          Best regards,<br/>
+          <strong>The IITIIMJobAssistant Team</strong>
+        </p>
       </body>
     </html>
     """
