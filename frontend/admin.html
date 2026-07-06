@@ -305,6 +305,42 @@
         <div class="card px-6 py-1" id="audit-list"></div>
       </section>
 
+      <!-- ADMIN ACCOUNTS -->
+      <section id="view-admins" class="view fade-up">
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+          <div class="flex items-center gap-3">
+            <div class="font-display font-bold text-ink-900 text-lg">Admin Accounts</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="btn-brand text-xs flex items-center gap-1.5" style="padding:7px 14px" onclick="openCreateAdminModal()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Create Admin
+            </button>
+          </div>
+        </div>
+
+        <div class="card overflow-hidden">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:200px;">Admin</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Allowed Windows</th>
+                <th>Created At</th>
+                <th>Last Login</th>
+              </tr>
+            </thead>
+            <tbody id="admins-tbody"></tbody>
+          </table>
+          <div id="admins-empty" class="hidden text-center py-12">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background:#EEF0FF;border:1px solid #C3CAFF">
+              <svg width="24" height="24" fill="none" stroke="#5B66E8" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <div class="font-display font-bold text-lg mb-1">No admin accounts yet</div>
+            <div class="text-sm text-gray-400">Created admin accounts will appear here.</div>
+          </div>
+        </div>
+      </section>
 
     </div>
   </div>

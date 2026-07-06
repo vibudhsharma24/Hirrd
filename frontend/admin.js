@@ -1134,11 +1134,11 @@ function openCreateAdminModal() {
   document.getElementById('ca-email').value = '';
   document.querySelectorAll('.ca-perm').forEach(c => c.checked = false);
   document.getElementById('ca-error').classList.add('hidden');
-  document.getElementById('create-admin-modal').classList.add('active');
+  document.getElementById('create-admin-modal').classList.add('open');
 }
 
 function closeCreateAdminModal() {
-  document.getElementById('create-admin-modal').classList.remove('active');
+  document.getElementById('create-admin-modal').classList.remove('open');
 }
 
 async function submitCreateAdmin() {
@@ -1208,11 +1208,11 @@ function openAdminSuccessModal(email, password, emailSent) {
   } else {
     statusEl.innerHTML = '<span class="text-amber-600 font-semibold flex items-center gap-1"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>Skipped/Failed (logged on server)</span>';
   }
-  document.getElementById('admin-success-modal').classList.add('active');
+  document.getElementById('admin-success-modal').classList.add('open');
 }
 
 function closeAdminSuccessModal() {
-  document.getElementById('admin-success-modal').classList.remove('active');
+  document.getElementById('admin-success-modal').classList.remove('open');
   lastGeneratedPassword = '';
 }
 
