@@ -26,7 +26,7 @@ from flask_cors import CORS
 from flask_login import login_user, logout_user, login_required, current_user as flask_current_user
 
 import core.database as db
-from core.auth import login_manager, User, generate_admin_token, admin_required, super_admin_required, restricted_admin_block
+from core.auth import login_manager, User, generate_admin_token, admin_required, super_admin_required, restricted_admin_block, permission_required
 
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
 
@@ -207,6 +207,8 @@ def join_waitlist():
 #  API: Users                                                                  #
 # --------------------------------------------------------------------------- #
 @app.route("/api/users", methods=["GET"])
+@admin_required
+@permission_required("database")
 def list_users():
     return jsonify(db.get_all_users())
 
@@ -237,6 +239,8 @@ def reject(user_id):
 
 
 @app.route("/api/users", methods=["DELETE"])
+@admin_required
+@permission_required("database")
 def clear_users():
     count = db.delete_all_users()
     print(f"[API] Deleted {count} user(s)")
@@ -635,6 +639,8 @@ def update_subscription(buyer_id):
 #  API: CSV export                                                             #
 # --------------------------------------------------------------------------- #
 @app.route("/api/export", methods=["GET"])
+@admin_required
+@permission_required("database")
 def export_csv():
     users  = db.get_all_users()
     output = io.StringIO()
@@ -758,7 +764,7 @@ def admin_me():
 # --------------------------------------------------------------------------- #
 @app.route("/admin/dashboard", methods=["GET"])
 @admin_required
-@restricted_admin_block
+@permission_required("dashboard")
 def admin_dashboard():
     """Return dashboard stats."""
     date_from = request.args.get("date_from", "")
@@ -769,7 +775,7 @@ def admin_dashboard():
 
 @app.route("/admin/dashboard/signups", methods=["GET"])
 @admin_required
-@restricted_admin_block
+@permission_required("dashboard")
 def admin_dashboard_signups():
     """Return daily signup data for chart."""
     days = request.args.get("days", 30, type=int)
@@ -784,7 +790,7 @@ def admin_dashboard_signups():
 # --------------------------------------------------------------------------- #
 @app.route("/admin/verifications", methods=["GET"])
 @admin_required
-@restricted_admin_block
+@permission_required("queue")
 def admin_verifications():
     """Return verification requests (approval queue)."""
     status = request.args.get("status", "")
@@ -797,7 +803,7 @@ def admin_verifications():
 
 @app.route("/admin/verifications/<int:verif_id>", methods=["GET"])
 @admin_required
-@restricted_admin_block
+@permission_required("queue")
 def admin_verification_detail(verif_id):
     """Return a single verification request with full user data."""
     v = db.get_verification(verif_id)
@@ -808,7 +814,7 @@ def admin_verification_detail(verif_id):
 
 @app.route("/admin/verifications/<int:verif_id>/approve", methods=["POST"])
 @admin_required
-@restricted_admin_block
+@permission_required("queue")
 def admin_approve_verification(verif_id):
     """Approve a verification request."""
     admin = request.admin
@@ -839,7 +845,7 @@ def admin_approve_verification(verif_id):
 
 @app.route("/admin/verifications/<int:verif_id>/reject", methods=["POST"])
 @admin_required
-@restricted_admin_block
+@permission_required("queue")
 def admin_reject_verification(verif_id):
     """Reject a verification request. Requires a reason."""
     admin = request.admin
@@ -879,6 +885,7 @@ def admin_reject_verification(verif_id):
 # --------------------------------------------------------------------------- #
 @app.route("/admin/users", methods=["GET"])
 @admin_required
+@permission_required("users")
 def admin_users():
     """Paginated user directory with search, filter, sort."""
     page = request.args.get("page", 1, type=int)
@@ -895,6 +902,7 @@ def admin_users():
 
 @app.route("/admin/users/<int:user_id>", methods=["GET"])
 @admin_required
+@permission_required("users")
 def admin_user_detail(user_id):
     """Return full user detail with activity summary."""
     user = db.get_user_detail(user_id)
@@ -908,7 +916,7 @@ def admin_user_detail(user_id):
 # --------------------------------------------------------------------------- #
 @app.route("/admin/audit-logs", methods=["GET"])
 @admin_required
-@restricted_admin_block
+@permission_required("audit")
 def admin_audit_logs():
     """Paginated audit log with search, filter, date range."""
     page = request.args.get("page", 1, type=int)
@@ -927,7 +935,6 @@ def admin_audit_logs():
 @app.route("/admin/admins", methods=["GET"])
 @admin_required
 @require_role("SUPER_ADMIN")
-@restricted_admin_block
 def admin_list_admins():
     """List all admin accounts. Super Admin only."""
     admins = db.get_all_admins()
@@ -940,20 +947,28 @@ def admin_list_admins():
 @app.route("/admin/admins", methods=["POST"])
 @admin_required
 @require_role("SUPER_ADMIN")
-@restricted_admin_block
 def admin_create_admin():
-    """Create a new admin account. Super Admin only."""
+    """Create a new admin account. Super Admin only.
+    Auto-generates a secure password and sends credentials via email."""
+    import secrets
+    import string
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip()
-    password = (data.get("password") or "").strip()
     role = (data.get("role") or "ADMIN").strip().upper()
     name = (data.get("name") or "").strip()
+    permissions = (data.get("permissions") or "").strip()
 
-    if not email or not password:
-        return jsonify({"ok": False, "error": "Email and password are required"}), 400
+    if not email:
+        return jsonify({"ok": False, "error": "Email is required"}), 400
+    if not name:
+        return jsonify({"ok": False, "error": "Name is required"}), 400
+
+    # Auto-generate a secure 14-character password
+    alphabet = string.ascii_letters + string.digits + "!@#$%&*"
+    generated_password = ''.join(secrets.choice(alphabet) for _ in range(14))
 
     try:
-        admin = db.create_admin(email, password, role, name)
+        admin = db.create_admin(email, generated_password, role, name, permissions)
     except ValueError as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
     except Exception as exc:
@@ -961,17 +976,51 @@ def admin_create_admin():
 
     admin.pop("password_hash", None)
 
+    # Send credentials email to the new admin
+    perm_labels = {
+        "dashboard": "Dashboard",
+        "queue": "Approval Queue",
+        "users": "User Directory",
+        "database": "User Database",
+        "audit": "Audit Log",
+    }
+    perm_list = [p.strip() for p in permissions.split(",") if p.strip()]
+    perm_display = ", ".join(perm_labels.get(p, p) for p in perm_list) or "All sections"
+
+    email_subject = "Your IITIIMJobAssistant Admin Access Credentials"
+    email_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333;">
+        <h2>Admin Access Granted</h2>
+        <p>Hello {name},</p>
+        <p>You have been granted admin access to the <strong>IITIIMJobAssistant Admin Console</strong>.</p>
+        <table style="margin: 16px 0; border-collapse: collapse;">
+          <tr><td style="padding: 8px 16px; font-weight: bold; background: #f5f5f5;">Email</td><td style="padding: 8px 16px;">{email}</td></tr>
+          <tr><td style="padding: 8px 16px; font-weight: bold; background: #f5f5f5;">Password</td><td style="padding: 8px 16px; font-family: monospace; font-size: 16px; color: #2563eb;">{generated_password}</td></tr>
+          <tr><td style="padding: 8px 16px; font-weight: bold; background: #f5f5f5;">Allowed Sections</td><td style="padding: 8px 16px;">{perm_display}</td></tr>
+        </table>
+        <p style="color: #b91c1c;"><strong>Important:</strong> Please keep your credentials secure and do not share them with anyone.</p>
+        <br/>
+        <p>Best regards,<br/>The IITIIMJobAssistant Team</p>
+      </body>
+    </html>
+    """
+
+    email_sent = send_smtp_email(email, email_subject, email_body)
+
     # Audit log
     db.create_audit_log(
-        admin_id=request.admin["id"],
+        admin_id=request.admin["admin_id"],
         admin_email=request.admin["email"],
         action="ADMIN_CREATED",
-        reason=f"Created admin: {email} (role={role})",
+        reason=f"Created admin: {email} (role={role}, permissions={permissions})",
         ip_address=_get_client_ip(),
     )
 
-    print(f"[Admin] New admin created: {email} (role={role}) by {request.admin['email']}")
-    return jsonify({"ok": True, "admin": admin}), 201
+    print(f"[Admin] New admin created: {email} (role={role}, permissions={permissions}) by {request.admin['email']}")
+    print(f"[Admin] Generated password: {generated_password}")
+    print(f"[Admin] Email delivery: {'SUCCESS' if email_sent else 'SKIPPED/FAILED'}")
+    return jsonify({"ok": True, "admin": admin, "generated_password": generated_password, "email_sent": email_sent}), 201
 
 
 # --------------------------------------------------------------------------- #

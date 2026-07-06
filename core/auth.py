@@ -112,6 +112,7 @@ def generate_admin_token(admin_dict: dict) -> str:
         "email": admin_dict["email"],
         "role": admin_dict["role"],
         "name": admin_dict.get("name", ""),
+        "permissions": admin_dict.get("permissions", ""),
         "exp": datetime.now(timezone.utc) + timedelta(hours=8),
         "iat": datetime.now(timezone.utc),
     }
@@ -128,13 +129,18 @@ def decode_admin_token(token: str) -> dict | None:
 
 
 def admin_required(f):
-    """Decorator: require a valid admin JWT in Authorization header."""
+    """Decorator: require a valid admin JWT in Authorization header or query parameter."""
     @functools.wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            return jsonify({"error": "Missing or invalid Authorization header"}), 401
-        token = auth_header.split(" ", 1)[1]
+        token = ""
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1]
+        else:
+            token = request.args.get("token", "")
+
+        if not token:
+            return jsonify({"error": "Missing or invalid Authorization header or token query parameter"}), 401
         payload = decode_admin_token(token)
         if not payload:
             return jsonify({"error": "Invalid or expired token"}), 401
@@ -155,13 +161,40 @@ def super_admin_required(f):
 
 
 def restricted_admin_block(f):
-    """Decorator: block restricted admin users (officishiv582@gmail.com) from accessing specific endpoints."""
+    """Decorator: block restricted admin users from accessing specific endpoints.
+    DEPRECATED — use permission_required() instead. Kept for backwards compat."""
     @functools.wraps(f)
     def decorated(*args, **kwargs):
-        if hasattr(request, "admin") and request.admin.get("email") == "officishiv582@gmail.com":
-            return jsonify({"ok": False, "error": "Insufficient permissions"}), 403
+        if hasattr(request, "admin") and request.admin.get("role") != "SUPER_ADMIN":
+            perms = (request.admin.get("permissions") or "").split(",")
+            perms = [p.strip() for p in perms if p.strip()]
+            if not perms:
+                return jsonify({"ok": False, "error": "Insufficient permissions"}), 403
         return f(*args, **kwargs)
     return decorated
+
+
+def permission_required(permission_name: str):
+    """Decorator factory: require a specific permission for non-SUPER_ADMIN admins.
+    SUPER_ADMIN always has access to everything.
+    For regular ADMIN, checks the 'permissions' field from the JWT token.
+    permission_name: one of 'dashboard', 'queue', 'users', 'database', 'audit', 'admins'"""
+    def decorator(f):
+        @functools.wraps(f)
+        def decorated(*args, **kwargs):
+            if not hasattr(request, "admin"):
+                return jsonify({"ok": False, "error": "Authentication required"}), 401
+            # SUPER_ADMIN bypasses all permission checks
+            if request.admin.get("role") == "SUPER_ADMIN":
+                return f(*args, **kwargs)
+            # For ADMIN role, check specific permission
+            perms_str = request.admin.get("permissions") or ""
+            perms = [p.strip() for p in perms_str.split(",") if p.strip()]
+            if permission_name not in perms:
+                return jsonify({"ok": False, "error": "Insufficient permissions"}), 403
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 
 # ── AES-256-GCM Encryption for LinkedIn Credentials ───────────────────────────

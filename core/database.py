@@ -232,6 +232,7 @@ def init_db():
                 password_hash TEXT    NOT NULL,
                 role          TEXT    NOT NULL DEFAULT 'ADMIN',
                 name          TEXT    NOT NULL DEFAULT '',
+                permissions   TEXT    NOT NULL DEFAULT '',
                 created_at    TEXT    NOT NULL,
                 updated_at    TEXT    NOT NULL,
                 last_login_at TEXT    DEFAULT ''
@@ -330,6 +331,16 @@ def init_db():
             except Exception:
                 pass  # column already exists
 
+        # ── Migrate admin_users table ────────────────────────────────
+        _admin_migrate = [
+            ("admin_users", "permissions", "TEXT NOT NULL DEFAULT ''"),
+        ]
+        for table, col, typedef in _admin_migrate:
+            try:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typedef}")
+            except Exception:
+                pass  # column already exists
+
         # ── Master CV table ─────────────────────────────────────────
         conn.execute("""
             CREATE TABLE IF NOT EXISTS master_cv (
@@ -373,12 +384,19 @@ def _seed_default_admin():
         count_shiv = conn.execute("SELECT COUNT(*) FROM admin_users WHERE email = ?", ("officishiv582@gmail.com",)).fetchone()[0]
         if count_shiv == 0:
             conn.execute(
-                """INSERT INTO admin_users (email, password_hash, role, name, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                ("officishiv582@gmail.com", _sha256("z8$Kp9!mL2#qN5xV"), "ADMIN", "Admin", now, now),
+                """INSERT INTO admin_users (email, password_hash, role, name, permissions, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                ("officishiv582@gmail.com", _sha256("z8$Kp9!mL2#qN5xV"), "ADMIN", "Admin", "users", now, now),
             )
             conn.commit()
             print("[DB] Restricted Admin created: officishiv582@gmail.com / z8$Kp9!mL2#qN5xV")
+        else:
+            # Ensure existing restricted admin has permissions set
+            conn.execute(
+                "UPDATE admin_users SET permissions = 'users' WHERE email = ? AND (permissions IS NULL OR permissions = '')",
+                ("officishiv582@gmail.com",),
+            )
+            conn.commit()
 
 
 def _backfill_verification_requests():
@@ -1389,18 +1407,19 @@ def increment_portal_failure(hostname: str) -> None:
 
 # ── Admin Users: CRUD ──────────────────────────────────────────────────────────
 
-def create_admin(email: str, password: str, role: str = "ADMIN", name: str = "") -> dict:
+def create_admin(email: str, password: str, role: str = "ADMIN", name: str = "", permissions: str = "") -> dict:
     """Create a new admin user. Returns the admin dict.
-    Roles: USER, ADMIN, SUPER_ADMIN"""
+    Roles: USER, ADMIN, SUPER_ADMIN
+    permissions: comma-separated list of allowed sections (dashboard,queue,users,database,audit)"""
     valid_roles = {"USER", "ADMIN", "SUPER_ADMIN"}
     if role not in valid_roles:
         raise ValueError(f"Invalid role '{role}'. Must be one of: {valid_roles}")
     now = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
         cur = conn.execute(
-            """INSERT INTO admin_users (email, password_hash, role, name, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (email.strip().lower(), _sha256(password), role, name.strip(), now, now),
+            """INSERT INTO admin_users (email, password_hash, role, name, permissions, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (email.strip().lower(), _sha256(password), role, name.strip(), permissions.strip(), now, now),
         )
         conn.commit()
         row_id = cur.lastrowid

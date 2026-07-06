@@ -163,22 +163,39 @@ function showApp() {
     }
   }
 
-  if (ADMIN.email === 'officishiv582@gmail.com') {
-    // Hide non-directory menu items
-    document.querySelectorAll('.nav-item').forEach(el => {
-      if (el.getAttribute('data-view') !== 'users') {
+  // Get role and permissions
+  const isSuper = ADMIN.role === 'SUPER_ADMIN';
+  const permsStr = ADMIN.permissions || '';
+  const perms = permsStr.split(',').map(p => p.trim()).filter(Boolean);
+
+  // Hide/show navbar items based on permissions
+  document.querySelectorAll('.nav-item').forEach(el => {
+    const view = el.getAttribute('data-view');
+    if (isSuper) {
+      el.style.display = '';
+    } else {
+      // For standard admins, check specific permissions, admins is SUPER_ADMIN only
+      if (view !== 'admins' && perms.includes(view)) {
+        el.style.display = '';
+      } else {
         el.style.display = 'none';
       }
-    });
-    navigate('users');
-  } else {
-    // Show all menu items
-    document.querySelectorAll('.nav-item').forEach(el => {
-      el.style.display = '';
-    });
+    }
+  });
+
+  // Decide starting view
+  if (isSuper) {
     loadRealSubmissions();
     navigate('dashboard');
     refreshPendingCount();
+  } else {
+    // Standard admin
+    loadRealSubmissions();
+    if (perms.length > 0) {
+      navigate(perms[0]);
+    } else {
+      navigate('users');
+    }
   }
 
   updateDate();
@@ -208,9 +225,16 @@ function updateDate() {
 
 /* ── Navigation ── */
 function navigate(view) {
-  if (ADMIN.email === 'officishiv582@gmail.com' && view !== 'users') {
-    view = 'users';
+  const isSuper = ADMIN.role === 'SUPER_ADMIN';
+  const permsStr = ADMIN.permissions || '';
+  const perms = permsStr.split(',').map(p => p.trim()).filter(Boolean);
+
+  if (!isSuper) {
+    if (view === 'admins' || !perms.includes(view)) {
+      view = perms.length > 0 ? perms[0] : 'users';
+    }
   }
+
   document.querySelectorAll('#app-shell .view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const el = document.getElementById('view-' + view);
@@ -218,7 +242,7 @@ function navigate(view) {
   const ni = document.querySelector(`.nav-item[data-view="${view}"]`);
   if (ni) ni.classList.add('active');
 
-  const titles = { dashboard: 'Dashboard', queue: 'Approval Queue', users: 'User Directory', database: 'User Database', audit: 'Audit Log' };
+  const titles = { dashboard: 'Dashboard', queue: 'Approval Queue', users: 'User Directory', database: 'User Database', audit: 'Audit Log', admins: 'Admin Accounts' };
   document.getElementById('page-title').textContent = titles[view] || view;
 
   if (view === 'dashboard') loadDashboard();
@@ -226,6 +250,7 @@ function navigate(view) {
   if (view === 'users') loadUsers();
   if (view === 'database') renderDatabase();
   if (view === 'audit') loadAudit();
+  if (view === 'admins') loadAdmins();
 }
 
 /* ── Dashboard stats & charts ── */
@@ -815,7 +840,10 @@ async function getAllSignups() {
     catch(e) { return []; }
   } else {
     try {
-      const res = await fetch(`${API}/api/users`, { signal: AbortSignal.timeout(1500) });
+      const res = await fetch(`${API}/api/users`, {
+        headers: authHeaders(),
+        signal: AbortSignal.timeout(1500)
+      });
       if (res.ok) {
         _dbSource = 'api';
         return await res.json();
@@ -923,7 +951,7 @@ function togglePwd(el) {
 
 function exportDatabase() {
   if (_dbSource === 'api') {
-    window.open(`${API}/api/export`, '_blank');
+    window.open(`${API}/api/export?token=${getToken()}`, '_blank');
     toast('CSV download started', 'ok');
     return;
   }
@@ -943,8 +971,12 @@ function exportDatabase() {
 async function clearDatabase() {
   if (!confirm('Delete ALL signup records from the database? This cannot be undone.')) return;
   if (_dbSource === 'api') {
-    try { await fetch(`${API}/api/users`, { method: 'DELETE' }); }
-    catch(_) {}
+    try {
+      await fetch(`${API}/api/users`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+    } catch(_) {}
   }
   try { localStorage.removeItem('iitiim_pending'); } catch(e) {}
   pendingQueue = [...QUEUE];
@@ -997,14 +1029,199 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('view-login').classList.contains('active')) doLogin();
-  if (e.key === 'Escape') { closeRejectModal(); closeUserModal(); }
+  if (e.key === 'Escape') {
+    closeRejectModal();
+    closeUserModal();
+    closeCreateAdminModal();
+    closeAdminSuccessModal();
+  }
 });
 document.addEventListener('click', e => {
   if (e.target.id === 'reject-modal') closeRejectModal();
   if (e.target.id === 'user-modal') closeUserModal();
+  if (e.target.id === 'create-admin-modal') closeCreateAdminModal();
+  if (e.target.id === 'admin-success-modal') closeAdminSuccessModal();
 });
 
 function toggleSidebarCollapse() {
   const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
   localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
 }
+
+/* ── Admin Management ── */
+async function loadAdmins() {
+  const tbody = document.getElementById('admins-tbody');
+  const empty = document.getElementById('admins-empty');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-300 text-sm">Loading…</td></tr>';
+  if (empty) empty.classList.add('hidden');
+
+  if (isMockMode) {
+    tbody.innerHTML = `
+      <tr>
+        <td>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-xs">SA</div>
+            <span class="font-semibold text-ink-900">Demo Super Admin</span>
+          </div>
+        </td>
+        <td>admin@iitiim.ai</td>
+        <td><span style="background:#EEF0FF;color:#4B52D1;" class="badge">SUPER_ADMIN</span></td>
+        <td>All sections</td>
+        <td>Just now</td>
+        <td>Just now</td>
+      </tr>
+    `;
+    return;
+  }
+
+  try {
+    const data = await apiFetch('/admin/admins');
+    if (!data.ok) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-500 text-sm">Failed to load admins: ${data.error || 'Unknown error'}</td></tr>`;
+      return;
+    }
+    const list = data.admins || [];
+    if (list.length === 0) {
+      tbody.innerHTML = '';
+      if (empty) empty.classList.remove('hidden');
+      return;
+    }
+
+    const permLabels = {
+      dashboard: 'Dashboard',
+      queue: 'Approval Queue',
+      users: 'User Directory',
+      database: 'User Database',
+      audit: 'Audit Log'
+    };
+
+    tbody.innerHTML = list.map(a => {
+      const av = (a.name || 'A').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      const isSuperAdmin = a.role === 'SUPER_ADMIN';
+      const badgeStyle = isSuperAdmin ? 'background:#EEF0FF;color:#4B52D1;' : 'background:#F3F4F6;color:#4B5563;';
+
+      const permsList = (a.permissions || '').split(',').map(p => p.trim()).filter(Boolean);
+      const permsDisplay = isSuperAdmin
+        ? 'All sections'
+        : permsList.map(p => permLabels[p] || p).join(', ') || 'None';
+
+      return `
+        <tr>
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs" style="background:linear-gradient(135deg,#5B66E8,#A3ACFF);">${av}</div>
+              <span class="font-semibold text-ink-900">${a.name || '—'}</span>
+            </div>
+          </td>
+          <td>${a.email}</td>
+          <td><span style="${badgeStyle}" class="badge">${a.role}</span></td>
+          <td class="text-xs text-gray-400 max-w-[200px] truncate" title="${permsDisplay}">${permsDisplay}</td>
+          <td>${fmtDate(a.created_at)}</td>
+          <td>${fmtDate(a.last_login_at)}</td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-500 text-sm">Failed to load: ${err.message}</td></tr>`;
+  }
+}
+
+function openCreateAdminModal() {
+  document.getElementById('ca-name').value = '';
+  document.getElementById('ca-email').value = '';
+  document.querySelectorAll('.ca-perm').forEach(c => c.checked = false);
+  document.getElementById('ca-error').classList.add('hidden');
+  document.getElementById('create-admin-modal').classList.add('active');
+}
+
+function closeCreateAdminModal() {
+  document.getElementById('create-admin-modal').classList.remove('active');
+}
+
+async function submitCreateAdmin() {
+  const name = document.getElementById('ca-name').value.trim();
+  const email = document.getElementById('ca-email').value.trim();
+  const errEl = document.getElementById('ca-error');
+  const btn = document.getElementById('ca-submit-btn');
+
+  if (!name || !email) {
+    errEl.textContent = 'Name and email are required';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const checkedPerms = [];
+  document.querySelectorAll('.ca-perm:checked').forEach(c => checkedPerms.push(c.value));
+  const permissions = checkedPerms.join(',');
+
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+  errEl.classList.add('hidden');
+
+  if (isMockMode) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create Admin Account`;
+    closeCreateAdminModal();
+    openAdminSuccessModal(email, 'mockPassword123!', true);
+    return;
+  }
+
+  try {
+    const res = await fetch(API + '/admin/admins', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ name, email, role: 'ADMIN', permissions })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      errEl.textContent = data.error || 'Failed to create admin';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create Admin Account`;
+      return;
+    }
+
+    closeCreateAdminModal();
+    openAdminSuccessModal(email, data.generated_password, data.email_sent);
+    loadAdmins();
+  } catch (err) {
+    errEl.textContent = 'Server error. Please try again.';
+    errEl.classList.remove('hidden');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create Admin Account`;
+}
+
+let lastGeneratedPassword = '';
+
+function openAdminSuccessModal(email, password, emailSent) {
+  lastGeneratedPassword = password;
+  document.getElementById('as-email').textContent = email;
+  document.getElementById('as-password').textContent = password;
+  const statusEl = document.getElementById('as-email-status');
+  if (emailSent) {
+    statusEl.innerHTML = '<span class="text-green-600 font-semibold flex items-center gap-1"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Sent successfully</span>';
+  } else {
+    statusEl.innerHTML = '<span class="text-amber-600 font-semibold flex items-center gap-1"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>Skipped/Failed (logged on server)</span>';
+  }
+  document.getElementById('admin-success-modal').classList.add('active');
+}
+
+function closeAdminSuccessModal() {
+  document.getElementById('admin-success-modal').classList.remove('active');
+  lastGeneratedPassword = '';
+}
+
+function copySuccessPassword() {
+  if (!lastGeneratedPassword) return;
+  navigator.clipboard.writeText(lastGeneratedPassword).then(() => {
+    toast('Password copied to clipboard', 'ok');
+  }).catch(() => {
+    toast('Failed to copy password', 'warn');
+  });
+}
+
