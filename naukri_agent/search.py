@@ -300,6 +300,26 @@ async def run_naukri_job_search(user_id: int, max_pages_per_query: int = 1, head
         await browser.close()
         
     print(f"[Naukri Search] Search complete. Total unique jobs found: {len(all_jobs)}")
+    
+    # Fetch master CV data for scoring
+    cv_data = db.get_master_cv(user_id) or {}
+    
+    # Score and sort jobs by relevance
+    try:
+        from naukri_agent.relevance_scorer import score_jobs
+        all_jobs = score_jobs(all_jobs, cv_data, filters)
+        # Sort in descending order of relevance score
+        all_jobs.sort(key=lambda x: x.get("relevance_percent", 0), reverse=True)
+        print("[Naukri Search] Successfully ranked scraped jobs by relevance.")
+    except Exception as e:
+        print(f"[Naukri Search] Error ranking jobs: {e}")
+        
+    # Save the scraped jobs to database
+    try:
+        db.save_naukri_jobs(all_jobs)
+    except Exception as e:
+        print(f"[Naukri Search] Database save failed: {e}")
+        
     return all_jobs
 
 

@@ -221,6 +221,32 @@ def init_db():
                 created_at          TEXT    NOT NULL
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS naukri_jobs (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id            TEXT    NOT NULL DEFAULT '',
+                title             TEXT    NOT NULL DEFAULT '',
+                company           TEXT    NOT NULL DEFAULT '',
+                location          TEXT    NOT NULL DEFAULT '',
+                experience        TEXT    NOT NULL DEFAULT '',
+                description       TEXT    NOT NULL DEFAULT '',
+                skills            TEXT    NOT NULL DEFAULT '[]',
+                posted_date       TEXT    NOT NULL DEFAULT '',
+                url               TEXT    UNIQUE NOT NULL,
+                portal            TEXT    NOT NULL DEFAULT 'naukri.com',
+                scraped_at        TEXT    NOT NULL,
+                status            TEXT    NOT NULL DEFAULT 'new',
+                relevance_percent INTEGER DEFAULT 0
+            )
+        """)
+
+        # Migration: Add relevance_percent column to naukri_jobs if not exists
+        try:
+            conn.execute("ALTER TABLE naukri_jobs ADD COLUMN relevance_percent INTEGER DEFAULT 0")
+        except Exception:
+            pass
+
         conn.commit()
 
     # ── Admin & Audit tables in users.db ───────────────────────────────────
@@ -986,6 +1012,88 @@ def update_job_status(job_id: int, status: str) -> bool:
     with _connect_jobs() as conn:
         cur = conn.execute(
             "UPDATE jobs SET status = ? WHERE id = ?",
+            (status, job_id),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
+
+# ── Naukri Jobs Helper Functions ───────────────────────────────────────────────
+
+def save_naukri_jobs(jobs: list[dict]):
+    """Save scraped Naukri jobs to the database."""
+    import json
+    with _connect_jobs() as conn:
+        for job in jobs:
+            try:
+                # Serialize skills list to JSON string
+                skills_json = json.dumps(job.get("skills", []))
+                conn.execute(
+                    """INSERT INTO naukri_jobs
+                       (job_id, title, company, location, experience, description, skills, posted_date, url, portal, scraped_at, status, relevance_percent)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)
+                       ON CONFLICT(url) DO UPDATE SET
+                           relevance_percent = excluded.relevance_percent,
+                           scraped_at = excluded.scraped_at,
+                           posted_date = excluded.posted_date""",
+                    (
+                        job.get("job_id", ""),
+                        job.get("title", ""),
+                        job.get("company", ""),
+                        job.get("location", ""),
+                        job.get("experience", ""),
+                        job.get("description", ""),
+                        skills_json,
+                        job.get("posted_date", ""),
+                        job.get("url", ""),
+                        job.get("portal", "naukri.com"),
+                        job.get("scraped_at", ""),
+                        job.get("relevance_percent", 0),
+                    ),
+                )
+            except Exception as e:
+                print(f"[DB] Error saving Naukri job {job.get('url')}: {e}")
+        conn.commit()
+    print(f"[DB] Saved {len(jobs)} Naukri jobs to database")
+
+
+def get_all_naukri_jobs(status: str | None = None) -> list[dict]:
+    """Return all Naukri jobs from jobs.db, optionally filtered by status."""
+    with _connect_jobs() as conn:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM naukri_jobs WHERE status = ? ORDER BY scraped_at DESC",
+                (status,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM naukri_jobs ORDER BY scraped_at DESC"
+            ).fetchall()
+    
+    # De-serialize skills JSON to list
+    res = []
+    import json
+    for r in rows:
+        d = _row_to_dict(r)
+        if d.get("skills"):
+            try:
+                d["skills"] = json.loads(d["skills"])
+            except Exception:
+                d["skills"] = []
+        else:
+            d["skills"] = []
+        res.append(d)
+    return res
+
+
+def update_naukri_job_status(job_id: int, status: str) -> bool:
+    """Update the status of a Naukri job in jobs.db. Returns True if a row was updated."""
+    valid = {"new", "reviewed", "applied", "dismissed"}
+    if status not in valid:
+        raise ValueError(f"Invalid status '{status}'. Must be one of: {valid}")
+    with _connect_jobs() as conn:
+        cur = conn.execute(
+            "UPDATE naukri_jobs SET status = ? WHERE id = ?",
             (status, job_id),
         )
         conn.commit()
