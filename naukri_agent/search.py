@@ -314,6 +314,23 @@ async def run_naukri_job_search(user_id: int, max_pages_per_query: int = 1, head
     except Exception as e:
         print(f"[Naukri Search] Error ranking jobs: {e}")
         
+    # Duplicate-application guard: filter out already processed/surfaced jobs
+    new_jobs = []
+    for job in all_jobs:
+        jid = job.get("job_id")
+        if not jid:
+            jid = job.get("url", "")
+        if jid:
+            if db.is_naukri_job_processed(user_id, jid):
+                continue
+            new_jobs.append(job)
+            db.add_naukri_application(user_id, jid, status="surfaced")
+        else:
+            new_jobs.append(job)
+            
+    print(f"[Naukri Search] Duplicate guard: filtered out {len(all_jobs) - len(new_jobs)} already processed/surfaced jobs. {len(new_jobs)} new jobs remaining.")
+    all_jobs = new_jobs
+        
     # Save the scraped jobs to database
     try:
         db.save_naukri_jobs(all_jobs)

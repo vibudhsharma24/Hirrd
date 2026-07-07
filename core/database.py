@@ -247,6 +247,17 @@ def init_db():
         except Exception:
             pass
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS naukri_applications (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id           INTEGER NOT NULL,
+                job_id            TEXT    NOT NULL,
+                status            TEXT    NOT NULL DEFAULT 'surfaced',
+                applied_at        TEXT    NOT NULL,
+                UNIQUE(user_id, job_id)
+            )
+        """)
+
         conn.commit()
 
     # ── Admin & Audit tables in users.db ───────────────────────────────────
@@ -1098,6 +1109,49 @@ def update_naukri_job_status(job_id: int, status: str) -> bool:
         )
         conn.commit()
     return cur.rowcount > 0
+
+
+# ── Naukri Applications Helper Functions ──────────────────────────────────────────
+
+def is_naukri_job_processed(user_id: int, job_id: str) -> bool:
+    """Check if a Naukri job has already been surfaced or applied to by the user."""
+    with _connect_jobs() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM naukri_applications WHERE user_id = ? AND job_id = ?",
+            (user_id, job_id)
+        ).fetchone()
+    return row is not None
+
+
+def add_naukri_application(user_id: int, job_id: str, status: str = "surfaced") -> bool:
+    """Record that a Naukri job has been surfaced or applied to by a user. Returns True on success."""
+    from datetime import datetime
+    applied_at = datetime.now().isoformat()
+    with _connect_jobs() as conn:
+        try:
+            conn.execute(
+                """INSERT INTO naukri_applications (user_id, job_id, status, applied_at)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(user_id, job_id) DO UPDATE SET
+                       status = excluded.status,
+                       applied_at = excluded.applied_at""",
+                (user_id, job_id, status, applied_at)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error adding/updating Naukri application record: {e}")
+            return False
+
+
+def get_naukri_applications(user_id: int) -> list[dict]:
+    """Get all naukri application records for a user."""
+    with _connect_jobs() as conn:
+        rows = conn.execute(
+            "SELECT * FROM naukri_applications WHERE user_id = ?",
+            (user_id,)
+        ).fetchall()
+    return [_row_to_dict(r) for r in rows]
 
 
 # ── Posts (scraped by linkedin-posts.mjs) ─────────────────────────────────────────────
