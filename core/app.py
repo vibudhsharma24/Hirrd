@@ -1065,7 +1065,7 @@ def api_me():
     user_dict = db.get_user_detail(flask_current_user.id)
     if not user_dict:
         return jsonify({"ok": False, "error": "User not found"}), 404
-    safe = {k: v for k, v in user_dict.items() if k not in ("password_hash", "linkedin_password", "gmail_password")}
+    safe = {k: v for k, v in user_dict.items() if k not in ("password_hash", "linkedin_password", "gmail_password", "naukri_password")}
     safe["full_name"] = f"{safe.get('name', '')} {safe.get('last_name', '')}".strip()
     
     # Check Gmail connection status
@@ -1076,6 +1076,13 @@ def api_me():
     safe["has_linkedin_creds"] = bool(user_dict.get("linkedin_username") and user_dict.get("linkedin_password"))
     safe["has_gmail_creds"] = bool(user_dict.get("gmail_username") and user_dict.get("gmail_password")) or gmail_connected
     safe["gmail_connected"] = gmail_connected or bool(user_dict.get("gmail_connected"))
+    
+    # Expose Naukri session flags
+    safe["has_naukri_creds"] = bool(user_dict.get("naukri_username") and user_dict.get("naukri_password"))
+    from naukri_agent.session_manager import _get_cookies_path
+    cookies_path = _get_cookies_path(flask_current_user.id)
+    safe["naukri_connected"] = os.path.exists(cookies_path) and safe["has_naukri_creds"]
+
     if g_conn:
         safe["gmail_username"] = g_conn["google_email"]
     
@@ -1456,6 +1463,100 @@ def save_email_credentials():
         "message": "Email credentials saved securely",
         "preview": preview
     })
+
+
+@app.route("/api/user/naukri-credentials", methods=["POST"])
+@login_required
+def save_naukri_credentials():
+    """Save encrypted Naukri credentials for the current user."""
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+    if not username or not password:
+        return jsonify({"ok": False, "error": "Naukri username and password are required"}), 400
+    db.update_user_naukri_creds(flask_current_user.id, username, password)
+    print(f"[API] Saved Naukri credentials for user {flask_current_user.id}")
+    return jsonify({
+        "ok": True,
+        "message": "Naukri credentials saved securely"
+    })
+
+
+@app.route("/api/user/naukri-preferences", methods=["GET"])
+@login_required
+def get_naukri_preferences():
+    """Retrieve Naukri job preferences for the current user."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+    prefs = user.get("naukri_preferences") or {}
+    return jsonify({"ok": True, "preferences": prefs})
+
+
+@app.route("/api/user/naukri-preferences", methods=["POST"])
+@login_required
+def save_naukri_preferences():
+    """Save Naukri job preferences for the current user."""
+    data = request.get_json(silent=True) or {}
+    preferences = data.get("preferences")
+    if not isinstance(preferences, dict):
+        return jsonify({"ok": False, "error": "Preferences payload must be a dictionary"}), 400
+    db.update_user_naukri_preferences(flask_current_user.id, preferences)
+    return jsonify({"ok": True, "message": "Naukri preferences saved successfully"})
+
+
+@app.route("/api/naukri/login", methods=["POST"])
+@login_required
+def login_naukri_endpoint():
+    """Trigger a headed or headless Playwright login using saved credentials to establish/refresh session."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+        
+    creds = db.get_user_naukri_creds(flask_current_user.id)
+    if not creds or not creds.get("username") or not creds.get("password"):
+        return jsonify({"ok": False, "error": "Naukri credentials not found"}), 400
+        
+    from naukri_agent.session_manager import login_naukri, save_session
+    import asyncio
+    from playwright.async_api import async_playwright
+    
+    async def do_login():
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=False,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-blink-features=AutomationControlled",
+                ]
+            )
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800}
+            )
+            await context.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
+            page = await context.new_page()
+            
+            success = await login_naukri(page, creds["username"], creds["password"])
+            if success:
+                cookies = await context.cookies()
+                save_session(flask_current_user.id, cookies)
+            await browser.close()
+            return success
+
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success = loop.run_until_complete(do_login())
+        loop.close()
+        
+        if success:
+            return jsonify({"ok": True, "message": "Logged in successfully to Naukri"})
+        else:
+            return jsonify({"ok": False, "error": "Login failed. Please check credentials or solve captcha."}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Internal error during login: {str(e)}"}), 500
 
 
 def get_valid_google_connection(user_id):

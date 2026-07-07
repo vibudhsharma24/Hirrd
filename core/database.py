@@ -319,6 +319,10 @@ def init_db():
             # ── Gmail credential columns ──────────────────────────────
             ("users", "gmail_username",      "TEXT DEFAULT ''"),
             ("users", "gmail_password",      "TEXT DEFAULT ''"),
+            # ── Naukri credential columns ─────────────────────────────
+            ("users", "naukri_username",     "TEXT DEFAULT ''"),
+            ("users", "naukri_password",     "TEXT DEFAULT ''"),
+            ("users", "naukri_preferences",  "TEXT DEFAULT '{}'"),
             # ── LinkedIn profile name column ──────────────────────────
             ("users", "linkedin_profile_name", "TEXT DEFAULT ''"),
             # ── Password reset code columns ───────────────────────────
@@ -549,6 +553,23 @@ def _row_to_dict(row) -> dict:
             d["gmail_password"] = decrypt_credential(d["gmail_password"])
         except Exception:
             pass  # leave as-is if decryption fails
+    # Transparently decrypt naukri_password if present and non-empty
+    if d.get("naukri_password"):
+        try:
+            from core.auth import decrypt_credential
+            d["naukri_password"] = decrypt_credential(d["naukri_password"])
+        except Exception:
+            pass  # leave as-is if decryption fails
+            
+    # Transparently parse naukri_preferences JSON
+    if d.get("naukri_preferences"):
+        try:
+            d["naukri_preferences"] = json.loads(d["naukri_preferences"])
+        except Exception:
+            d["naukri_preferences"] = {}
+    else:
+        d["naukri_preferences"] = {}
+        
     return d
 
 
@@ -702,6 +723,34 @@ def update_user_gmail_creds(user_id: int, username: str, password: str) -> bool:
         cur = conn.execute(
             "UPDATE users SET gmail_username = ?, gmail_password = ? WHERE id = ?",
             (username, encrypted_password, user_id),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
+
+def update_user_naukri_creds(user_id: int, username: str, password: str) -> bool:
+    """Store encrypted Naukri credentials for a user."""
+    try:
+        from core.auth import encrypt_credential
+        encrypted_password = encrypt_credential(password)
+    except Exception:
+        encrypted_password = password  # fallback if encryption unavailable
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE users SET naukri_username = ?, naukri_password = ? WHERE id = ?",
+            (username, encrypted_password, user_id),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
+
+def update_user_naukri_preferences(user_id: int, preferences: dict) -> bool:
+    """Store Naukri job search preferences for a user."""
+    pref_json = json.dumps(preferences, ensure_ascii=False)
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE users SET naukri_preferences = ? WHERE id = ?",
+            (pref_json, user_id),
         )
         conn.commit()
     return cur.rowcount > 0
