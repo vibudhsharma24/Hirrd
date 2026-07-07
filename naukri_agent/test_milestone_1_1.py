@@ -131,13 +131,19 @@ async def main():
     
     async with async_playwright() as p:
         browser = await p.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-setuid-sandbox"]
+            headless=False,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-blink-features=AutomationControlled",
+            ]
         )
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-            viewport={"width": 1000, "height": 650}
+            viewport={"width": 1000, "height": 650},
+            locale="en-US"
         )
+        await context.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
         page = await context.new_page()
         
         # 1. Take screenshot of Naukri Login Page (Visual setup proof)
