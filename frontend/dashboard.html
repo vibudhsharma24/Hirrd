@@ -352,6 +352,7 @@ async function loadDashboard() {
       console.error('Failed to load applications:', e);
     }
 
+
     // Fetch user's submission logs
     try {
       const logsRes = await fetch('/api/submission-logs');

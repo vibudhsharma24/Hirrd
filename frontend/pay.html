@@ -367,8 +367,9 @@ const gst = totalAmount - subtotal;
 const perMonth = Math.round(subtotal / totalMonths);
 
 let isCouponApplied = false;
+let appliedCouponCode = '';
 
-function applyCoupon() {
+async function applyCoupon() {
   const input = document.getElementById('couponInput');
   const status = document.getElementById('couponStatus');
   const discountRow = document.getElementById('discountRow');
@@ -377,36 +378,62 @@ function applyCoupon() {
   const labelEl = document.getElementById('payLabel');
   
   const code = (input.value || '').trim().toUpperCase();
-  if (code === 'IIT99') {
-    isCouponApplied = true;
-    discountRow.classList.remove('hidden');
-    const discountAmount = totalAmount - 1;
-    discountAmountEl.textContent = `–₹${discountAmount.toLocaleString('en-IN')}.00`;
-    totalEl.textContent = '₹1.00';
-    if (labelEl) {
-      labelEl.textContent = 'Pay ₹1 · Activate agent';
-    }
-    status.textContent = 'Coupon applied successfully! 100% discount applied.';
-    status.className = 'mt-1 text-[11px] font-medium text-emerald-600';
-    status.classList.remove('hidden');
-  } else if (code === '') {
+  if (code === '') {
     isCouponApplied = false;
+    appliedCouponCode = '';
     discountRow.classList.add('hidden');
     totalEl.textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
     if (labelEl) {
       labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
     }
     status.classList.add('hidden');
-  } else {
+    return;
+  }
+
+  status.textContent = 'Validating coupon...';
+  status.className = 'mt-1 text-[11px] font-medium text-ink-700/60';
+  status.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/validate-coupon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coupon: code, plan_months: totalMonths })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      isCouponApplied = true;
+      appliedCouponCode = code;
+      discountRow.classList.remove('hidden');
+      const discountAmount = totalAmount - 1;
+      discountAmountEl.textContent = `–₹${discountAmount.toLocaleString('en-IN')}.00`;
+      totalEl.textContent = '₹1.00';
+      if (labelEl) {
+        labelEl.textContent = 'Pay ₹1 · Activate agent';
+      }
+      status.textContent = data.message || 'Coupon applied successfully! 100% discount applied.';
+      status.className = 'mt-1 text-[11px] font-medium text-emerald-600';
+    } else {
+      isCouponApplied = false;
+      appliedCouponCode = '';
+      discountRow.classList.add('hidden');
+      totalEl.textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
+      if (labelEl) {
+        labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
+      }
+      status.textContent = data.error || 'Invalid coupon code.';
+      status.className = 'mt-1 text-[11px] font-medium text-rose-600';
+    }
+  } catch (err) {
     isCouponApplied = false;
+    appliedCouponCode = '';
     discountRow.classList.add('hidden');
     totalEl.textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
     if (labelEl) {
       labelEl.textContent = `Pay ₹${totalAmount.toLocaleString('en-IN')} · Activate agent`;
     }
-    status.textContent = 'Invalid coupon code.';
+    status.textContent = 'Error validating coupon: ' + err.message;
     status.className = 'mt-1 text-[11px] font-medium text-rose-600';
-    status.classList.remove('hidden');
   }
 }
 
@@ -509,7 +536,7 @@ async function startPayment() {
     const orderRes = await fetch('/api/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: amountPaise, currency: 'INR', coupon: isCouponApplied ? 'IIT99' : '' }),
+      body: JSON.stringify({ amount: amountPaise, currency: 'INR', coupon: isCouponApplied ? appliedCouponCode : '', plan_months: totalMonths }),
     });
     const orderData = await orderRes.json();
     if (!orderData.ok) throw new Error(orderData.error || 'Order creation failed');

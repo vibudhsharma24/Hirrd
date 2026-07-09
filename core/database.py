@@ -222,6 +222,18 @@ def init_db():
             )
         """)
 
+        # Migrate payments with user_id and coupon columns
+        try:
+            conn.execute("ALTER TABLE payments ADD COLUMN user_id INTEGER")
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE payments ADD COLUMN coupon TEXT DEFAULT ''")
+            conn.commit()
+        except Exception:
+            pass
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS naukri_jobs (
                 id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -254,7 +266,40 @@ def init_db():
                 job_id            TEXT    NOT NULL,
                 status            TEXT    NOT NULL DEFAULT 'surfaced',
                 applied_at        TEXT    NOT NULL,
+                tailored_resume_path TEXT,
                 UNIQUE(user_id, job_id)
+            )
+        """)
+
+        # Migration: Add tailored_resume_path column to naukri_applications if not exists
+        try:
+            conn.execute("ALTER TABLE naukri_applications ADD COLUMN tailored_resume_path TEXT")
+        except Exception:
+            pass
+
+        # Migration: Add retry_count column to naukri_applications if not exists
+        try:
+            conn.execute("ALTER TABLE naukri_applications ADD COLUMN retry_count INTEGER DEFAULT 0")
+        except Exception:
+            pass
+
+        # Migration: Add last_error column to naukri_applications if not exists
+        try:
+            conn.execute("ALTER TABLE naukri_applications ADD COLUMN last_error TEXT")
+        except Exception:
+            pass
+
+        # Create naukri_application_logs table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS naukri_application_logs (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id         INTEGER NOT NULL,
+                job_id          TEXT    NOT NULL,
+                attempt_number  INTEGER NOT NULL,
+                status          TEXT    NOT NULL,
+                error_message   TEXT,
+                screenshot_path TEXT,
+                attempted_at    TEXT    NOT NULL
             )
         """)
 
@@ -273,6 +318,18 @@ def init_db():
                 created_at    TEXT    NOT NULL,
                 updated_at    TEXT    NOT NULL,
                 last_login_at TEXT    DEFAULT ''
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS naukri_answer_bank (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id      INTEGER NOT NULL,
+                question     TEXT    NOT NULL,
+                answer       TEXT    NOT NULL,
+                status       TEXT    NOT NULL DEFAULT 'approved',
+                updated_at   TEXT    NOT NULL,
+                UNIQUE(user_id, question)
             )
         """)
 
@@ -1123,19 +1180,20 @@ def is_naukri_job_processed(user_id: int, job_id: str) -> bool:
     return row is not None
 
 
-def add_naukri_application(user_id: int, job_id: str, status: str = "surfaced") -> bool:
+def add_naukri_application(user_id: int, job_id: str, status: str = "surfaced", tailored_resume_path: str = None) -> bool:
     """Record that a Naukri job has been surfaced or applied to by a user. Returns True on success."""
     from datetime import datetime
     applied_at = datetime.now().isoformat()
     with _connect_jobs() as conn:
         try:
             conn.execute(
-                """INSERT INTO naukri_applications (user_id, job_id, status, applied_at)
-                   VALUES (?, ?, ?, ?)
+                """INSERT INTO naukri_applications (user_id, job_id, status, applied_at, tailored_resume_path)
+                   VALUES (?, ?, ?, ?, ?)
                    ON CONFLICT(user_id, job_id) DO UPDATE SET
                        status = excluded.status,
-                       applied_at = excluded.applied_at""",
-                (user_id, job_id, status, applied_at)
+                       applied_at = excluded.applied_at,
+                       tailored_resume_path = CASE WHEN excluded.tailored_resume_path IS NOT NULL THEN excluded.tailored_resume_path ELSE naukri_applications.tailored_resume_path END""",
+                (user_id, job_id, status, applied_at, tailored_resume_path)
             )
             conn.commit()
             return True
@@ -2159,19 +2217,52 @@ def create_payment_record(
     currency: str = "INR",
     receipt: str = "",
     buyer_id: int | None = None,
+    user_id: int | None = None,
+    coupon: str = "",
 ) -> dict:
     """Insert a new payment record after creating a Razorpay order."""
     created_at = datetime.now(timezone.utc).isoformat()
     with _connect_jobs() as conn:
         cur = conn.execute(
             """INSERT INTO payments
-               (razorpay_order_id, amount_paise, currency, receipt, buyer_id, status, created_at)
-               VALUES (?, ?, ?, ?, ?, 'created', ?)""",
-            (razorpay_order_id, amount_paise, currency, receipt, buyer_id, created_at),
+               (razorpay_order_id, amount_paise, currency, receipt, buyer_id, user_id, coupon, status, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'created', ?)""",
+            (razorpay_order_id, amount_paise, currency, receipt, buyer_id, user_id, coupon, created_at),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM payments WHERE id = ?", (cur.lastrowid,)).fetchone()
     return _row_to_dict(row) if row else {}
+
+
+def has_user_used_coupon(user_id: int, coupon_code: str) -> bool:
+    """Check if the user has already successfully used the coupon code."""
+    # First get buyer_id if exists
+    with _connect() as conn:
+        user_row = conn.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
+        email = user_row["email"] if user_row else None
+
+    buyer_id = None
+    if email:
+        with _connect() as conn:
+            buyer_row = conn.execute("SELECT id FROM agent_buyers WHERE email = ?", (email,)).fetchone()
+            buyer_id = buyer_row["id"] if buyer_row else None
+
+    with _connect_jobs() as conn:
+        if buyer_id:
+            row = conn.execute(
+                """SELECT 1 FROM payments 
+                   WHERE (user_id = ? OR buyer_id = ?) 
+                     AND UPPER(coupon) = ? 
+                     AND status = 'paid' 
+                   LIMIT 1""",
+                (user_id, buyer_id, coupon_code.strip().upper())
+            ).fetchone()
+        else:
+            row = conn.execute(
+                "SELECT 1 FROM payments WHERE user_id = ? AND UPPER(coupon) = ? AND status = 'paid' LIMIT 1",
+                (user_id, coupon_code.strip().upper())
+            ).fetchone()
+    return row is not None
 
 
 def verify_payment_record(
@@ -2414,3 +2505,145 @@ def save_master_cv(user_id: int, cv_data: dict) -> bool:
         )
         conn.commit()
     return True
+
+
+def get_naukri_answer_bank(user_id: int) -> list[dict]:
+    """Get all answer bank entries for a user."""
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM naukri_answer_bank WHERE user_id = ? ORDER BY id DESC",
+            (user_id,)
+        ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
+def save_naukri_answer_bank_entry(user_id: int, question: str, answer: str, status: str = 'approved') -> bool:
+    """Add or update an answer bank entry for a user."""
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        try:
+            conn.execute(
+                """INSERT INTO naukri_answer_bank (user_id, question, answer, status, updated_at)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(user_id, question) DO UPDATE SET
+                       answer = excluded.answer,
+                       status = excluded.status,
+                       updated_at = excluded.updated_at""",
+                (user_id, question, answer, status, now)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error saving answer bank entry: {e}")
+            return False
+
+
+def delete_naukri_answer_bank_entry(user_id: int, question: str) -> bool:
+    """Delete an answer bank entry for a user."""
+    with _connect() as conn:
+        try:
+            conn.execute(
+                "DELETE FROM naukri_answer_bank WHERE user_id = ? AND question = ?",
+                (user_id, question)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error deleting answer bank entry: {e}")
+            return False
+
+
+def get_naukri_job_details(job_id: str) -> dict | None:
+    """Fetch details of a Naukri job by job_id or url."""
+    with _connect_jobs() as conn:
+        row = conn.execute(
+            "SELECT * FROM naukri_jobs WHERE job_id = ? OR url = ? LIMIT 1",
+            (job_id, job_id)
+        ).fetchone()
+    return _row_to_dict(row) if row else None
+
+
+def add_naukri_application_attempt(user_id: int, job_id: str, attempt_number: int, status: str, error_message: str | None, screenshot_path: str | None) -> bool:
+    """Record an application attempt in the audit logs."""
+    from datetime import datetime
+    attempted_at = datetime.now().isoformat()
+    with _connect_jobs() as conn:
+        try:
+            conn.execute(
+                """INSERT INTO naukri_application_logs (user_id, job_id, attempt_number, status, error_message, screenshot_path, attempted_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, job_id, attempt_number, status, error_message, screenshot_path, attempted_at)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error adding naukri application attempt log: {e}")
+            return False
+
+
+def get_naukri_application_logs(user_id: int, job_id: str | None = None) -> list[dict]:
+    """Retrieve all application attempts for a user/job."""
+    with _connect_jobs() as conn:
+        if job_id:
+            rows = conn.execute(
+                "SELECT * FROM naukri_application_logs WHERE user_id = ? AND job_id = ? ORDER BY attempted_at DESC",
+                (user_id, job_id)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM naukri_application_logs WHERE user_id = ? ORDER BY attempted_at DESC",
+                (user_id,)
+            ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
+def update_naukri_application_retry(user_id: int, job_id: str, status: str, retry_count: int, last_error: str | None) -> bool:
+    """Update retry count and last error for a Naukri application."""
+    with _connect_jobs() as conn:
+        try:
+            conn.execute(
+                """UPDATE naukri_applications 
+                   SET status = ?, retry_count = ?, last_error = ? 
+                   WHERE user_id = ? AND job_id = ?""",
+                (status, retry_count, last_error, user_id, job_id)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error updating naukri application retry status: {e}")
+            return False
+
+
+def get_naukri_terminal_failures(user_id: int) -> list[dict]:
+    """Get all failed/terminal applications for a user, including job details and the latest screenshot path."""
+    with _connect_jobs() as conn:
+        rows = conn.execute(
+            """SELECT a.*, j.title, j.company, j.url, 
+                      (SELECT screenshot_path FROM naukri_application_logs l 
+                       WHERE l.user_id = a.user_id AND l.job_id = a.job_id 
+                       ORDER BY l.attempted_at DESC LIMIT 1) as screenshot_path
+               FROM naukri_applications a
+               JOIN naukri_jobs j ON a.job_id = j.job_id OR a.job_id = j.url
+               WHERE a.user_id = ? AND a.status = 'failed'
+               ORDER BY a.applied_at DESC""",
+            (user_id,)
+        ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
+def dismiss_naukri_application(user_id: int, job_id: str) -> bool:
+    """Change status of a failed Naukri application to 'dismissed'."""
+    with _connect_jobs() as conn:
+        try:
+            conn.execute(
+                "UPDATE naukri_applications SET status = 'dismissed' WHERE user_id = ? AND job_id = ?",
+                (user_id, job_id)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error dismissing naukri application: {e}")
+            return False
+
+
+

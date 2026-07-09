@@ -323,8 +323,18 @@ async def run_naukri_job_search(user_id: int, max_pages_per_query: int = 1, head
         if jid:
             if db.is_naukri_job_processed(user_id, jid):
                 continue
+            
+            # Generate a tailored resume variant for the newly surfaced high-relevance job
+            tailored_path = None
+            if job.get("relevance_percent", 0) >= 50:
+                try:
+                    from naukri_agent.resume_tailor import generate_tailored_resume
+                    tailored_path = generate_tailored_resume(user_id, job, cv_data)
+                except Exception as e:
+                    print(f"  [Resume Tailor] Failed generating tailored resume for {jid}: {e}")
+            
             new_jobs.append(job)
-            db.add_naukri_application(user_id, jid, status="surfaced")
+            db.add_naukri_application(user_id, jid, status="surfaced", tailored_resume_path=tailored_path)
         else:
             new_jobs.append(job)
             

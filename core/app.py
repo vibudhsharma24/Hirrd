@@ -702,6 +702,152 @@ def apply():
 
 
 # --------------------------------------------------------------------------- #
+#  Naukri Answer-Bank and Auto-Apply APIs                                     #
+# --------------------------------------------------------------------------- #
+
+@app.route("/api/users/<int:user_id>/naukri-apply", methods=["POST"])
+def trigger_naukri_apply(user_id):
+    try:
+        data = request.get_json(silent=True) or {}
+        max_daily_apps = data.get("max_daily_apps", 5)
+        
+        from naukri_agent.applier import run_naukri_auto_apply
+        res = asyncio.run(run_naukri_auto_apply(user_id, max_daily_apps=max_daily_apps))
+        
+        if res.get("success"):
+            return jsonify({"ok": True, "result": res})
+        else:
+            return jsonify({"ok": False, "error": res.get("message")}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/answer-bank", methods=["GET"])
+def get_user_answer_bank(user_id):
+    try:
+        entries = db.get_naukri_answer_bank(user_id)
+        return jsonify({"ok": True, "entries": entries})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/answer-bank", methods=["POST"])
+def save_user_answer_bank_entry(user_id):
+    try:
+        data = request.get_json(silent=True) or {}
+        question = data.get("question")
+        answer = data.get("answer")
+        status = data.get("status", "approved")
+        
+        if not question or not answer:
+            return jsonify({"ok": False, "error": "question and answer are required"}), 400
+            
+        success = db.save_naukri_answer_bank_entry(user_id, question, answer, status)
+        if success:
+            return jsonify({"ok": True, "message": "Answer bank entry saved successfully"})
+        else:
+            return jsonify({"ok": False, "error": "Database error saving entry"}), 500
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/answer-bank", methods=["DELETE"])
+def delete_user_answer_bank_entry(user_id):
+    try:
+        data = request.get_json(silent=True) or {}
+        question = data.get("question") or request.args.get("question")
+        
+        if not question:
+            return jsonify({"ok": False, "error": "question is required"}), 400
+            
+        success = db.delete_naukri_answer_bank_entry(user_id, question)
+        if success:
+            return jsonify({"ok": True, "message": "Answer bank entry deleted successfully"})
+        else:
+            return jsonify({"ok": False, "error": "Database error deleting entry"}), 500
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/naukri-failures", methods=["GET"])
+def get_naukri_failures(user_id):
+    try:
+        failures = db.get_naukri_terminal_failures(user_id)
+        return jsonify({"ok": True, "failures": failures})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/naukri-logs", methods=["GET"])
+def get_naukri_logs(user_id):
+    try:
+        logs = db.get_naukri_application_logs(user_id)
+        return jsonify({"ok": True, "logs": logs})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/naukri-applications", methods=["GET"])
+def get_user_naukri_apps(user_id):
+    try:
+        apps = db.get_naukri_applications(user_id)
+        for app in apps:
+            job_details = db.get_naukri_job_details(app.get("job_id"))
+            if job_details:
+                app["title"] = job_details.get("title")
+                app["company"] = job_details.get("company")
+                app["url"] = job_details.get("url")
+        return jsonify({"ok": True, "applications": apps})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/naukri-applications/<int:app_id>/dismiss", methods=["POST"])
+def dismiss_naukri_app(user_id, app_id):
+    try:
+        apps = db.get_naukri_applications(user_id)
+        app = next((a for a in apps if a.get("id") == app_id), None)
+        if not app:
+            return jsonify({"ok": False, "error": "Application not found"}), 404
+        db.dismiss_naukri_application(user_id, app.get("job_id"))
+        return jsonify({"ok": True, "message": "Application dismissed successfully"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/naukri-applications/<int:app_id>/retry", methods=["POST"])
+def retry_naukri_app(user_id, app_id):
+    try:
+        apps = db.get_naukri_applications(user_id)
+        app = next((a for a in apps if a.get("id") == app_id), None)
+        if not app:
+            return jsonify({"ok": False, "error": "Application not found"}), 404
+        db.update_naukri_application_retry(user_id, app.get("job_id"), "retrying", 0, None)
+        from naukri_agent.applier import run_naukri_auto_apply
+        res = asyncio.run(run_naukri_auto_apply(user_id, max_daily_apps=5))
+        return jsonify({"ok": True, "result": res})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/naukri-applications/<int:app_id>/screenshot", methods=["GET"])
+def get_naukri_app_screenshot(user_id, app_id):
+    try:
+        apps = db.get_naukri_applications(user_id)
+        app = next((a for a in apps if a.get("id") == app_id), None)
+        if not app:
+            return jsonify({"ok": False, "error": "Application not found"}), 404
+        logs = db.get_naukri_application_logs(user_id, app.get("job_id"))
+        for log in logs:
+            ss = log.get("screenshot_path", "")
+            if ss and os.path.exists(ss):
+                return send_file(ss, mimetype='image/png')
+        return jsonify({"ok": False, "error": "No screenshot found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# --------------------------------------------------------------------------- #
 #  Admin JWT Auth (uses core.auth imports above)                                #
 # --------------------------------------------------------------------------- #
 
@@ -2615,11 +2761,43 @@ def razorpay_key():
     return jsonify({"ok": True, "key_id": _rzp_key_id})
 
 
+@app.route("/api/validate-coupon", methods=["POST"])
+@login_required
+def validate_coupon():
+    data = request.get_json(silent=True) or {}
+    coupon = (data.get("coupon") or "").strip().upper()
+    plan_months = data.get("plan_months")
+
+    if not coupon:
+        return jsonify({"ok": False, "error": "Coupon code is required"}), 400
+
+    if coupon == "IIT99":
+        return jsonify({"ok": True, "message": "Coupon applied successfully! 100% discount applied."})
+
+    if coupon == "JOB99":
+        if plan_months is None:
+            return jsonify({"ok": False, "error": "Plan duration is required"}), 400
+        try:
+            plan_months = int(plan_months)
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "Invalid plan duration"}), 400
+
+        if plan_months != 3:
+            return jsonify({"ok": False, "error": "JOB99 coupon is only applicable on the 3-month subscription plan"}), 400
+
+        if db.has_user_used_coupon(flask_current_user.id, "JOB99"):
+            return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
+
+        return jsonify({"ok": True, "message": "Coupon applied successfully! 100% discount applied."})
+
+    return jsonify({"ok": False, "error": "Invalid coupon code"}), 400
+
+
 @app.route("/api/create-order", methods=["POST"])
 @login_required
 def create_order():
     """Create a Razorpay order.
-    Body: { "amount": 49900, "currency": "INR", "coupon": "IIT99" }
+    Body: { "amount": 49900, "currency": "INR", "coupon": "IIT99", "plan_months": 3 }
     amount is in paise (₹499 = 49900 paise). Minimum 100 paise (₹1).
     User resolved automatically from session.
     """
@@ -2628,11 +2806,28 @@ def create_order():
     currency = (data.get("currency") or "INR").upper()
     receipt  = (data.get("receipt") or "").strip()
     coupon   = (data.get("coupon") or "").strip().upper()
+    plan_months = data.get("plan_months")
 
-    # Apply IIT99 coupon — force ₹1 (100 paise) but still go through real Razorpay
+    # Apply coupon logic
     if coupon == "IIT99":
         amount = 100  # Force ₹1.00 (100 paise)
         print(f"[Coupon] IIT99 applied — amount overridden to 100 paise (₹1)")
+    elif coupon == "JOB99":
+        if plan_months is None:
+            return jsonify({"ok": False, "error": "plan_months is required when using coupon JOB99"}), 400
+        try:
+            plan_months = int(plan_months)
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "plan_months must be an integer"}), 400
+
+        if plan_months != 3:
+            return jsonify({"ok": False, "error": "JOB99 coupon is only applicable on the 3-month subscription plan"}), 400
+
+        if db.has_user_used_coupon(flask_current_user.id, "JOB99"):
+            return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
+
+        amount = 100  # Force ₹1.00 (100 paise)
+        print(f"[Coupon] JOB99 applied — amount overridden to 100 paise (₹1)")
 
     if not razorpay_client:
         return jsonify({"ok": False, "error": "Razorpay not configured on server"}), 503
@@ -2678,6 +2873,8 @@ def create_order():
         currency=currency,
         receipt=receipt,
         buyer_id=buyer_id,
+        user_id=flask_current_user.id,
+        coupon=coupon,
     )
 
     print(f"[Razorpay] Order created: {order['id']}  amount={amount} paise")

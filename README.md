@@ -245,6 +245,12 @@ The server starts at **`http://127.0.0.1:5000`**.
 | GET | `/api/submission-logs` | Get agent submission logs |
 | GET | `/api/portal-credentials` | List auto-generated passwords |
 | GET | `/api/failure-queue` | View failed applications |
+| GET | `/api/users/<user_id>/naukri-failures` | Get Naukri terminal failures |
+| GET | `/api/users/<user_id>/naukri-logs` | Get all Naukri application attempts / logs |
+| GET | `/api/users/<user_id>/naukri-applications` | Get user's Naukri applications |
+| POST | `/api/users/<user_id>/naukri-applications/<app_id>/dismiss` | Dismiss a Naukri terminal failure |
+| POST | `/api/users/<user_id>/naukri-applications/<app_id>/retry` | Manually retry a Naukri application |
+| GET | `/api/users/<user_id>/naukri-applications/<app_id>/screenshot` | Serve Naukri application failure screenshot |
 
 ### User Settings
 | Method | Endpoint | Description |
