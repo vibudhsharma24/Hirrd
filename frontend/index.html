@@ -125,14 +125,22 @@
 <!-- ============================================================= -->
 <div id="appShell" class="hidden-view min-h-screen bg-[#FAFBFD]">
   <aside id="appSidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-ink-900/5 p-5 flex-col z-30 hidden md:flex">
-    <a href="#" onclick="navigate('dashboard')" class="flex items-center gap-2 mb-8">
-      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
-        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center">
-          <span class="font-display text-white text-[13px] font-bold">I²</span>
+    <div class="flex items-center justify-between mb-8">
+      <a href="#" onclick="navigate('dashboard')" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
+          <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center">
+            <span class="font-display text-white text-[13px] font-bold">I²</span>
+          </div>
         </div>
-      </div>
-      <div class="font-display font-bold text-[16px]">IITIIMJobAssistant</div>
-    </a>
+        <div class="font-display font-bold text-[16px]">IITIIMJobAssistant</div>
+      </a>
+      <!-- Mobile Close Button -->
+      <button class="md:hidden p-1.5 rounded-lg hover:bg-ink-900/5 text-ink-700 focus:outline-none" onclick="toggleSidebar()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
     <nav class="flex-1 space-y-1 text-[14px]">
       <a href="#" data-appnav="dashboard" onclick="navigate('dashboard')" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-900 font-medium">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12 12 4l9 8"/><path d="M5 10v10h14V10"/></svg>
@@ -177,6 +185,9 @@
       </div>
     </div>
   </aside>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
 
   <main id="appMain" class="md:pl-64">
     <header class="sticky top-0 z-20 bg-white/70 backdrop-blur border-b border-ink-900/5">
@@ -2131,6 +2142,12 @@
   }
 
   function navigate(view) {
+    // Auto-close mobile sidebar on navigation
+    const sidebar = document.getElementById('appSidebar');
+    if (sidebar && !sidebar.classList.contains('hidden') && window.innerWidth < 768) {
+      toggleSidebar();
+    }
+
     if (view === 'login') {
       window.location.href = '/login';
       return;
@@ -2376,7 +2393,19 @@
   }
 
   function toggleSidebar() {
-    document.getElementById('appSidebar').classList.toggle('hidden');
+    const sidebar = document.getElementById('appSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar) {
+      sidebar.classList.toggle('hidden');
+      if (!sidebar.classList.contains('hidden')) {
+        sidebar.classList.add('flex');
+      } else {
+        sidebar.classList.remove('flex');
+      }
+    }
+    if (backdrop) {
+      backdrop.classList.toggle('hidden');
+    }
   }
 
   function renderApp(view) {

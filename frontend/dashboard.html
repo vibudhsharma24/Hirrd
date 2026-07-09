@@ -118,12 +118,20 @@
     </button>
     
     <div id="sidebar-content" class="flex flex-col h-full w-full">
-      <a href="/" class="flex items-center gap-2 mb-8">
-      <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
-        <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center"><span class="font-display text-white text-[13px] font-bold">I²</span></div>
+      <div class="flex items-center justify-between mb-8">
+        <a href="/" class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg ring-gradient p-[1.5px]">
+            <div class="w-full h-full rounded-[7px] bg-ink-900 grid place-items-center"><span class="font-display text-white text-[13px] font-bold">I²</span></div>
+          </div>
+          <div class="font-display font-bold text-[16px]">IITIIMJobAssistant</div>
+        </a>
+        <!-- Mobile Close Button -->
+        <button class="md:hidden p-1.5 rounded-lg hover:bg-ink-900/5 text-ink-700 focus:outline-none" onclick="toggleSidebarMobile()">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="font-display font-bold text-[16px]">IITIIMJobAssistant</div>
-    </a>
     <nav class="flex-1 space-y-1 text-[14px]">
       <a href="#" id="dashboardNavLink" onclick="window.location.hash = ''; return false;" class="appnav active flex items-center gap-2.5 px-3 py-2 rounded-lg">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12 12 4l9 8"/><path d="M5 10v10h14V10"/></svg>
@@ -199,11 +207,14 @@
     </div>
   </aside>
 
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-20 hidden md:hidden" onclick="toggleSidebarMobile()"></div>
+
   <!-- Main -->
   <main class="md:pl-64">
     <header class="sticky top-0 z-20 bg-white/70 backdrop-blur border-b border-ink-900/5">
       <div class="px-5 md:px-8 h-16 flex items-center gap-3">
-        <button class="md:hidden p-2 rounded-lg hover:bg-ink-900/5" onclick="document.getElementById('sidebar').classList.toggle('hidden')">
+        <button class="md:hidden p-2 rounded-lg hover:bg-ink-900/5" onclick="toggleSidebarMobile()">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <div class="flex-1 max-w-md relative">
@@ -332,6 +343,22 @@ async function pollAgentData() {
 function toggleSidebarCollapse() {
   const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
   localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
+}
+
+function toggleSidebarMobile() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (sidebar) {
+    sidebar.classList.toggle('hidden');
+    if (!sidebar.classList.contains('hidden')) {
+      sidebar.classList.add('flex');
+    } else {
+      sidebar.classList.remove('flex');
+    }
+  }
+  if (backdrop) {
+    backdrop.classList.toggle('hidden');
+  }
 }
 
 async function loadDashboard() {
@@ -896,6 +923,12 @@ async function uploadDashboardResume(event) {
 
 function handleRouting() {
   const hash = window.location.hash;
+  
+  // Auto-close mobile sidebar on navigation
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar && !sidebar.classList.contains('hidden') && window.innerWidth < 768) {
+    toggleSidebarMobile();
+  }
   
   if (agentPollInterval) {
     clearInterval(agentPollInterval);
