@@ -198,22 +198,39 @@ def _run_cycle(user_id: int, daily_limit: int):
         stop_agent(user_id)
         return
 
-    # Run the full pipeline (scrape LinkedIn → apply → connection requests)
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        
+        # 1. Run the full standard pipeline (scrape LinkedIn → apply → connection requests)
         from job_seeker_agent.applier import run_full_pipeline
-        loop.run_until_complete(
-            run_full_pipeline(
-                user_id=user_id,
-                dry_run=False,
-                headed=False,
-                limit=daily_limit,
+        try:
+            loop.run_until_complete(
+                run_full_pipeline(
+                    user_id=user_id,
+                    dry_run=False,
+                    headed=False,
+                    limit=daily_limit,
+                )
             )
-        )
+        except Exception as e:
+            print(f"[Agent] Full LinkedIn pipeline failed for user {user_id}: {e}")
+            
+        # 2. Run the Naukri auto-apply pipeline (scrape Naukri → apply → logs/retries)
+        try:
+            from naukri_agent.applier import run_naukri_auto_apply
+            loop.run_until_complete(
+                run_naukri_auto_apply(
+                    user_id=user_id,
+                    max_daily_apps=daily_limit,
+                )
+            )
+        except Exception as e:
+            print(f"[Agent] Naukri auto-apply pipeline failed for user {user_id}: {e}")
+            
         loop.close()
     except Exception as e:
-        print(f"[Agent] Full pipeline failed for user {user_id}: {e}")
+        print(f"[Agent] Event loop or pipeline initialization failed for user {user_id}: {e}")
 
     # Track activity
     update_user_activity(user_id)
