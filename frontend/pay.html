@@ -511,8 +511,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const meRes = await fetch('/api/me');
       const meData = await meRes.json();
-      if (meData.ok && meData.user && meData.user.is_agent_buyer) {
-        showResumeModal();
+      if (meData.ok && meData.user) {
+        let alreadySubscribed = false;
+        if (agentId === 'linkedin_jobs') {
+          alreadySubscribed = !!meData.user.linkedin_jobs_subscribed;
+        } else if (agentId === 'naukri_ai') {
+          alreadySubscribed = !!meData.user.naukri_subscribed;
+        } else {
+          // Default: job_seeker
+          alreadySubscribed = !!meData.user.is_agent_buyer;
+        }
+
+        if (alreadySubscribed) {
+          showResumeModal();
+        }
       }
     } catch (e) {}
   }
@@ -865,7 +877,7 @@ async function connectPayEmail() {
     const res = await fetch('/gmail/connect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'pay' })
+      body: JSON.stringify({ source: 'pay', origin: window.location.origin })
     });
     const data = await res.json();
     if (data.ok && data.url) {

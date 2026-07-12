@@ -722,6 +722,104 @@ def trigger_naukri_apply(user_id):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+# --------------------------------------------------------------------------- #
+#  Per-Agent Toggle (Start / Stop) APIs                                        #
+# --------------------------------------------------------------------------- #
+_per_agent_threads = {}   # key: (user_id, agent_type) -> {"thread": Thread, "running": bool}
+_per_agent_lock = threading.Lock()
+
+
+def _run_linkedin_jobs_agent_bg(user_id):
+    """Background thread target for LinkedIn Jobs Agent."""
+    try:
+        from linkedin_jobs_agent.search import run_linkedin_job_search
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(
+                run_linkedin_job_search(user_id, max_jobs_per_run=5, headed=False)
+            )
+        finally:
+            loop.close()
+    except Exception as e:
+        print(f"[LinkedIn Jobs Agent] Error in background run: {e}")
+    finally:
+        with _per_agent_lock:
+            key = (user_id, "linkedin_jobs")
+            if key in _per_agent_threads:
+                _per_agent_threads[key]["running"] = False
+        try:
+            db.update_user_activity(user_id)
+        except Exception:
+            pass
+
+
+def _run_naukri_agent_bg(user_id):
+    """Background thread target for Naukri AI Agent."""
+    try:
+        from naukri_agent.applier import run_naukri_auto_apply
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(
+                run_naukri_auto_apply(user_id, max_daily_apps=5)
+            )
+        finally:
+            loop.close()
+    except Exception as e:
+        print(f"[Naukri Agent] Error in background run: {e}")
+    finally:
+        with _per_agent_lock:
+            key = (user_id, "naukri_ai")
+            if key in _per_agent_threads:
+                _per_agent_threads[key]["running"] = False
+        try:
+            db.update_user_activity(user_id)
+        except Exception:
+            pass
+
+
+@app.route("/api/users/<int:user_id>/agent-toggle/<agent_type>", methods=["POST"])
+def toggle_per_agent(user_id, agent_type):
+    """Toggle start/stop for a specific agent (linkedin_jobs or naukri_ai)."""
+    if agent_type not in ("linkedin_jobs", "naukri_ai"):
+        return jsonify({"ok": False, "error": "Unknown agent type"}), 400
+
+    key = (user_id, agent_type)
+    with _per_agent_lock:
+        entry = _per_agent_threads.get(key)
+        if entry and entry.get("running") and entry.get("thread") and entry["thread"].is_alive():
+            # Agent is currently running — stop it
+            entry["running"] = False
+            return jsonify({"ok": True, "status": "stopped",
+                            "message": f"{agent_type} agent stopped."})
+
+    # Agent is not running — start it
+    target_fn = _run_linkedin_jobs_agent_bg if agent_type == "linkedin_jobs" else _run_naukri_agent_bg
+    t = threading.Thread(
+        target=target_fn,
+        args=(user_id,),
+        name=f"agent-{user_id}-{agent_type}",
+        daemon=True,
+    )
+    with _per_agent_lock:
+        _per_agent_threads[key] = {"thread": t, "running": True}
+    t.start()
+    return jsonify({"ok": True, "status": "running",
+                    "message": f"{agent_type} agent started in background."})
+
+
+@app.route("/api/users/<int:user_id>/agent-running/<agent_type>", methods=["GET"])
+def get_per_agent_running(user_id, agent_type):
+    """Return whether a specific agent is currently running for this user."""
+    key = (user_id, agent_type)
+    with _per_agent_lock:
+        entry = _per_agent_threads.get(key)
+        if entry and entry.get("running") and entry.get("thread") and entry["thread"].is_alive():
+            return jsonify({"ok": True, "running": True})
+    return jsonify({"ok": True, "running": False})
+
+
 @app.route("/api/users/<int:user_id>/answer-bank", methods=["GET"])
 def get_user_answer_bank(user_id):
     try:
@@ -2503,13 +2601,31 @@ def gmail_connect():
 
     data = request.get_json(silent=True) or {}
     source = data.get("source", "dashboard")
+    origin = data.get("origin", "").strip()
 
     # Reconstruct/read redirect URI
+    google_redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI", "")
+    base_from_env = ""
+    if google_redirect_uri:
+        if "/auth/google/callback" in google_redirect_uri:
+            base_from_env = google_redirect_uri.replace("/auth/google/callback", "")
+        elif "/google/callback" in google_redirect_uri:
+            base_from_env = google_redirect_uri.replace("/google/callback", "")
+
     redirect_uri = os.environ.get("GOOGLE_GMAIL_REDIRECT_URI")
     if not redirect_uri:
-        redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
+        if origin:
+            redirect_uri = origin.rstrip('/') + "/gmail/callback"
+        elif base_from_env:
+            redirect_uri = base_from_env.rstrip('/') + "/gmail/callback"
+        else:
+            redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
     if "127.0.0.1" in redirect_uri:
         redirect_uri = redirect_uri.replace("127.0.0.1", "localhost")
+    if "iitiimjobassistant.in" in redirect_uri:
+        redirect_uri = "https://iitiimjobassistant.in/gmail/callback"
+
+    print(f"[Gmail Connect Debug] origin={origin} google_redirect_uri={google_redirect_uri} base_from_env={base_from_env} -> redirect_uri={redirect_uri}")
 
     scopes = "openid email profile https://www.googleapis.com/auth/gmail.readonly"
     
@@ -2517,7 +2633,8 @@ def gmail_connect():
     import urllib.parse
     state_str = urllib.parse.quote(json.dumps({
         "user_id": flask_current_user.id,
-        "source": source
+        "source": source,
+        "redirect_uri": redirect_uri
     }))
 
     params = {
@@ -2556,6 +2673,7 @@ def gmail_callback():
             pass
     user_id = state_data.get("user_id")
     source = state_data.get("source", "dashboard")
+    state_redirect_uri = state_data.get("redirect_uri")
 
     redirect_target = "/pay" if source == "pay" else "/dashboard"
 
@@ -2569,11 +2687,26 @@ def gmail_callback():
     client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
     
+    google_redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI", "")
+    base_from_env = ""
+    if google_redirect_uri:
+        if "/auth/google/callback" in google_redirect_uri:
+            base_from_env = google_redirect_uri.replace("/auth/google/callback", "")
+        elif "/google/callback" in google_redirect_uri:
+            base_from_env = google_redirect_uri.replace("/google/callback", "")
+
     redirect_uri = os.environ.get("GOOGLE_GMAIL_REDIRECT_URI")
     if not redirect_uri:
-        redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
+        if state_redirect_uri:
+            redirect_uri = state_redirect_uri
+        elif base_from_env:
+            redirect_uri = base_from_env.rstrip('/') + "/gmail/callback"
+        else:
+            redirect_uri = request.url_root.rstrip('/') + "/gmail/callback"
     if "127.0.0.1" in redirect_uri:
         redirect_uri = redirect_uri.replace("127.0.0.1", "localhost")
+    if "iitiimjobassistant.in" in redirect_uri:
+        redirect_uri = "https://iitiimjobassistant.in/gmail/callback"
 
     try:
         token_data = urllib.parse.urlencode({

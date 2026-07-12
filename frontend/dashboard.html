@@ -60,6 +60,41 @@
   .setup-input{width:100%;padding:10px 14px;border:1px solid rgba(15,16,51,0.1);border-radius:12px;font-size:13px;outline:none;background:#FAFBFD;transition:border-color .2s}
   .setup-input:focus{border-color:#5B66E8}
 
+  /* ── Agent Paywall Blur Overlay ──────────────────────────── */
+  .agent-paywall-wrapper { position: relative; min-height: 500px; }
+  .agent-paywall-blurred { filter: blur(6px); pointer-events: none; user-select: none; opacity: 0.7; }
+  .agent-paywall-overlay {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(250,251,253,0.6) 0%, rgba(250,251,253,0.85) 70%);
+    backdrop-filter: blur(2px);
+  }
+  .agent-paywall-card {
+    background: rgba(255,255,255,0.95); border: 1px solid rgba(15,16,51,0.08);
+    border-radius: 24px; padding: 3rem 2.5rem; text-align: center;
+    max-width: 440px; width: 90%;
+    box-shadow: 0 25px 80px -15px rgba(15,16,51,0.18), 0 0 0 1px rgba(91,102,232,0.06);
+    animation: slideIn .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .agent-paywall-card .paywall-icon {
+    width: 72px; height: 72px; border-radius: 20px;
+    background: linear-gradient(135deg, #0B0D1F 0%, #3E42A8 50%, #5B66E8 100%);
+    display: grid; place-items: center; margin: 0 auto;
+    box-shadow: 0 12px 40px -8px rgba(91,102,232,0.4);
+  }
+  .agent-paywall-card h2 { font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 1.5rem; margin-top: 1.5rem; letter-spacing: -0.02em; }
+  .agent-paywall-card p { font-size: 13px; color: rgba(11,13,31,0.6); margin-top: 0.75rem; line-height: 1.6; }
+  .agent-paywall-card .paywall-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 1.75rem; padding: 12px 32px; border-radius: 14px;
+    background: #0B0D1F; color: #fff; font-weight: 700; font-size: 14px;
+    text-decoration: none; transition: all 0.25s;
+    box-shadow: 0 8px 24px -6px rgba(11,13,31,0.3);
+  }
+  .agent-paywall-card .paywall-btn:hover { background: #5B66E8; transform: translateY(-2px); box-shadow: 0 12px 32px -6px rgba(91,102,232,0.4); }
+  .agent-paywall-card .paywall-features { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 1.25rem; }
+  .agent-paywall-card .paywall-feature { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: rgba(11,13,31,0.55); background: rgba(91,102,232,0.06); padding: 4px 10px; border-radius: 8px; }
+
   /* Collapsible Sidebar Styles */
   #sidebar-toggle {
     display: none;
@@ -141,6 +176,10 @@
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 7Z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
         Agent Store
       </a>
+      <a href="#cv" id="cvNavLink" class="appnav hidden flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Master CV Builder
+      </a>
       <div class="mt-5 mb-2 text-[11px] font-semibold text-ink-700/60 px-3 tracking-widest">MY AGENTS</div>
       <a href="#agent" id="agentNavLink" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
@@ -167,10 +206,7 @@
           <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>LIVE
         </span>
       </a>
-      <a href="#cv" id="cvNavLink" class="appnav hidden flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Master CV Builder
-      </a>
+
       <div class="mt-5 mb-2 text-[11px] font-semibold text-ink-700/60 px-3 tracking-widest">ACCOUNT</div>
       <a href="#settings" id="settingsNavLink" class="appnav flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -267,6 +303,9 @@ let activeAgentTab = 'overview';
 let agentPollInterval = null;
 let connectionsPreview = null;
 let logInterval = null;
+let linkedinJobsAgentRunning = false;
+let naukriAgentRunning = false;
+let agentStatusPollInterval = null;
 
 async function loadConnectionsPreview() {
   try {
@@ -432,6 +471,21 @@ async function loadDashboard() {
       }
     } catch (e) {
       console.error('Failed to load agent preferences:', e);
+    }
+
+    // Fetch initial running status of per-agent toggles
+    try {
+      const [liRes, nkRes] = await Promise.all([
+        fetch(`/api/users/${U.id}/agent-running/linkedin_jobs`),
+        fetch(`/api/users/${U.id}/agent-running/naukri_ai`)
+      ]);
+      const liData = await liRes.json();
+      const nkData = await nkRes.json();
+      linkedinJobsAgentRunning = !!liData.running;
+      naukriAgentRunning = !!nkData.running;
+      if (linkedinJobsAgentRunning || naukriAgentRunning) startAgentStatusPolling();
+    } catch (e) {
+      console.error('Failed to fetch agent running statuses:', e);
     }
 
     renderSidebar();
@@ -1114,9 +1168,11 @@ function renderLinkedinAgent() {
         <button id="btnUnsubscribeLinkedin" onclick="unsubscribeLinkedinJobsAgent()" class="px-4 py-2 rounded-xl border border-rose-200 text-[13px] font-semibold text-rose-700 hover:bg-rose-50 transition bg-white">
           Cancel subscription
         </button>
-        <button onclick="alert('LinkedIn jobs scan initiated!')" class="px-4 py-2 rounded-xl bg-ink-900 text-white text-[13px] font-semibold hover:bg-brand-700 transition flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          Scan now
+        <button id="btnToggleLinkedinAgent" onclick="toggleAgentRunning('linkedin_jobs')" class="px-4 py-2 rounded-xl ${linkedinJobsAgentRunning ? 'bg-rose-600 hover:bg-rose-700' : 'bg-ink-900 hover:bg-brand-700'} text-white text-[13px] font-semibold transition flex items-center gap-2">
+          ${linkedinJobsAgentRunning
+            ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop'
+            : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Run now'
+          }
         </button>
       </div>
     </div>
@@ -1368,9 +1424,11 @@ function renderNaukriAgent() {
         <button id="btnUnsubscribeNaukri" onclick="unsubscribeNaukriAgent()" class="px-4 py-2 rounded-xl border border-rose-200 text-[13px] font-semibold text-rose-700 hover:bg-rose-50 transition bg-white">
           Cancel subscription
         </button>
-        <button onclick="triggerNaukriScan()" class="px-4 py-2 rounded-xl bg-ink-900 text-white text-[13px] font-semibold hover:bg-brand-700 transition flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          Scan now
+        <button id="btnToggleNaukriAgent" onclick="toggleAgentRunning('naukri_ai')" class="px-4 py-2 rounded-xl ${naukriAgentRunning ? 'bg-rose-600 hover:bg-rose-700' : 'bg-ink-900 hover:bg-brand-700'} text-white text-[13px] font-semibold transition flex items-center gap-2">
+          ${naukriAgentRunning
+            ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop'
+            : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Run now'
+          }
         </button>
       </div>
     </div>
@@ -1390,23 +1448,62 @@ function renderNaukriAgent() {
 }
 
 
-async function triggerNaukriScan() {
+async function toggleAgentRunning(agentType) {
+  const btnId = agentType === 'linkedin_jobs' ? 'btnToggleLinkedinAgent' : 'btnToggleNaukriAgent';
+  const btn = document.getElementById(btnId);
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+
   try {
-    const res = await fetch(`/api/users/${U.id}/naukri-apply`, {
+    const res = await fetch(`/api/users/${U.id}/agent-toggle/${agentType}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ max_daily_apps: 5 })
+      headers: { 'Content-Type': 'application/json' }
     });
     const data = await res.json();
     if (data.ok) {
-      alert("Naukri apply scan initiated successfully!");
-      switchNaukriAgentTab('logs');
+      if (agentType === 'linkedin_jobs') {
+        linkedinJobsAgentRunning = data.status === 'running';
+        renderLinkedinAgent();
+      } else {
+        naukriAgentRunning = data.status === 'running';
+        renderNaukriAgent();
+      }
+      startAgentStatusPolling();
     } else {
-      alert("Naukri apply scan failed: " + data.error);
+      alert('Error: ' + (data.error || 'Unknown error'));
     }
   } catch (e) {
-    alert("Error: " + e.message);
+    alert('Error: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
+}
+
+async function pollAgentStatuses() {
+  if (!U || !U.id) return;
+  try {
+    const [liRes, nkRes] = await Promise.all([
+      fetch(`/api/users/${U.id}/agent-running/linkedin_jobs`),
+      fetch(`/api/users/${U.id}/agent-running/naukri_ai`)
+    ]);
+    const liData = await liRes.json();
+    const nkData = await nkRes.json();
+    const liChanged = linkedinJobsAgentRunning !== !!liData.running;
+    const nkChanged = naukriAgentRunning !== !!nkData.running;
+    linkedinJobsAgentRunning = !!liData.running;
+    naukriAgentRunning = !!nkData.running;
+    if (liChanged && window.location.hash === '#linkedin-agent') renderLinkedinAgent();
+    if (nkChanged && window.location.hash === '#naukri-agent') renderNaukriAgent();
+    // Stop polling when both agents are stopped
+    if (!linkedinJobsAgentRunning && !naukriAgentRunning && agentStatusPollInterval) {
+      clearInterval(agentStatusPollInterval);
+      agentStatusPollInterval = null;
+    }
+  } catch(e) { /* silent */ }
+}
+
+function startAgentStatusPolling() {
+  if (agentStatusPollInterval) return;
+  agentStatusPollInterval = setInterval(pollAgentStatuses, 5000);
 }
 
 async function renderNaukriAgentTabContent() {
@@ -1537,7 +1634,7 @@ async function renderNaukriAgentTabContent() {
         } else {
           logEl.innerHTML = `
             <div class="text-ink-400">[2026-07-11 10:10:02] Agent initialized.</div>
-            <div class="text-emerald-400">[2026-07-11 10:10:05] Idle. Click "Scan now" to trigger job search.</div>
+            <div class="text-emerald-400">[2026-07-11 10:10:05] Idle. Click "Run now" to trigger job search.</div>
           `;
         }
       }
@@ -2281,7 +2378,7 @@ async function toggleConnectedAccount(key) {
         const res = await fetch('/gmail/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: 'dashboard' })
+          body: JSON.stringify({ source: 'dashboard', origin: window.location.origin })
         });
         const data = await res.json();
         if (data.ok && data.url) {
@@ -2336,11 +2433,11 @@ function renderAgent() {
   const status = U.status || 'pending';
   const agentStatus = U.agent_status || 'inactive';
   const isActive = agentStatus === 'running';
+  const isSubscribed = !!U.is_agent_buyer;
   
   let renewsStr = getRenewsStr();
 
-  document.getElementById('appView').innerHTML = `
-  <div class="slide-in">
+  const agentContent = `
     <!-- Header Row -->
     <div class="flex items-start justify-between flex-wrap gap-4 border-b border-ink-900/5 pb-6">
       <div class="flex items-center gap-4">
@@ -2385,9 +2482,42 @@ function renderAgent() {
 
     <!-- Tab Content -->
     <div id="agentTabContent" class="mt-6"></div>
-  </div>`;
+  `;
 
-  renderAgentTabContent();
+  if (!isSubscribed) {
+    // Show blurred agent view with paywall overlay
+    document.getElementById('appView').innerHTML = `
+    <div class="slide-in agent-paywall-wrapper">
+      <div class="agent-paywall-blurred">${agentContent}</div>
+      <div class="agent-paywall-overlay">
+        <div class="agent-paywall-card">
+          <div class="paywall-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <circle cx="12" cy="16" r="1"/>
+            </svg>
+          </div>
+          <h2>Unlock Job Seeker Agent</h2>
+          <p>Subscribe to activate your AI-powered job seeker agent. It auto-applies to matching jobs across LinkedIn, job portals, and email — completely hands-free.</p>
+          <div class="paywall-features">
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Auto-apply to 5 jobs/day</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Multi-channel outreach</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Smart resume tailoring</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Real-time activity logs</span>
+          </div>
+          <a href="#agentDetail?agent=job_seeker" class="paywall-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Subscribe Now
+          </a>
+          <div style="margin-top:1rem;font-size:11px;color:rgba(11,13,31,0.4);font-weight:500">Starting at ₹1,000/month • Cancel anytime</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    document.getElementById('appView').innerHTML = `<div class="slide-in">${agentContent}</div>`;
+    renderAgentTabContent();
+  }
 }
 
 function renderAgentTabContent() {
@@ -4251,7 +4381,7 @@ async function connectSetupEmail() {
     const res = await fetch('/gmail/connect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'dashboard' })
+      body: JSON.stringify({ source: 'dashboard', origin: window.location.origin })
     });
     const data = await res.json();
     if (data.ok && data.url) {
