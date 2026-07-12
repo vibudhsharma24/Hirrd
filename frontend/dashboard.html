@@ -1078,7 +1078,7 @@ let activeLinkedinAgentTab = 'overview';
 
 function switchLinkedinAgentTab(tab) {
   activeLinkedinAgentTab = tab;
-  renderLinkedinAgentTabContent();
+  renderLinkedinAgent();
 }
 
 function renderLinkedinAgent() {
@@ -1336,7 +1336,7 @@ let activeNaukriAgentTab = 'overview';
 
 function switchNaukriAgentTab(tab) {
   activeNaukriAgentTab = tab;
-  renderNaukriAgentTabContent();
+  renderNaukriAgent();
 }
 
 function renderNaukriAgent() {
@@ -1377,9 +1377,9 @@ function renderNaukriAgent() {
 
     <!-- Agent Tabs Row -->
     <div class="flex gap-6 text-[13px] font-semibold text-ink-700/50 mt-6 border-b border-ink-900/5">
-      <button onclick="switchNaukriAgentTab('overview')" class="pb-3 border-b-2 \${activeNaukriAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
-      <button onclick="switchNaukriAgentTab('answer-bank')" class="pb-3 border-b-2 \${activeNaukriAgentTab === 'answer-bank' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Answer Bank</button>
-      <button onclick="switchNaukriAgentTab('logs')" class="pb-3 border-b-2 \${activeNaukriAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
+      <button onclick="switchNaukriAgentTab('overview')" class="pb-3 border-b-2 ${activeNaukriAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
+      <button onclick="switchNaukriAgentTab('answer-bank')" class="pb-3 border-b-2 ${activeNaukriAgentTab === 'answer-bank' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Answer Bank</button>
+      <button onclick="switchNaukriAgentTab('logs')" class="pb-3 border-b-2 ${activeNaukriAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
     </div>
 
     <!-- Tab Content -->
@@ -1389,9 +1389,10 @@ function renderNaukriAgent() {
   renderNaukriAgentTabContent();
 }
 
+
 async function triggerNaukriScan() {
   try {
-    const res = await fetch(\`/api/users/\${U.id}/naukri-apply\`, {
+    const res = await fetch(`/api/users/${U.id}/naukri-apply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ max_daily_apps: 5 })
@@ -1446,29 +1447,29 @@ async function renderNaukriAgentTabContent() {
     </div>`;
 
     try {
-      const res = await fetch(\`/api/users/\${U.id}/naukri-applications\`);
+      const res = await fetch(`/api/users/${U.id}/naukri-applications`);
       const data = await res.json();
       const listEl = document.getElementById('naukriApplicationsList');
       if (listEl) {
         if (data.ok && data.applications && data.applications.length > 0) {
-          listEl.innerHTML = data.applications.map(app => \`
+          listEl.innerHTML = data.applications.map(app => `
             <div class="flex justify-between items-center border-b border-ink-900/5 pb-3">
               <div>
-                <div class="font-semibold text-[13px] text-ink-900">\${app.title || 'Job Application'}</div>
-                <div class="text-[11px] text-ink-700/60 mt-0.5">\${app.company || 'Naukri Recruiter'}</div>
+                <div class="font-semibold text-[13px] text-ink-900">${app.title || 'Job Application'}</div>
+                <div class="text-[11px] text-ink-700/60 mt-0.5">${app.company || 'Naukri Recruiter'}</div>
               </div>
               <div class="text-right">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold \${
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
                   app.status === 'applied' ? 'bg-emerald-50 text-emerald-700' :
                   app.status === 'failed' ? 'bg-rose-50 text-rose-700' :
                   'bg-amber-50 text-amber-700'
-                }">\${app.status.toUpperCase()}</span>
-                <div class="text-[10px] text-ink-700/40 mt-1">\${new Date(app.created_at || Date.now()).toLocaleDateString()}</div>
+                }">${app.status.toUpperCase()}</span>
+                <div class="text-[10px] text-ink-700/40 mt-1">${new Date(app.created_at || Date.now()).toLocaleDateString()}</div>
               </div>
             </div>
-          \`).join('');
+          `).join('');
         } else {
-          listEl.innerHTML = \\\`<p class="text-ink-700/60">No applications sent yet.</p>\\\`;
+          listEl.innerHTML = `<p class="text-ink-700/60">No applications sent yet.</p>`;
         }
       }
     } catch (e) {
@@ -1488,20 +1489,20 @@ async function renderNaukriAgentTabContent() {
     </div>`;
 
     try {
-      const res = await fetch(\`/api/users/\${U.id}/answer-bank\`);
+      const res = await fetch(`/api/users/${U.id}/answer-bank`);
       const data = await res.json();
       const bankEl = document.getElementById('naukriAnswerBankList');
       if (bankEl) {
         if (data.ok && data.entries && data.entries.length > 0) {
-          bankEl.innerHTML = data.entries.map(entry => \`
+          bankEl.innerHTML = data.entries.map(entry => `
             <div class="p-3 bg-ink-900/[0.02] border border-ink-900/5 rounded-xl space-y-2">
-              <div class="font-semibold text-[13px] text-ink-900">Q: \${entry.question}</div>
-              <div class="text-[12px] text-ink-700/70">A: \${entry.answer}</div>
-              <div class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Status: \${entry.status}</div>
+              <div class="font-semibold text-[13px] text-ink-900">Q: ${entry.question}</div>
+              <div class="text-[12px] text-ink-700/70">A: ${entry.answer}</div>
+              <div class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Status: ${entry.status}</div>
             </div>
-          \`).join('');
+          `).join('');
         } else {
-          bankEl.innerHTML = \\\`<p class="text-ink-700/60">Answer bank is currently empty. The agent will add screening questions here as it encounters them.</p>\\\`;
+          bankEl.innerHTML = `<p class="text-ink-700/60">Answer bank is currently empty. The agent will add screening questions here as it encounters them.</p>`;
         }
       }
     } catch (e) {
@@ -1523,21 +1524,21 @@ async function renderNaukriAgentTabContent() {
     </div>`;
 
     try {
-      const res = await fetch(\`/api/users/\${U.id}/naukri-logs\`);
+      const res = await fetch(`/api/users/${U.id}/naukri-logs`);
       const data = await res.json();
       const logEl = document.getElementById('naukriLogsContainer');
       if (logEl) {
         if (data.ok && data.logs && data.logs.length > 0) {
-          logEl.innerHTML = data.logs.map(log => \`
-            <div class="\${log.status === 'success' ? 'text-emerald-400' : log.status === 'failed' ? 'text-rose-400' : 'text-ink-400'}">
-              [\${new Date(log.created_at || Date.now()).toLocaleTimeString()}] \${log.message}
+          logEl.innerHTML = data.logs.map(log => `
+            <div class="${log.status === 'success' ? 'text-emerald-400' : log.status === 'failed' ? 'text-rose-400' : 'text-ink-400'}">
+              [${new Date(log.created_at || Date.now()).toLocaleTimeString()}] ${log.message}
             </div>
-          \`).join('');
+          `).join('');
         } else {
-          logEl.innerHTML = \`
+          logEl.innerHTML = `
             <div class="text-ink-400">[2026-07-11 10:10:02] Agent initialized.</div>
             <div class="text-emerald-400">[2026-07-11 10:10:05] Idle. Click "Scan now" to trigger job search.</div>
-          \`;
+          `;
         }
       }
     } catch (e) {
