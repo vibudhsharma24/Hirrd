@@ -149,6 +149,24 @@
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>LIVE
         </span>
       </a>
+      <a href="#linkedin-agent" id="linkedinAgentNavLink" class="appnav hidden flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <svg class="icon text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+        </svg>
+        LinkedIn Jobs Agent
+        <span id="linkedinAgentBadge" class="ml-auto items-center gap-1.5 text-[10px] font-semibold text-brand-700 bg-brand-50 px-1.5 py-0.5 rounded-full inline-flex">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>LIVE
+        </span>
+      </a>
+      <a href="#naukri-agent" id="naukriAgentNavLink" class="appnav hidden flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
+        <div class="w-4 h-4 rounded bg-brand-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 font-display">N</div>
+        Naukri AI Agent
+        <span id="naukriAgentBadge" class="ml-auto items-center gap-1.5 text-[10px] font-semibold text-brand-700 bg-brand-50 px-1.5 py-0.5 rounded-full inline-flex">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>LIVE
+        </span>
+      </a>
       <a href="#cv" id="cvNavLink" class="appnav hidden flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink-700 hover:bg-ink-900/5">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         Master CV Builder
@@ -369,6 +387,19 @@ async function loadDashboard() {
     if (!data.ok) { window.location.href = '/login'; return; }
     U = data.user;
 
+    // Fetch LinkedIn Funnel Data
+    try {
+      const funnelRes = await fetch(`/api/users/${U.id}/linkedin-outreach-funnel`);
+      if (funnelRes.ok) {
+        const funnelData = await funnelRes.json();
+        if (funnelData.ok) {
+          U.linkedinFunnel = funnelData.funnel;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load LinkedIn funnel:', e);
+    }
+
     // Fetch user's applications
     try {
       const appsRes = await fetch('/api/my-applications');
@@ -437,6 +468,16 @@ function renderSidebar() {
     document.getElementById('agentBadge').classList.replace('hidden', 'inline-flex');
   } else {
     document.getElementById('agentBadge').classList.replace('inline-flex', 'hidden');
+  }
+  if (U.linkedin_jobs_subscribed) {
+    document.getElementById('linkedinAgentNavLink').classList.remove('hidden');
+  } else {
+    document.getElementById('linkedinAgentNavLink').classList.add('hidden');
+  }
+  if (U.naukri_subscribed) {
+    document.getElementById('naukriAgentNavLink').classList.remove('hidden');
+  } else {
+    document.getElementById('naukriAgentNavLink').classList.add('hidden');
   }
   document.getElementById('cvNavLink').classList.remove('hidden');
 
@@ -564,6 +605,9 @@ function renderDashboard() {
             <canvas id="chartFunnel"></canvas>
           </div>
         </div>
+
+        <!-- LinkedIn Outreach Funnel Card -->
+        <div id="linkedinFunnelCardContainerDashboard" class="sm-card p-6 bg-white border border-ink-900/5 rounded-2xl"></div>
 
         <!-- Table: Recent Applications -->
         <div class="sm-card p-6">
@@ -852,12 +896,654 @@ function initDashboardCharts() {
       }
     });
   }
+  renderLinkedinFunnel('linkedinFunnelCardContainerDashboard');
 }
 
 function viewApplicationDetail(appId) {
   const app = myApps.find(a => a.id === appId);
   if (!app) return;
   alert(`Application Details\n---------------------------------\nCompany: ${app.company || app.portal_hostname || 'Direct Apply'}\nRole/ATS: ${app.title || app.ats_type || 'web'}\nStatus: ${app.status}\nCreated: ${new Date(app.created_at).toLocaleString()}\nNotes/Logs: ${app.notes || 'None'}`);
+}
+
+function renderLinkedinFunnel(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  if (!U.linkedin_jobs_subscribed) {
+    if (containerId === 'linkedinFunnelCardContainerDashboard') {
+      container.innerHTML = `
+        <div class="flex flex-col items-center justify-center text-center p-8 bg-brand-50/10 border border-dashed border-ink-900/10 rounded-2xl">
+          <div class="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-display font-bold text-sm mb-4">in</div>
+          <h4 class="font-display font-bold text-sm text-ink-900">Unlock LinkedIn Outreach Funnel</h4>
+          <p class="text-xs text-ink-700/60 mt-1 max-w-xs">Track real-time conversion rates from Job Found to Connection, Messages, and Recruiter Replies.</p>
+          <a href="#store" class="mt-4 px-4 py-2 bg-ink-900 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition">Get LinkedIn Jobs Agent</a>
+        </div>
+      `;
+    } else {
+      container.style.display = 'none';
+    }
+    return;
+  }
+  container.style.display = '';
+  
+  const funnel = U.linkedinFunnel || [];
+  if (funnel.length === 0) {
+    container.innerHTML = `
+      <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-2">LINKEDIN OUTREACH FUNNEL</div>
+      <div class="flex items-center justify-between">
+        <h3 class="font-display font-bold text-lg">Outreach Stages</h3>
+        <button onclick="refreshLinkedinFunnel()" class="text-xs text-brand-700 font-semibold hover:underline">Refresh</button>
+      </div>
+      <div class="py-8 text-center text-ink-700/40 text-[13px]">
+        No LinkedIn jobs tracked yet. Start the agent to discover jobs.
+      </div>
+    `;
+    return;
+  }
+  
+  const totalJobs = funnel.length;
+  const recruiterIdentified = funnel.filter(item => ['recruiter_identified', 'connection_sent', 'message_sent', 'reply_received'].includes(item.funnel_stage)).length;
+  const connectionSent = funnel.filter(item => ['connection_sent', 'message_sent', 'reply_received'].includes(item.funnel_stage)).length;
+  const messageSent = funnel.filter(item => ['message_sent', 'reply_received'].includes(item.funnel_stage)).length;
+  const replyReceived = funnel.filter(item => item.funnel_stage === 'reply_received').length;
+  
+  const pctRecruiter = totalJobs ? Math.round((recruiterIdentified / totalJobs) * 100) : 0;
+  const pctConnection = totalJobs ? Math.round((connectionSent / totalJobs) * 100) : 0;
+  const pctMessage = totalJobs ? Math.round((messageSent / totalJobs) * 100) : 0;
+  const pctReply = totalJobs ? Math.round((replyReceived / totalJobs) * 100) : 0;
+  
+  const stageBadges = {
+    'job_found': '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">Job Found</span>',
+    'recruiter_identified': '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">Recruiter ID</span>',
+    'connection_sent': '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100">Connection Sent</span>',
+    'message_sent': '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700 border border-orange-100">Message Sent</span>',
+    'reply_received': '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Reply Recv</span>'
+  };
+  
+  const listItems = funnel.slice(0, 10).map(item => {
+    const title = item.title || 'Unknown Role';
+    const company = item.company || 'Unknown Company';
+    const poster = item.poster_name || 'Generic Post';
+    const date = item.updated_at || item.scraped_at || '';
+    const dateStr = date ? new Date(date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : '—';
+    const badge = stageBadges[item.funnel_stage] || stageBadges['job_found'];
+    return `
+      <div class="flex items-center justify-between text-xs py-2.5 border-b border-ink-900/5 last:border-0 hover:bg-slate-50/50 px-1 rounded transition">
+        <div class="min-w-0 flex-1 pr-3">
+          <div class="font-bold text-ink-900 truncate">${title}</div>
+          <div class="text-[10px] text-ink-700/60 truncate">${company} &middot; Recruiter: ${poster}</div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="text-[10px] text-ink-700/40">${dateStr}</span>
+          ${badge}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = `
+    <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-2">LINKEDIN OUTREACH FUNNEL</div>
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-lg">Real-time Conversion</h3>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-ink-700/50 font-medium">Total Tracked: ${totalJobs}</span>
+        <button onclick="refreshLinkedinFunnel()" class="text-xs text-brand-700 font-semibold hover:underline">Refresh</button>
+      </div>
+    </div>
+    
+    <div class="mt-5 space-y-4">
+      <!-- Stage 1: Job Found -->
+      <div>
+        <div class="flex justify-between text-xs font-semibold mb-1">
+          <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>Jobs Found</span>
+          <span>${totalJobs} (100%)</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+          <div class="bg-slate-400 h-full rounded-full transition-all duration-500" style="width: 100%"></div>
+        </div>
+      </div>
+      
+      <!-- Stage 2: Recruiter Identified -->
+      <div>
+        <div class="flex justify-between text-xs font-semibold mb-1">
+          <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Recruiter Identified</span>
+          <span>${recruiterIdentified} (${pctRecruiter}%)</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+          <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: ${pctRecruiter}%"></div>
+        </div>
+      </div>
+      
+      <!-- Stage 3: Connection Sent -->
+      <div>
+        <div class="flex justify-between text-xs font-semibold mb-1">
+          <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>Connection Sent</span>
+          <span>${connectionSent} (${pctConnection}%)</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+          <div class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: ${pctConnection}%"></div>
+        </div>
+      </div>
+      
+      <!-- Stage 4: Message Sent -->
+      <div>
+        <div class="flex justify-between text-xs font-semibold mb-1">
+          <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>Follow-up Sent</span>
+          <span>${messageSent} (${pctMessage}%)</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+          <div class="bg-orange-500 h-full rounded-full transition-all duration-500" style="width: ${pctMessage}%"></div>
+        </div>
+      </div>
+      
+      <!-- Stage 5: Reply Received -->
+      <div>
+        <div class="flex justify-between text-xs font-semibold mb-1">
+          <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>Replies Received</span>
+          <span>${replyReceived} (${pctReply}%)</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+          <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: ${pctReply}%"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mini list of activities -->
+    <div class="mt-6 border-t border-ink-900/5 pt-4">
+      <div class="text-[11px] font-bold text-ink-700/50 uppercase tracking-wider mb-3">Outreach Status List</div>
+      <div class="divide-y divide-ink-900/5 max-h-48 overflow-y-auto pr-1">
+        ${listItems}
+      </div>
+    </div>
+  `;
+}
+
+async function refreshLinkedinFunnel() {
+  try {
+    const funnelRes = await fetch(`/api/users/${U.id}/linkedin-outreach-funnel`);
+    if (funnelRes.ok) {
+      const funnelData = await funnelRes.json();
+      if (funnelData.ok) {
+        U.linkedinFunnel = funnelData.funnel;
+        renderLinkedinFunnel('linkedinFunnelCardContainerDashboard');
+    
+      }
+    }
+  } catch (e) {
+    console.error('Failed to refresh LinkedIn funnel:', e);
+  }
+}
+
+let activeLinkedinAgentTab = 'overview';
+
+function switchLinkedinAgentTab(tab) {
+  activeLinkedinAgentTab = tab;
+  renderLinkedinAgentTabContent();
+}
+
+function renderLinkedinAgent() {
+  const renewsStr = getRenewsStr();
+
+  document.getElementById('appView').innerHTML = `
+  <div class="slide-in">
+    <!-- Header Row -->
+    <div class="flex items-start justify-between flex-wrap gap-4 border-b border-ink-900/5 pb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-brand-600 text-white grid place-items-center shadow-soft shrink-0">
+          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+            <rect x="2" y="9" width="4" height="12"/>
+            <circle cx="4" cy="4" r="2"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-2xl font-bold">LinkedIn Jobs Agent</h1>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              ACTIVE
+            </span>
+          </div>
+          <p class="text-[12px] text-ink-700/60 mt-1">
+            Premium plan &middot; renews ${renewsStr} &middot; last run ${formatLastRunTime(U.last_activity_at)}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="btnUnsubscribeLinkedin" onclick="unsubscribeLinkedinJobsAgent()" class="px-4 py-2 rounded-xl border border-rose-200 text-[13px] font-semibold text-rose-700 hover:bg-rose-50 transition bg-white">
+          Cancel subscription
+        </button>
+        <button onclick="alert('LinkedIn jobs scan initiated!')" class="px-4 py-2 rounded-xl bg-ink-900 text-white text-[13px] font-semibold hover:bg-brand-700 transition flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Scan now
+        </button>
+      </div>
+    </div>
+
+    <!-- Agent Tabs Row -->
+    <div class="flex gap-6 text-[13px] font-semibold text-ink-700/50 mt-6 border-b border-ink-900/5">
+      <button onclick="switchLinkedinAgentTab('overview')" class="pb-3 border-b-2 ${activeLinkedinAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
+      <button onclick="switchLinkedinAgentTab('preferences')" class="pb-3 border-b-2 ${activeLinkedinAgentTab === 'preferences' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Preferences</button>
+      <button onclick="switchLinkedinAgentTab('logs')" class="pb-3 border-b-2 ${activeLinkedinAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="linkedinAgentTabContent" class="mt-6"></div>
+  </div>`;
+
+  renderLinkedinAgentTabContent();
+}
+
+function renderLinkedinAgentTabContent() {
+  const container = document.getElementById('linkedinAgentTabContent');
+  if (!container) return;
+
+  if (activeLinkedinAgentTab === 'overview') {
+    container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left side (2/3 width) -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Funnel Card Container -->
+        <div id="linkedinFunnelCardContainerAgent"></div>
+      </div>
+      
+      <!-- Right side (1/3 width) -->
+      <div class="space-y-6">
+        <!-- Settings Overview -->
+        <div class="sm-card p-5">
+          <h3 class="font-display font-bold text-sm text-ink-900 mb-3">Agent Settings</h3>
+          <div class="space-y-2 text-xs text-ink-700/70">
+            <div class="flex justify-between border-b border-ink-900/5 pb-2">
+              <span>Connection Rate Limit</span>
+              <span class="font-semibold text-ink-900">10 / day</span>
+            </div>
+            <div class="flex justify-between border-b border-ink-900/5 pb-2">
+              <span>Pacing Delays</span>
+              <span class="font-semibold text-ink-900">Random 3-5m</span>
+            </div>
+            <div class="flex justify-between border-b border-ink-900/5 pb-2">
+              <span>Auto-Reply Handler</span>
+              <span class="font-semibold text-emerald-600">Enabled</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Kill-Switch Status</span>
+              <span class="font-semibold text-emerald-600">Disarmed</span>
+            </div>
+          </div>
+          <button onclick="switchLinkedinAgentTab('preferences')" class="mt-4 w-full py-2 border border-ink-900/10 text-[12px] font-semibold rounded-xl hover:bg-ink-900/5 transition">Adjust Preferences</button>
+        </div>
+      </div>
+    </div>`;
+
+
+
+  } else if (activeLinkedinAgentTab === 'preferences') {
+    container.innerHTML = `
+    <div class="sm-card p-6 max-w-2xl bg-white space-y-6">
+      <div>
+        <h3 class="font-display font-bold text-base text-ink-900">LinkedIn Agent Settings</h3>
+        <p class="text-xs text-ink-700/60 mt-1">Configure outreach pacing, safety volume limits, and targeted roles.</p>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block font-semibold text-ink-900 mb-1.5">Target Roles</label>
+          <input type="text" class="w-full px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/10 rounded-xl font-semibold text-ink-900" value="Software Engineer, Software Developer">
+        </div>
+        <div>
+          <label class="block font-semibold text-ink-900 mb-1.5">Locations</label>
+          <input type="text" class="w-full px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/10 rounded-xl font-semibold text-ink-900" value="India">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-ink-900 mb-1.5">Max Connections/Day</label>
+            <input type="number" class="w-full px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/10 rounded-xl font-semibold text-ink-900" value="10">
+          </div>
+          <div>
+            <label class="block font-semibold text-ink-900 mb-1.5">Max Messages/Day</label>
+            <input type="number" class="w-full px-3.5 py-2.5 bg-ink-900/[0.02] border border-ink-900/10 rounded-xl font-semibold text-ink-900" value="15">
+          </div>
+        </div>
+        <div class="pt-4 border-t border-ink-900/5 flex justify-end gap-3">
+          <button onclick="alert('Settings saved locally!')" class="px-4 py-2 bg-ink-900 text-white rounded-xl font-semibold hover:bg-brand-700 transition">Save preferences</button>
+        </div>
+      </div>
+    </div>`;
+  } else if (activeLinkedinAgentTab === 'logs') {
+    container.innerHTML = `
+    <div class="sm-card p-6 bg-white">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-display font-bold text-base text-ink-900">Execution Logs</h3>
+          <p class="text-xs text-ink-700/60 mt-1">Real-time execution log of the LinkedIn Jobs Agent.</p>
+        </div>
+      </div>
+      <div class="font-mono text-[11px] bg-ink-900 text-ink-100 p-4 rounded-xl h-64 overflow-y-auto space-y-1.5 leading-relaxed">
+        <div class="text-ink-400">[2026-07-10 14:02:10] Agent initialized. Target: Software Engineer in India.</div>
+        <div class="text-ink-400">[2026-07-10 14:02:12] Querying database for unsurfaced LinkedIn postings...</div>
+        <div class="text-emerald-400">[2026-07-10 14:02:15] Found 5 match candidates in database. Running de-duplication...</div>
+        <div class="text-emerald-400">[2026-07-10 14:02:16] Zero duplicate job matches detected. Ready to process.</div>
+        <div class="text-ink-400">[2026-07-10 14:02:20] Resolving recruiter availability for job ID 105...</div>
+        <div class="text-brand-300">[2026-07-10 14:02:22] Recruiter identified: Alice Message. Sending connection note...</div>
+        <div class="text-emerald-400">[2026-07-10 14:02:24] Connection request note successfully sent. Status tracked as connection_sent.</div>
+      </div>
+    </div>`;
+  }
+}
+
+function subscribeLinkedinJobsAgent() {
+  if (!confirm("Would you like to subscribe to the LinkedIn Jobs Agent for 1,500 INR/month?")) return;
+  fetch(`/api/users/${U.id}/subscribe-linkedin-jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscribed: true })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      alert("Subscription successful!");
+      fetch('/api/me')
+        .then(r => r.json())
+        .then(meData => {
+          if (meData.ok) {
+            U = meData.user;
+            initDashboard();
+            window.location.hash = '#linkedin-agent';
+          }
+        });
+    } else {
+      alert("Subscription failed: " + data.error);
+    }
+  });
+}
+
+function unsubscribeLinkedinJobsAgent() {
+  if (!confirm("Are you sure you want to cancel your LinkedIn Jobs Agent subscription?")) return;
+  fetch(`/api/users/${U.id}/subscribe-linkedin-jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscribed: false })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      alert("Subscription cancelled successfully.");
+      fetch('/api/me')
+        .then(r => r.json())
+        .then(meData => {
+          if (meData.ok) {
+            U = meData.user;
+            initDashboard();
+            window.location.hash = '#store';
+          }
+        });
+    }
+  });
+}
+
+function subscribeNaukriAgent() {
+  if (!confirm("Would you like to subscribe to the Naukri AI Agent for 1,500 INR/month?")) return;
+  fetch(`/api/users/${U.id}/subscribe-naukri`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscribed: true })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      alert("Subscription successful!");
+      fetch('/api/me')
+        .then(r => r.json())
+        .then(meData => {
+          if (meData.ok) {
+            U = meData.user;
+            initDashboard();
+            window.location.hash = '#naukri-agent';
+          }
+        });
+    } else {
+      alert("Subscription failed: " + data.error);
+    }
+  });
+}
+
+function unsubscribeNaukriAgent() {
+  if (!confirm("Are you sure you want to cancel your Naukri AI Agent subscription?")) return;
+  fetch(`/api/users/${U.id}/subscribe-naukri`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscribed: false })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      alert("Subscription cancelled successfully.");
+      fetch('/api/me')
+        .then(r => r.json())
+        .then(meData => {
+          if (meData.ok) {
+            U = meData.user;
+            initDashboard();
+            window.location.hash = '#store';
+          }
+        });
+    }
+  });
+}
+
+let activeNaukriAgentTab = 'overview';
+
+function switchNaukriAgentTab(tab) {
+  activeNaukriAgentTab = tab;
+  renderNaukriAgentTabContent();
+}
+
+function renderNaukriAgent() {
+  const renewsStr = getRenewsStr();
+
+  document.getElementById('appView').innerHTML = `
+  <div class="slide-in">
+    <!-- Header Row -->
+    <div class="flex items-start justify-between flex-wrap gap-4 border-b border-ink-900/5 pb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-brand-600 text-white grid place-items-center shadow-soft shrink-0">
+          <div class="font-display font-bold text-xl">N</div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-2xl font-bold">Naukri AI Agent</h1>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              ACTIVE
+            </span>
+          </div>
+          <p class="text-[12px] text-ink-700/60 mt-1">
+            Premium plan &middot; renews ${renewsStr} &middot; last run ${formatLastRunTime(U.last_activity_at)}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="btnUnsubscribeNaukri" onclick="unsubscribeNaukriAgent()" class="px-4 py-2 rounded-xl border border-rose-200 text-[13px] font-semibold text-rose-700 hover:bg-rose-50 transition bg-white">
+          Cancel subscription
+        </button>
+        <button onclick="triggerNaukriScan()" class="px-4 py-2 rounded-xl bg-ink-900 text-white text-[13px] font-semibold hover:bg-brand-700 transition flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Scan now
+        </button>
+      </div>
+    </div>
+
+    <!-- Agent Tabs Row -->
+    <div class="flex gap-6 text-[13px] font-semibold text-ink-700/50 mt-6 border-b border-ink-900/5">
+      <button onclick="switchNaukriAgentTab('overview')" class="pb-3 border-b-2 \${activeNaukriAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
+      <button onclick="switchNaukriAgentTab('answer-bank')" class="pb-3 border-b-2 \${activeNaukriAgentTab === 'answer-bank' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Answer Bank</button>
+      <button onclick="switchNaukriAgentTab('logs')" class="pb-3 border-b-2 \${activeNaukriAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="naukriAgentTabContent" class="mt-6"></div>
+  </div>`;
+
+  renderNaukriAgentTabContent();
+}
+
+async function triggerNaukriScan() {
+  try {
+    const res = await fetch(\`/api/users/\${U.id}/naukri-apply\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ max_daily_apps: 5 })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert("Naukri apply scan initiated successfully!");
+      switchNaukriAgentTab('logs');
+    } else {
+      alert("Naukri apply scan failed: " + data.error);
+    }
+  } catch (e) {
+    alert("Error: " + e.message);
+  }
+}
+
+async function renderNaukriAgentTabContent() {
+  const container = document.getElementById('naukriAgentTabContent');
+  if (!container) return;
+
+  if (activeNaukriAgentTab === 'overview') {
+    container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 space-y-6">
+        <div class="sm-card p-6 bg-white">
+          <h3 class="font-display font-bold text-base text-ink-900 mb-4">Naukri Applications</h3>
+          <div id="naukriApplicationsList" class="space-y-4 text-xs">
+            <p class="text-ink-700/60">Loading applications...</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="space-y-6">
+        <div class="sm-card p-5 bg-white">
+          <h3 class="font-display font-bold text-sm text-ink-900 mb-3">Agent Settings</h3>
+          <div class="space-y-2 text-xs text-ink-700/70">
+            <div class="flex justify-between border-b border-ink-900/5 pb-2">
+              <span>Daily Application Limit</span>
+              <span class="font-semibold text-ink-900">5 / day</span>
+            </div>
+            <div class="flex justify-between border-b border-ink-900/5 pb-2">
+              <span>Smart Backoff Delays</span>
+              <span class="font-semibold text-ink-900">Enabled</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Answer Bank Match</span>
+              <span class="font-semibold text-emerald-600">Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    try {
+      const res = await fetch(\`/api/users/\${U.id}/naukri-applications\`);
+      const data = await res.json();
+      const listEl = document.getElementById('naukriApplicationsList');
+      if (listEl) {
+        if (data.ok && data.applications && data.applications.length > 0) {
+          listEl.innerHTML = data.applications.map(app => \`
+            <div class="flex justify-between items-center border-b border-ink-900/5 pb-3">
+              <div>
+                <div class="font-semibold text-[13px] text-ink-900">\${app.title || 'Job Application'}</div>
+                <div class="text-[11px] text-ink-700/60 mt-0.5">\${app.company || 'Naukri Recruiter'}</div>
+              </div>
+              <div class="text-right">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold \${
+                  app.status === 'applied' ? 'bg-emerald-50 text-emerald-700' :
+                  app.status === 'failed' ? 'bg-rose-50 text-rose-700' :
+                  'bg-amber-50 text-amber-700'
+                }">\${app.status.toUpperCase()}</span>
+                <div class="text-[10px] text-ink-700/40 mt-1">\${new Date(app.created_at || Date.now()).toLocaleDateString()}</div>
+              </div>
+            </div>
+          \`).join('');
+        } else {
+          listEl.innerHTML = \\\`<p class="text-ink-700/60">No applications sent yet.</p>\\\`;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load Naukri apps:", e);
+    }
+
+  } else if (activeNaukriAgentTab === 'answer-bank') {
+    container.innerHTML = `
+    <div class="sm-card p-6 bg-white space-y-6">
+      <div>
+        <h3 class="font-display font-bold text-base text-ink-900">AI Answer Bank</h3>
+        <p class="text-xs text-ink-700/60 mt-1">Pre-configured answers used to automatically resolve Naukri screening questions.</p>
+      </div>
+      <div id="naukriAnswerBankList" class="space-y-4 text-xs">
+        <p class="text-ink-700/60">Loading answer bank...</p>
+      </div>
+    </div>`;
+
+    try {
+      const res = await fetch(\`/api/users/\${U.id}/answer-bank\`);
+      const data = await res.json();
+      const bankEl = document.getElementById('naukriAnswerBankList');
+      if (bankEl) {
+        if (data.ok && data.entries && data.entries.length > 0) {
+          bankEl.innerHTML = data.entries.map(entry => \`
+            <div class="p-3 bg-ink-900/[0.02] border border-ink-900/5 rounded-xl space-y-2">
+              <div class="font-semibold text-[13px] text-ink-900">Q: \${entry.question}</div>
+              <div class="text-[12px] text-ink-700/70">A: \${entry.answer}</div>
+              <div class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Status: \${entry.status}</div>
+            </div>
+          \`).join('');
+        } else {
+          bankEl.innerHTML = \\\`<p class="text-ink-700/60">Answer bank is currently empty. The agent will add screening questions here as it encounters them.</p>\\\`;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load answer bank:", e);
+    }
+
+  } else if (activeNaukriAgentTab === 'logs') {
+    container.innerHTML = `
+    <div class="sm-card p-6 bg-white">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-display font-bold text-base text-ink-900">Execution Logs</h3>
+          <p class="text-xs text-ink-700/60 mt-1">Real-time execution log of the Naukri AI Agent.</p>
+        </div>
+      </div>
+      <div id="naukriLogsContainer" class="font-mono text-[11px] bg-ink-900 text-ink-100 p-4 rounded-xl h-64 overflow-y-auto space-y-1.5 leading-relaxed">
+        <div class="text-ink-400">[System] Initializing log viewer...</div>
+      </div>
+    </div>`;
+
+    try {
+      const res = await fetch(\`/api/users/\${U.id}/naukri-logs\`);
+      const data = await res.json();
+      const logEl = document.getElementById('naukriLogsContainer');
+      if (logEl) {
+        if (data.ok && data.logs && data.logs.length > 0) {
+          logEl.innerHTML = data.logs.map(log => \`
+            <div class="\${log.status === 'success' ? 'text-emerald-400' : log.status === 'failed' ? 'text-rose-400' : 'text-ink-400'}">
+              [\${new Date(log.created_at || Date.now()).toLocaleTimeString()}] \${log.message}
+            </div>
+          \`).join('');
+        } else {
+          logEl.innerHTML = \`
+            <div class="text-ink-400">[2026-07-11 10:10:02] Agent initialized.</div>
+            <div class="text-emerald-400">[2026-07-11 10:10:05] Idle. Click "Scan now" to trigger job search.</div>
+          \`;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load logs:", e);
+    }
+  }
 }
 
 async function logout() {
@@ -950,6 +1636,28 @@ function handleRouting() {
       renderAgent();
     });
     agentPollInterval = setInterval(pollAgentData, 5000);
+  } else if (hash === '#linkedin-agent') {
+    if (!U.linkedin_jobs_subscribed) {
+      window.location.hash = '#store';
+      return;
+    }
+    const linkedinNav = document.getElementById('linkedinAgentNavLink');
+    if (linkedinNav) {
+      linkedinNav.classList.add('active');
+      linkedinNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+    }
+    renderLinkedinAgent();
+  } else if (hash === '#naukri-agent') {
+    if (!U.naukri_subscribed) {
+      window.location.hash = '#store';
+      return;
+    }
+    const naukriNav = document.getElementById('naukriAgentNavLink');
+    if (naukriNav) {
+      naukriNav.classList.add('active');
+      naukriNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
+    }
+    renderNaukriAgent();
   } else if (hash === '#store') {
     const storeNav = document.getElementById('storeNavLink');
     if (storeNav) {
@@ -957,9 +1665,15 @@ function handleRouting() {
       storeNav.classList.remove('text-ink-700', 'hover:bg-ink-900/5');
     }
     renderStore();
-  } else if (hash === '#agentDetail') {
-    renderAgentDetail();
-    setTimeout(initAgentDetailView, 50);
+  } else if (hash.startsWith('#agentDetail')) {
+    let agentId = 'job_seeker';
+    if (hash.includes('?')) {
+      const queryStr = hash.split('?')[1];
+      const params = new URLSearchParams(queryStr);
+      agentId = params.get('agent') || 'job_seeker';
+    }
+    renderAgentDetail(agentId);
+    setTimeout(() => initAgentDetailView(agentId), 50);
   } else if (hash === '#settings') {
     const settingsNav = document.getElementById('settingsNavLink');
     if (settingsNav) {
@@ -1024,37 +1738,37 @@ function renderStore() {
       subtitle: 'LinkedIn DMs · Email · Portal auto-apply',
       desc: 'Finds roles matching your preferences and applies across 3 channels automatically.',
       categories: ['Most popular', 'Outreach', 'Auto-apply'],
-      price: U.is_agent_buyer ? 'Active' : 'Starts at ₹2,000/mo',
+      price: U.is_agent_buyer ? 'Active' : 'Starts at ₹1,000/mo',
       btnText: U.is_agent_buyer ? 'View agent' : 'Subscribe',
-      btnAction: U.is_agent_buyer ? "window.location.hash = '#agent'" : "window.location.hash = '#agentDetail'"
+      btnAction: U.is_agent_buyer ? "window.location.hash = '#agent'" : "window.location.hash = '#agentDetail?agent=job_seeker'"
     },
     {
       id: 'naukri_ai',
       name: 'Naukri AI Agent',
       icon: `<div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 border border-brand-100/50 grid place-items-center font-display font-bold text-base shrink-0">N</div>`,
-      live: false,
-      badge: "Q3 '26",
-      badgeClass: 'bg-orange-50 text-orange-700 border border-orange-200',
+      live: true,
+      badge: U.naukri_subscribed ? 'LIVE' : 'NEW',
+      badgeClass: U.naukri_subscribed ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-brand-50 text-brand-700 border border-brand-100/50',
       subtitle: 'Naukri.com auto-search & apply',
       desc: "Scans Naukri's massive listing pool and applies to high-match roles with tailored cover letters.",
       categories: ['Auto-apply'],
-      price: 'Waitlist open',
-      btnText: 'Notify me',
-      btnAction: "notifyAgentWaitlist('naukri_ai')"
+      price: U.naukri_subscribed ? 'Active' : 'Starts at ₹1,000/mo',
+      btnText: U.naukri_subscribed ? 'View agent' : 'Subscribe',
+      btnAction: U.naukri_subscribed ? "window.location.hash = '#naukri-agent'" : "window.location.hash = '#agentDetail?agent=naukri_ai'"
     },
     {
       id: 'linkedin_jobs',
       name: 'LinkedIn Jobs Agent',
       icon: `<div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 border border-brand-100/50 grid place-items-center font-display font-bold text-base shrink-0">in</div>`,
-      live: false,
-      badge: "Q3 '26",
-      badgeClass: 'bg-orange-50 text-orange-700 border border-orange-200',
+      live: true,
+      badge: U.linkedin_jobs_subscribed ? 'LIVE' : 'NEW',
+      badgeClass: U.linkedin_jobs_subscribed ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-brand-50 text-brand-700 border border-brand-100/50',
       subtitle: 'Easy Apply + direct listings',
       desc: 'Applies to roles directly on LinkedIn with tailored cover letters and smart throttling.',
       categories: ['Auto-apply'],
-      price: 'Waitlist open',
-      btnText: 'Notify me',
-      btnAction: "notifyAgentWaitlist('linkedin_jobs')"
+      price: U.linkedin_jobs_subscribed ? 'Active' : 'Starts at ₹1,000/mo',
+      btnText: U.linkedin_jobs_subscribed ? 'View agent' : 'Subscribe',
+      btnAction: U.linkedin_jobs_subscribed ? "window.location.hash = '#linkedin-agent'" : "window.location.hash = '#agentDetail?agent=linkedin_jobs'"
     },
     {
       id: 'linkedin_growth',
@@ -1761,6 +2475,8 @@ function renderAgentTabContent() {
             </div>
           </div>
         </div>
+
+
       </div>
 
       <!-- Right side (1/3 width) - Mini Preferences Panel -->
@@ -1834,6 +2550,7 @@ function renderAgentTabContent() {
 
     renderMiniPrefsTags();
     renderAgentLogsFeed();
+
   }
 
   else if (activeAgentTab === 'preferences') {
@@ -2401,7 +3118,132 @@ async function runAgentNow() {
   }
 }
 
-function renderAgentDetail() {
+function renderAgentDetail(agentId = 'job_seeker') {
+  let details = {
+    title: 'Job Seeker Agent',
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>`,
+    subtitle: 'LIVE · PHASE 1',
+    version: 'v1.4',
+    desc: 'Automates role discovery and outreach across LinkedIn DMs, recruiter emails, and company portals — 24/7.',
+    subscribers: '1,284',
+    subscribersGrowth: '+142 this month',
+    statApps: '32',
+    statReply: '17.4%',
+    statInterviews: '8',
+    statTimeSaved: '11 hrs',
+    features: [
+      'Sends LinkedIn DMs to relevant recruiters & hiring managers',
+      'Drafts & sends cold emails with your resume + personalized pitch',
+      'Auto-fills application forms on company career pages',
+      'Matches roles to your preferences (role, location, comp)',
+      'Tracks replies and auto-schedules follow-ups',
+      'Respects LinkedIn & email rate limits with smart throttling'
+    ],
+    channelMix: `
+      <div class="p-3 rounded-xl bg-brand-50 border border-brand-100">
+        <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>LinkedIn DMs</b></div>
+        <div class="mt-1 text-ink-700/70 font-semibold">48% of daily outreach</div>
+      </div>
+      <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+        <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Cold emails</b></div>
+        <div class="mt-1 text-ink-700/70 font-semibold">31% of daily outreach</div>
+      </div>
+      <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+        <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>Company portals</b></div>
+        <div class="mt-1 text-ink-700/70 font-semibold">21% of daily outreach</div>
+      </div>
+    `,
+    faqs: [
+      { q: 'How many applications per day?', a: 'Up to 5/day (150 total for 1 month) depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.' },
+      { q: 'Can I approve messages before they go out?', a: 'Yes — toggle "human-in-the-loop" in Settings. You\'ll get a mobile push to approve every outreach.' },
+      { q: 'Do I get a refund if I cancel early?', a: 'Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.' }
+    ]
+  };
+
+  if (agentId === 'naukri_ai') {
+    details = {
+      title: 'Naukri AI Agent',
+      icon: `<div class="w-10 h-10 rounded-xl bg-white/10 border border-white/15 grid place-items-center font-display font-bold text-xl text-white">N</div>`,
+      subtitle: 'LIVE · AUTO-APPLY',
+      version: 'v2.1',
+      desc: 'Automates job discovery, match ranking, dynamic Answer-Bank resolutions, and auto-apply submissions on Naukri.com.',
+      subscribers: '846',
+      subscribersGrowth: '+98 this month',
+      statApps: '45',
+      statReply: '14.8%',
+      statInterviews: '6',
+      statTimeSaved: '8 hrs',
+      features: [
+        'Monitors Naukri job feeds for matches matching your profile',
+        'Auto-fills complex screening forms using an AI Answer-Bank',
+        'Dynamically drafts cover letters customized to each job description',
+        'Automatically retries terminal application steps on failure',
+        'Provides clear screenshots of submission confirmations',
+        'Bypasses duplicate postings and irrelevant search results'
+      ],
+      channelMix: `
+        <div class="p-3 rounded-xl bg-brand-50 border border-brand-100">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>Naukri Search</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">55% of daily scan matches</div>
+        </div>
+        <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Recommended Feed</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">28% of daily scan matches</div>
+        </div>
+        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>Recruiter DMs</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">17% of daily scan matches</div>
+        </div>
+      `,
+      faqs: [
+        { q: 'Do I need a Naukri Premium account?', a: 'No — the agent operates within the free tier limits of Naukri seamlessly.' },
+        { q: 'What happens if the agent encounters a new question?', a: 'It flags it in your Answer-Bank queue. Once you write the answer once, the AI remembers it for all future matches.' },
+        { q: 'How does it prevent duplicate applications?', a: 'The agent keeps a local database of all job hashes and skips any listing you\'ve already applied to.' }
+      ]
+    };
+  } else if (agentId === 'linkedin_jobs') {
+    details = {
+      title: 'LinkedIn Jobs Agent',
+      icon: `<div class="w-10 h-10 rounded-xl bg-white/10 border border-white/15 grid place-items-center font-display font-bold text-xl text-white">in</div>`,
+      subtitle: 'LIVE · EASY APPLY',
+      version: 'v1.8',
+      desc: 'Applies to roles directly on LinkedIn with tailored cover letters, dynamic form-fill answers, and smart limit safety.',
+      subscribers: '1,102',
+      subscribersGrowth: '+125 this month',
+      statApps: '25',
+      statReply: '18.2%',
+      statInterviews: '7',
+      statTimeSaved: '10 hrs',
+      features: [
+        'Automates LinkedIn "Easy Apply" process with zero friction',
+        'Solves multi-step application screening questions on the fly',
+        'Tailors resume attachment dynamically if needed',
+        'Emulates realistic human browsing behavior to prevent account flags',
+        'Tracks outreach funnel from view to submission',
+        'Dismisses outdated, expired, or non-matching jobs'
+      ],
+      channelMix: `
+        <div class="p-3 rounded-xl bg-brand-50 border border-brand-100">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>Easy Apply</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">60% of submissions</div>
+        </div>
+        <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Direct Apply Links</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">25% of submissions</div>
+        </div>
+        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>InMail Referrals</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">15% of submissions</div>
+        </div>
+      `,
+      faqs: [
+        { q: 'Will my account get restricted or flagged?', a: 'No — the agent uses human-like delays, limits daily applications to safe levels, and operates on your local session.' },
+        { q: 'Does it upload different resumes?', a: 'Yes — it uses your master resume but can tailor details if you upload a primary profile.' },
+        { q: 'How does it answer complex salary or visa questions?', a: 'It uses pre-configured settings you define during the onboarding setup.' }
+      ]
+    };
+  }
+
   document.getElementById('appView').innerHTML = `
   <div class="slide-in max-w-5xl mx-auto">
     <button onclick="window.location.hash = '#store'" class="flex items-center gap-1.5 text-[13px] text-ink-700/70 hover:text-ink-900 mb-4">
@@ -2414,22 +3256,22 @@ function renderAgentDetail() {
       <div class="absolute -left-10 -bottom-10 w-72 h-72 rounded-full bg-accent-500/20 blur-3xl"></div>
       <div class="relative flex items-start gap-5 flex-wrap">
         <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 grid place-items-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
+          ${details.icon}
         </div>
         <div class="flex-1 min-w-[220px]">
           <div class="flex items-center gap-2 flex-wrap">
             <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-bold tracking-widest">
-              <span class="pulse-dot"></span>LIVE · PHASE 1
+              <span class="pulse-dot"></span>${details.subtitle}
             </div>
-            <div class="text-[11px] text-white/60">v1.4</div>
+            <div class="text-[11px] text-white/60">${details.version}</div>
           </div>
-          <h1 class="font-display text-3xl md:text-4xl font-bold mt-2">Job Seeker Agent</h1>
-          <p class="mt-2 text-white/70 max-w-xl">Automates role discovery and outreach across LinkedIn DMs, recruiter emails, and company portals — 24/7.</p>
+          <h1 class="font-display text-3xl md:text-4xl font-bold mt-2">${details.title}</h1>
+          <p class="mt-2 text-white/70 max-w-xl">${details.desc}</p>
         </div>
         <div class="flex flex-col items-start md:items-end gap-1">
           <div class="text-[11px] text-white/60">SUBSCRIBERS</div>
-          <div class="font-display text-2xl font-bold">1,284</div>
-          <div class="flex items-center gap-1.5 text-[11px] text-emerald-300"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l5-5 4 4 5-5"/></svg> +142 this month</div>
+          <div class="font-display text-2xl font-bold">${details.subscribers}</div>
+          <div class="flex items-center gap-1.5 text-[11px] text-emerald-300"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l5-5 4 4 5-5"/></svg> ${details.subscribersGrowth}</div>
         </div>
       </div>
 
@@ -2437,19 +3279,19 @@ function renderAgentDetail() {
       <div class="relative mt-7 grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
           <div class="text-[11px] text-white/60">Avg applications / day</div>
-          <div class="font-display text-2xl font-bold mt-1">32</div>
+          <div class="font-display text-2xl font-bold mt-1">${details.statApps}</div>
         </div>
         <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
           <div class="text-[11px] text-white/60">Reply rate</div>
-          <div class="font-display text-2xl font-bold mt-1">17.4%</div>
+          <div class="font-display text-2xl font-bold mt-1">${details.statReply}</div>
         </div>
         <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
           <div class="text-[11px] text-white/60">Interviews / mo (median)</div>
-          <div class="font-display text-2xl font-bold mt-1">8</div>
+          <div class="font-display text-2xl font-bold mt-1">${details.statInterviews}</div>
         </div>
         <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
           <div class="text-[11px] text-white/60">Time saved / week</div>
-          <div class="font-display text-2xl font-bold mt-1">11 hrs</div>
+          <div class="font-display text-2xl font-bold mt-1">${details.statTimeSaved}</div>
         </div>
       </div>
     </div>
@@ -2461,12 +3303,9 @@ function renderAgentDetail() {
         <div class="sm-card p-6 bg-white">
           <div class="font-display text-lg font-bold">What this agent does</div>
           <ul class="mt-4 grid sm:grid-cols-2 gap-3 text-[14px]">
-            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Sends LinkedIn DMs to relevant recruiters & hiring managers</li>
-            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Drafts & sends cold emails with your resume + personalized pitch</li>
-            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Auto-fills application forms on company career pages</li>
-            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Matches roles to your preferences (role, location, comp)</li>
-            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Tracks replies and auto-schedules follow-ups</li>
-            <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Respects LinkedIn & email rate limits with smart throttling</li>
+            ${details.features.map(f => `
+              <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> ${f}</li>
+            `).join('')}
           </ul>
         </div>
 
@@ -2486,18 +3325,7 @@ function renderAgentDetail() {
         <div class="sm-card p-6 bg-white">
           <div class="font-display text-lg font-bold">Channel mix</div>
           <div class="mt-3 grid grid-cols-3 gap-3 text-[13px]">
-            <div class="p-3 rounded-xl bg-brand-50 border border-brand-100">
-              <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>LinkedIn DMs</b></div>
-              <div class="mt-1 text-ink-700/70">48% of daily outreach</div>
-            </div>
-            <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
-              <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Cold emails</b></div>
-              <div class="mt-1 text-ink-700/70">31% of daily outreach</div>
-            </div>
-            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-              <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>Company portals</b></div>
-              <div class="mt-1 text-ink-700/70">21% of daily outreach</div>
-            </div>
+            ${details.channelMix}
           </div>
         </div>
 
@@ -2505,18 +3333,12 @@ function renderAgentDetail() {
         <div class="sm-card p-6 bg-white">
           <div class="font-display text-lg font-bold">Frequently asked</div>
           <div class="mt-3 divide-y divide-ink-900/5">
-            <details class="py-3 group" open>
-              <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">How many applications per day?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
-              <p class="mt-2 text-[13px] text-ink-700/80">Up to 5/day (150 total for 1 month) depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.</p>
-            </details>
-            <details class="py-3 group">
-              <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">Can I approve messages before they go out?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
-              <p class="mt-2 text-[13px] text-ink-700/80">Yes — toggle "human-in-the-loop" in Settings. You'll get a mobile push to approve every outreach.</p>
-            </details>
-            <details class="py-3 group">
-              <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">Do I get a refund if I cancel early?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
-              <p class="mt-2 text-[13px] text-ink-700/80">Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.</p>
-            </details>
+            ${details.faqs.map((faq, i) => `
+              <details class="py-3 group" ${i === 0 ? 'open' : ''}>
+                <summary class="flex items-center justify-between font-semibold text-[14px] list-none cursor-pointer">${faq.q}<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+                <p class="mt-2 text-[13px] text-ink-700/80">${faq.a}</p>
+              </details>
+            `).join('')}
           </div>
         </div>
       </div>
@@ -2594,20 +3416,31 @@ function renderAgentDetail() {
   </div>`;
 }
 
-function initAgentDetailView() {
+function initAgentDetailView(agentId = 'job_seeker') {
   const radios = document.querySelectorAll('.plan-radio');
   radios.forEach(r => r.addEventListener('change', updateAgentDetailPlanSummary));
   updateAgentDetailPlanSummary();
 
   const pc = document.getElementById('agentPerfChart');
   if (pc) {
+    let dataset1 = [22,40,55,68,80,98,115,130,152,180,210,240];
+    let dataset2 = [2,5,8,10,14,18,22,26,30,38,45,52];
+    
+    if (agentId === 'naukri_ai') {
+      dataset1 = [15,30,48,62,75,90,105,122,140,160,185,210];
+      dataset2 = [1,3,6,8,11,14,18,21,25,31,37,44];
+    } else if (agentId === 'linkedin_jobs') {
+      dataset1 = [18,35,50,65,78,94,110,125,145,170,195,225];
+      dataset2 = [2,4,7,9,13,16,20,24,28,35,41,48];
+    }
+
     new Chart(pc, {
       type: 'line',
       data: {
         labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
         datasets: [
-          { label:'Subscribers', data:[22,40,55,68,80,98,115,130,152,180,210,240], borderColor:'#5B66E8', backgroundColor:'rgba(91,102,232,0.08)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 },
-          { label:'Replies/week', data:[2,5,8,10,14,18,22,26,30,38,45,52], borderColor:'#FF9E50', backgroundColor:'rgba(255,158,80,0.06)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 }
+          { label:'Subscribers', data:dataset1, borderColor:'#5B66E8', backgroundColor:'rgba(91,102,232,0.08)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 },
+          { label:'Replies/week', data:dataset2, borderColor:'#FF9E50', backgroundColor:'rgba(255,158,80,0.06)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 }
         ]
       },
       options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{size:11}}}}, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#6b7280'}}, y:{ grid:{color:'#eef0fa'}, ticks:{font:{size:10},color:'#6b7280'}}}}
@@ -2664,7 +3497,16 @@ function redirectToPayment() {
   const total = parseInt(checked.dataset.total, 10);
   const gst = Math.round(total * 0.18);
   const due = total + gst;
-  window.location.href = `/pay?amount=${due}&months=${months}`;
+  
+  let agentId = 'job_seeker';
+  const hash = window.location.hash;
+  if (hash.includes('?')) {
+    const queryStr = hash.split('?')[1];
+    const params = new URLSearchParams(queryStr);
+    agentId = params.get('agent') || 'job_seeker';
+  }
+  
+  window.location.href = `/pay?amount=${due}&months=${months}&agent=${agentId}`;
 }
 
 window.addEventListener('hashchange', handleRouting);

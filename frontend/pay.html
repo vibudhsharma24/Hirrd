@@ -439,14 +439,33 @@ async function applyCoupon() {
 
 // Update UI elements dynamically on load
 document.addEventListener('DOMContentLoaded', async () => {
+  const agentId = urlParams.get('agent') || 'job_seeker';
+  let agentName = 'Job Seeker Agent';
+  if (agentId === 'naukri_ai') {
+    agentName = 'Naukri AI Agent';
+  } else if (agentId === 'linkedin_jobs') {
+    agentName = 'LinkedIn Jobs Agent';
+  }
+
   // Update header descriptions
-  document.getElementById('paymentPlanHeader').textContent = `Job Seeker Agent · ${totalMonths}-month plan`;
+  document.getElementById('paymentPlanHeader').textContent = `${agentName} · ${totalMonths}-month plan`;
   
   // Update order summary card
   document.getElementById('summaryPlanText').textContent = `${totalMonths}-month plan · ₹${perMonth.toLocaleString('en-IN')}/mo`;
   document.getElementById('summarySubtotal').textContent = `₹${subtotal.toLocaleString('en-IN')}.00`;
   document.getElementById('summaryGst').textContent = `₹${gst.toLocaleString('en-IN')}.00`;
   document.getElementById('summaryTotal').textContent = `₹${totalAmount.toLocaleString('en-IN')}.00`;
+  
+  // Update agent initial in order summary
+  const summaryLogo = document.querySelector('.sm-card.p-7.bg-gradient-to-br .font-bold');
+  if (summaryLogo) {
+    summaryLogo.textContent = agentName.charAt(0);
+  }
+  // Update agent name in order summary
+  const summaryName = document.querySelector('.sm-card.p-7.bg-gradient-to-br .font-semibold');
+  if (summaryName) {
+    summaryName.textContent = agentName;
+  }
   
   const labelEl = document.getElementById('payLabel');
   if (labelEl) {
@@ -555,6 +574,7 @@ async function startPayment() {
         showStatus('Verifying payment signature...', 'info');
 
         try {
+          const agentId = urlParams.get('agent') || 'job_seeker';
           const verifyRes = await fetch('/api/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -562,6 +582,7 @@ async function startPayment() {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
+              agent_id: agentId,
             }),
           });
           const verifyData = await verifyRes.json();

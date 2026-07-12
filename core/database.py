@@ -303,6 +303,78 @@ def init_db():
             )
         """)
 
+        # Create linkedin_jobs table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS linkedin_jobs (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id            TEXT    NOT NULL DEFAULT '',
+                title             TEXT    NOT NULL DEFAULT '',
+                company           TEXT    NOT NULL DEFAULT '',
+                location          TEXT    NOT NULL DEFAULT '',
+                description       TEXT    NOT NULL DEFAULT '',
+                poster_info       TEXT    NOT NULL DEFAULT '',
+                poster_name       TEXT    NOT NULL DEFAULT '',
+                poster_url        TEXT    NOT NULL DEFAULT '',
+                has_recruiter_outreach INTEGER DEFAULT 0,
+                posted_date       TEXT    NOT NULL DEFAULT '',
+                url               TEXT    UNIQUE NOT NULL,
+                portal            TEXT    NOT NULL DEFAULT 'linkedin.com',
+                scraped_at        TEXT    NOT NULL,
+                status            TEXT    NOT NULL DEFAULT 'new',
+                relevance_percent INTEGER DEFAULT 0
+            )
+        """)
+
+        # Migration: Add columns to linkedin_jobs if not exists (for existing tables)
+        for col, col_type in [("poster_name", "TEXT DEFAULT ''"), ("poster_url", "TEXT DEFAULT ''"), ("has_recruiter_outreach", "INTEGER DEFAULT 0")]:
+            try:
+                conn.execute(f"ALTER TABLE linkedin_jobs ADD COLUMN {col} {col_type}")
+            except Exception:
+                pass
+
+        # Create linkedin_applications table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS linkedin_applications (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id           INTEGER NOT NULL,
+                job_id            TEXT    NOT NULL,
+                status            TEXT    NOT NULL DEFAULT 'surfaced',
+                applied_at        TEXT    NOT NULL,
+                tailored_resume_path TEXT,
+                retry_count       INTEGER DEFAULT 0,
+                last_error        TEXT,
+                UNIQUE(user_id, job_id)
+            )
+        """)
+
+        # Create linkedin_outreach table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS linkedin_outreach (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id             INTEGER NOT NULL,
+                job_id              TEXT    NOT NULL,
+                poster_url          TEXT    NOT NULL,
+                connection_status   TEXT    NOT NULL DEFAULT 'none',
+                note                TEXT    DEFAULT '',
+                follow_up_message   TEXT    DEFAULT '',
+                follow_up_sent      INTEGER DEFAULT 0,
+                created_at          TEXT    NOT NULL,
+                updated_at          TEXT    NOT NULL,
+                UNIQUE(user_id, job_id)
+            )
+        """)
+
+        # Create linkedin_jobs_tracking table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS linkedin_jobs_tracking (
+                user_id             INTEGER NOT NULL,
+                job_id              TEXT    NOT NULL,
+                surfaced_at         TEXT    NOT NULL,
+                actioned            INTEGER DEFAULT 0,
+                PRIMARY KEY (user_id, job_id)
+            )
+        """)
+
         conn.commit()
 
     # ── Admin & Audit tables in users.db ───────────────────────────────────
@@ -419,9 +491,15 @@ def init_db():
             ("users", "naukri_preferences",  "TEXT DEFAULT '{}'"),
             # ── LinkedIn profile name column ──────────────────────────
             ("users", "linkedin_profile_name", "TEXT DEFAULT ''"),
+            # ── LinkedIn preferences column ───────────────────────────
+            ("users", "linkedin_preferences", "TEXT DEFAULT '{}'"),
             # ── Password reset code columns ───────────────────────────
             ("users", "reset_code",          "TEXT DEFAULT ''"),
             ("users", "reset_code_expires_at", "TEXT DEFAULT ''"),
+            # ── LinkedIn Jobs Agent Subscription ──────────────────────
+            ("users", "linkedin_jobs_subscribed", "INTEGER DEFAULT 0"),
+            # ── Naukri AI Agent Subscription ──────────────────────────
+            ("users", "naukri_subscribed",      "INTEGER DEFAULT 0"),
         ]
         for table, col, typedef in _migrate_columns:
             try:
@@ -664,6 +742,15 @@ def _row_to_dict(row) -> dict:
     else:
         d["naukri_preferences"] = {}
         
+    # Transparently parse linkedin_preferences JSON
+    if d.get("linkedin_preferences"):
+        try:
+            d["linkedin_preferences"] = json.loads(d["linkedin_preferences"])
+        except Exception:
+            d["linkedin_preferences"] = {}
+    else:
+        d["linkedin_preferences"] = {}
+        
     return d
 
 
@@ -787,6 +874,29 @@ def set_user_agent_buyer(user_id: int, is_buyer: bool = True) -> bool:
         )
         conn.commit()
     return cur.rowcount > 0
+
+
+def set_user_linkedin_jobs_subscribed(user_id: int, subscribed: bool = True) -> bool:
+    """Set LinkedIn Jobs Agent subscription status for a user."""
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE users SET linkedin_jobs_subscribed = ? WHERE id = ?",
+            (1 if subscribed else 0, user_id),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
+
+def set_user_naukri_subscribed(user_id: int, subscribed: bool = True) -> bool:
+    """Set Naukri AI Agent subscription status for a user."""
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE users SET naukri_subscribed = ? WHERE id = ?",
+            (1 if subscribed else 0, user_id),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
 
 
 def update_user_linkedin_creds(user_id: int, username: str, password: str) -> bool:
@@ -1210,6 +1320,322 @@ def get_naukri_applications(user_id: int) -> list[dict]:
             (user_id,)
         ).fetchall()
     return [_row_to_dict(r) for r in rows]
+
+
+# ── LinkedIn Jobs Helper Functions ─────────────────────────────────────────────
+
+def save_linkedin_jobs(jobs: list[dict]):
+    """Save scraped LinkedIn jobs to the database."""
+    import json
+    with _connect_jobs() as conn:
+        for job in jobs:
+            try:
+                conn.execute(
+                    """INSERT INTO linkedin_jobs
+                       (job_id, title, company, location, description, poster_info, poster_name, poster_url, has_recruiter_outreach, posted_date, url, portal, scraped_at, status, relevance_percent)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)
+                       ON CONFLICT(url) DO UPDATE SET
+                           relevance_percent = excluded.relevance_percent,
+                           scraped_at = excluded.scraped_at,
+                           posted_date = excluded.posted_date,
+                           poster_info = excluded.poster_info,
+                           poster_name = excluded.poster_name,
+                           poster_url = excluded.poster_url,
+                           has_recruiter_outreach = excluded.has_recruiter_outreach""",
+                    (
+                        job.get("job_id", ""),
+                        job.get("title", ""),
+                        job.get("company", ""),
+                        job.get("location", ""),
+                        job.get("description", ""),
+                        job.get("poster_info", ""),
+                        job.get("poster_name", ""),
+                        job.get("poster_url", ""),
+                        job.get("has_recruiter_outreach", 0),
+                        job.get("posted_date", ""),
+                        job.get("url", ""),
+                        job.get("portal", "linkedin.com"),
+                        job.get("scraped_at", ""),
+                        job.get("relevance_percent", 0),
+                    ),
+                )
+            except Exception as e:
+                print(f"[DB] Error saving LinkedIn job {job.get('url')}: {e}")
+        conn.commit()
+    print(f"[DB] Saved {len(jobs)} LinkedIn jobs to database")
+
+
+def get_all_linkedin_jobs(status: str | None = None) -> list[dict]:
+    """Return all LinkedIn jobs from jobs.db, optionally filtered by status."""
+    with _connect_jobs() as conn:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM linkedin_jobs WHERE status = ? ORDER BY scraped_at DESC",
+                (status,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM linkedin_jobs ORDER BY scraped_at DESC"
+            ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
+def get_linkedin_job_by_id(job_id: str) -> dict | None:
+    """Retrieve a LinkedIn job by its job_id."""
+    with _connect_jobs() as conn:
+        row = conn.execute(
+            "SELECT * FROM linkedin_jobs WHERE job_id = ?",
+            (job_id,),
+        ).fetchone()
+    return _row_to_dict(row) if row else None
+
+
+def update_linkedin_job_status(job_id: int, status: str) -> bool:
+    """Update the status of a LinkedIn job."""
+    with _connect_jobs() as conn:
+        cur = conn.execute(
+            "UPDATE linkedin_jobs SET status = ? WHERE id = ?",
+            (status, job_id),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
+
+def is_linkedin_job_processed(user_id: int, job_id: str) -> bool:
+    """Check if a LinkedIn job has already been surfaced or applied to for a user."""
+    with _connect_jobs() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM linkedin_applications WHERE user_id = ? AND job_id = ?",
+            (user_id, job_id),
+        ).fetchone()
+    return row is not None
+
+
+def add_linkedin_application(user_id: int, job_id: str, status: str = "surfaced", tailored_resume_path: str = None) -> bool:
+    """Record that a LinkedIn job was surfaced or applied to."""
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        with _connect_jobs() as conn:
+            conn.execute(
+                """INSERT INTO linkedin_applications (user_id, job_id, status, applied_at, tailored_resume_path)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(user_id, job_id) DO UPDATE SET
+                       status = excluded.status,
+                       applied_at = excluded.applied_at,
+                       tailored_resume_path = CASE WHEN excluded.tailored_resume_path IS NOT NULL THEN excluded.tailored_resume_path ELSE linkedin_applications.tailored_resume_path END""",
+                (user_id, job_id, status, now, tailored_resume_path),
+            )
+            conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error adding/updating LinkedIn application record: {e}")
+        return False
+
+
+def get_linkedin_applications(user_id: int) -> list[dict]:
+    """Get all linkedin application records for a user."""
+    with _connect_jobs() as conn:
+        rows = conn.execute(
+            "SELECT * FROM linkedin_applications WHERE user_id = ?",
+            (user_id,)
+        ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
+def update_user_linkedin_preferences(user_id: int, preferences: dict) -> bool:
+    """Store user preferences for LinkedIn job search."""
+    import json
+    pref_json = json.dumps(preferences)
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE users SET linkedin_preferences = ? WHERE id = ?",
+            (pref_json, user_id),
+        )
+        conn.commit()
+    return cur.rowcount > 0
+
+
+def add_linkedin_outreach(user_id: int, job_id: str, poster_url: str, connection_status: str = 'none', note: str = '', follow_up_message: str = '') -> bool:
+    """Insert or update a LinkedIn recruiter outreach entry."""
+    from datetime import datetime
+    now = datetime.now().isoformat()
+    try:
+        with _connect_jobs() as conn:
+            conn.execute(
+                """INSERT INTO linkedin_outreach (user_id, job_id, poster_url, connection_status, note, follow_up_message, follow_up_sent, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+                   ON CONFLICT(user_id, job_id) DO UPDATE SET
+                       connection_status = excluded.connection_status,
+                       note = CASE WHEN excluded.note != '' THEN excluded.note ELSE linkedin_outreach.note END,
+                       follow_up_message = CASE WHEN excluded.follow_up_message != '' THEN excluded.follow_up_message ELSE linkedin_outreach.follow_up_message END,
+                       updated_at = excluded.updated_at""",
+                (user_id, job_id, poster_url, connection_status, note, follow_up_message, now, now),
+            )
+            conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error adding/updating LinkedIn outreach record: {e}")
+        return False
+
+
+def get_pending_linkedin_outreaches(user_id: int) -> list[dict]:
+    """Get all pending LinkedIn outreaches for a user (status is 'sent' and follow_up_sent is 0)."""
+    with _connect_jobs() as conn:
+        rows = conn.execute(
+            "SELECT * FROM linkedin_outreach WHERE user_id = ? AND connection_status = 'sent' AND follow_up_sent = 0",
+            (user_id,)
+        ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
+def get_active_linkedin_outreaches(user_id: int) -> list[dict]:
+    """Get all active LinkedIn outreaches (follow_up_sent = 1 and connection_status != 'escalated')."""
+    with _connect_jobs() as conn:
+        rows = conn.execute(
+            "SELECT * FROM linkedin_outreach WHERE user_id = ? AND follow_up_sent = 1 AND connection_status != 'escalated'",
+            (user_id,)
+        ).fetchall()
+    return [_row_to_dict(r) for r in rows]
+
+
+def get_daily_action_counts(user_id: int) -> dict:
+    """Get the count of connection requests and follow-up DMs sent today."""
+    from datetime import datetime
+    today_str = datetime.now().date().isoformat()
+    try:
+        with _connect_jobs() as conn:
+            connects_today = conn.execute(
+                "SELECT COUNT(*) FROM linkedin_outreach WHERE user_id = ? AND connection_status IN ('sent', 'connected_already') AND created_at LIKE ?",
+                (user_id, f"{today_str}%")
+            ).fetchone()[0]
+            
+            dms_today = conn.execute(
+                "SELECT COUNT(*) FROM linkedin_outreach WHERE user_id = ? AND follow_up_sent = 1 AND updated_at LIKE ?",
+                (user_id, f"{today_str}%")
+            ).fetchone()[0]
+    except Exception as e:
+        print(f"[DB] Error getting daily action counts: {e}")
+        return {"connection_requests": 0, "direct_messages": 0}
+        
+    return {"connection_requests": connects_today, "direct_messages": dms_today}
+
+
+def update_linkedin_outreach_status(user_id: int, job_id: str, connection_status: str, follow_up_sent: int = 0) -> bool:
+    """Update the connection status and follow-up status for a LinkedIn outreach entry."""
+    from datetime import datetime
+    now = datetime.now().isoformat()
+    try:
+        with _connect_jobs() as conn:
+            conn.execute(
+                """UPDATE linkedin_outreach 
+                   SET connection_status = ?, follow_up_sent = ?, updated_at = ?
+                   WHERE user_id = ? AND job_id = ?""",
+                (connection_status, follow_up_sent, now, user_id, job_id),
+            )
+            conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error updating LinkedIn outreach status: {e}")
+        return False
+
+
+def is_linkedin_job_tracked(user_id: int, job_id: str) -> bool:
+    """Check if a LinkedIn job has already been tracked (surfaced or actioned) for a user."""
+    with _connect_jobs() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM linkedin_jobs_tracking WHERE user_id = ? AND job_id = ?",
+            (user_id, job_id),
+        ).fetchone()
+    return row is not None
+
+
+def track_linkedin_job(user_id: int, job_id: str, actioned: int = 0) -> bool:
+    """Track a LinkedIn job to prevent it from being surfaced again."""
+    from datetime import datetime
+    now = datetime.now().isoformat()
+    try:
+        with _connect_jobs() as conn:
+            conn.execute(
+                """INSERT INTO linkedin_jobs_tracking (user_id, job_id, surfaced_at, actioned)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(user_id, job_id) DO UPDATE SET
+                       actioned = excluded.actioned""",
+                (user_id, job_id, now, actioned),
+            )
+            conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error tracking LinkedIn job: {e}")
+        return False
+
+
+def get_linkedin_outreach_funnel(user_id: int) -> list[dict]:
+    """
+    Returns structured data tracking each LinkedIn job posting's status
+    through the outreach funnel: job found -> recruiter identified -> connection sent -> message sent -> reply received.
+    """
+    with _connect_jobs() as conn:
+        rows = conn.execute(
+            """
+            SELECT 
+                t.job_id,
+                j.title,
+                j.company,
+                j.location,
+                j.url,
+                j.scraped_at,
+                j.relevance_percent,
+                j.poster_name,
+                j.poster_url,
+                j.has_recruiter_outreach,
+                o.connection_status,
+                o.follow_up_sent,
+                o.note,
+                o.follow_up_message,
+                o.updated_at
+            FROM linkedin_jobs_tracking t
+            LEFT JOIN linkedin_jobs j ON t.job_id = j.job_id
+            LEFT JOIN linkedin_outreach o ON t.user_id = o.user_id AND t.job_id = o.job_id
+            WHERE t.user_id = ?
+            ORDER BY t.surfaced_at DESC
+            """,
+            (user_id,),
+        ).fetchall()
+        
+    funnel_data = []
+    for r in rows:
+        d = _row_to_dict(r)
+        
+        # Calculate current funnel stage
+        stage = "job_found"
+        
+        p_name = d.get("poster_name") or ""
+        p_url = d.get("poster_url") or ""
+        has_rec = d.get("has_recruiter_outreach") or 0
+        
+        # 1. Recruiter identified
+        if (p_url and p_url.strip()) or (p_name and p_name.strip() and "linkedin member" not in p_name.lower()) or has_rec == 1:
+            stage = "recruiter_identified"
+            
+        # 2. Connection sent
+        conn_status = d.get("connection_status") or "none"
+        if conn_status in ('sent', 'pending_already', 'connected_already', 'accepted', 'replied_auto', 'escalated'):
+            stage = "connection_sent"
+            
+        # 3. Message sent
+        follow_sent = d.get("follow_up_sent") or 0
+        if follow_sent == 1 or conn_status in ('accepted', 'replied_auto', 'escalated'):
+            stage = "message_sent"
+            
+        # 4. Reply received
+        if conn_status in ('replied_auto', 'escalated'):
+            stage = "reply_received"
+            
+        d["funnel_stage"] = stage
+        funnel_data.append(d)
+        
+    return funnel_data
 
 
 # ── Posts (scraped by linkedin-posts.mjs) ─────────────────────────────────────────────

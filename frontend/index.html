@@ -278,59 +278,130 @@
         <p class="mt-4 text-ink-800/70 text-[17px]">Subscribe to each agent individually — every agent has its own pricing and plan durations. Start with the Job Seeker Agent.</p>
       </div>
 
-      <div class="mt-12 grid md:grid-cols-2 gap-5">
-        <div class="relative p-6 md:p-8 rounded-3xl bg-gradient-to-br from-ink-900 to-brand-950 text-white overflow-hidden card-glow">
+      <div class="mt-12 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Job Seeker Agent -->
+        <div class="relative p-6 md:p-8 rounded-3xl bg-gradient-to-br from-ink-900 to-brand-950 text-white overflow-hidden card-glow flex flex-col justify-between">
           <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-brand-500/30 blur-3xl"></div>
           <div class="absolute -left-20 -bottom-20 w-60 h-60 rounded-full bg-accent-500/20 blur-3xl"></div>
-          <div class="relative">
-            <div class="flex items-center justify-between">
-              <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-semibold">
-                <span class="pulse-dot"></span> LIVE · PHASE 1
+          <div class="relative flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-semibold">
+                  <span class="pulse-dot"></span> LIVE · PHASE 1
+                </div>
+                <div class="text-[11px] text-white/60">v1.4</div>
               </div>
-              <div class="text-[11px] text-white/60">v1.4 · updated today</div>
+              <div class="mt-4 text-[12px] uppercase tracking-widest text-white/50">Job Seeker Agent</div>
+              <h3 class="font-display text-2xl font-bold mt-1">Apply to dream roles on autopilot.</h3>
+              <p class="mt-3 text-white/70 text-[13px] leading-relaxed">Discover roles matching your preferences, then apply across three channels automatically: LinkedIn DMs, recruiter emails, and company application forms.</p>
+              <ul class="mt-5 space-y-2 text-[12px] text-white/80">
+                <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> LinkedIn direct messages to recruiters & managers</li>
+                <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Personalized cold emails with resume + pitch</li>
+                <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Auto-fills company portal application forms</li>
+              </ul>
             </div>
-            <div class="mt-4 text-[12px] uppercase tracking-widest text-white/50">Job Seeker Agent</div>
-            <h3 class="font-display text-3xl md:text-4xl font-bold mt-1">Apply to dream roles — on autopilot.</h3>
-            <p class="mt-3 text-white/70 leading-relaxed">Discover roles matching your preferences, then apply across three channels automatically: LinkedIn DMs, recruiter emails, and company application forms.</p>
-            <ul class="mt-5 space-y-2 text-[14px]">
-              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> LinkedIn direct messages to recruiters & hiring managers</li>
-              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Personalized cold emails with resume + pitch</li>
-              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Auto-fills application forms on company career pages</li>
-              <li class="flex gap-2"><svg class="icon text-brand-300 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Smart throttling to stay within LinkedIn & email limits</li>
-            </ul>
-            <div class="mt-6 flex gap-3">
-              <button onclick="navigate('agentDetail')" class="px-4 py-2.5 rounded-lg bg-white text-ink-900 font-semibold text-[14px] hover:bg-brand-50">View agent & pricing</button>
+            <div class="mt-8 pt-4 border-t border-white/10">
+              <div class="flex items-center justify-between">
+                <div class="text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹1,000/mo</span></div>
+                <button onclick="selectedAgentId = 'job_seeker'; navigate('agentDetail')" class="px-4 py-2 rounded-lg bg-white text-ink-900 font-semibold text-[13px] hover:bg-brand-50 transition">View agent →</button>
+              </div>
             </div>
-            <div class="mt-4 text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹1,000/month</span> (6-month plan)</div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-5">
-          <div class="p-6 rounded-3xl bg-white border border-ink-900/5 card-glow">
-            <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">AVG/DAY PER USER</div>
-            <div class="font-display text-4xl font-bold mt-2">32</div>
-            <div class="mt-1 text-[13px] text-ink-700/70">Targeted applications</div>
-            <svg viewBox="0 0 100 30" class="mt-4 w-full h-10"><polyline fill="none" stroke="#5B66E8" stroke-width="2" points="0,25 10,20 20,22 30,15 40,18 50,10 60,13 70,8 80,10 90,5 100,6"/></svg>
-          </div>
-          <div class="p-6 rounded-3xl bg-brand-50 border border-brand-100 card-glow">
-            <div class="text-[11px] font-semibold tracking-widest text-brand-700">REPLY RATE</div>
-            <div class="font-display text-4xl font-bold mt-2 text-brand-900">17.4%</div>
-            <div class="mt-1 text-[13px] text-brand-700/80">vs 3.1% industry avg</div>
-            <div class="mt-4 w-full h-2 rounded-full bg-white overflow-hidden">
-              <div class="h-2 bg-gradient-to-r from-brand-500 to-accent-500" style="width:82%"></div>
+        <!-- LinkedIn Jobs Agent -->
+        <div class="relative p-6 md:p-8 rounded-3xl bg-gradient-to-br from-ink-900 to-blue-950 text-white overflow-hidden card-glow flex flex-col justify-between">
+          <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-blue-500/30 blur-3xl"></div>
+          <div class="absolute -left-20 -bottom-20 w-60 h-60 rounded-full bg-emerald-500/10 blur-3xl"></div>
+          <div class="relative flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-semibold">
+                  <span class="pulse-dot"></span> LIVE · EASY APPLY
+                </div>
+                <div class="text-[11px] text-white/60">v1.8</div>
+              </div>
+              <div class="mt-4 text-[12px] uppercase tracking-widest text-white/50">LinkedIn Jobs Agent</div>
+              <h3 class="font-display text-2xl font-bold mt-1">Direct application and Easy Apply.</h3>
+              <p class="mt-3 text-white/70 text-[13px] leading-relaxed">Applies to roles directly on LinkedIn with tailored cover letters, dynamic form-fill answers, and smart limit safety.</p>
+              <ul class="mt-5 space-y-2 text-[12px] text-white/80">
+                <li class="flex gap-2"><svg class="icon text-blue-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Automates LinkedIn "Easy Apply" with zero friction</li>
+                <li class="flex gap-2"><svg class="icon text-blue-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Solves screening questions on the fly</li>
+                <li class="flex gap-2"><svg class="icon text-blue-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Human-like browsing patterns prevent flags</li>
+              </ul>
+            </div>
+            <div class="mt-8 pt-4 border-t border-white/10">
+              <div class="flex items-center justify-between">
+                <div class="text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹1,000/mo</span></div>
+                <button onclick="selectedAgentId = 'linkedin_jobs'; navigate('agentDetail')" class="px-4 py-2 rounded-lg bg-white text-ink-900 font-semibold text-[13px] hover:bg-brand-50 transition">View agent →</button>
+              </div>
             </div>
           </div>
-          <div class="col-span-2 p-6 rounded-3xl bg-gradient-to-br from-white to-brand-50/60 border border-ink-900/5 card-glow">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-ink-900 text-white grid place-items-center">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
+        </div>
+
+        <!-- Naukri AI Agent -->
+        <div class="relative p-6 md:p-8 rounded-3xl bg-gradient-to-br from-ink-900 to-emerald-950 text-white overflow-hidden card-glow flex flex-col justify-between">
+          <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-emerald-500/20 blur-3xl"></div>
+          <div class="absolute -left-20 -bottom-20 w-60 h-60 rounded-full bg-brand-500/10 blur-3xl"></div>
+          <div class="relative flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-semibold">
+                  <span class="pulse-dot"></span> LIVE · AUTO APPLY
+                </div>
+                <div class="text-[11px] text-white/60">v1.2</div>
+              </div>
+              <div class="mt-4 text-[12px] uppercase tracking-widest text-white/50">Naukri AI Agent</div>
+              <h3 class="font-display text-2xl font-bold mt-1">Naukri.com auto-search & apply.</h3>
+              <p class="mt-3 text-white/70 text-[13px] leading-relaxed">Scans Naukri's massive listing pool and applies to high-match roles with tailored cover letters and dynamic form-fill answers.</p>
+              <ul class="mt-5 space-y-2 text-[12px] text-white/80">
+                <li class="flex gap-2"><svg class="icon text-emerald-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Scans Naukri's listing pool continuously</li>
+                <li class="flex gap-2"><svg class="icon text-emerald-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Applies to high-match roles automatically</li>
+                <li class="flex gap-2"><svg class="icon text-emerald-300 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Dynamic screening question solver</li>
+              </ul>
+            </div>
+            <div class="mt-8 pt-4 border-t border-white/10">
+              <div class="flex items-center justify-between">
+                <div class="text-[12px] text-white/60">Starts at <span class="text-white font-semibold">₹1,000/mo</span></div>
+                <button onclick="selectedAgentId = 'naukri_ai'; navigate('agentDetail')" class="px-4 py-2 rounded-lg bg-white text-ink-900 font-semibold text-[13px] hover:bg-brand-50 transition">View agent →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Grid (in Col 4) -->
+        <div class="grid grid-rows-2 gap-5">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 rounded-2xl bg-white border border-ink-900/5 card-glow flex flex-col justify-between">
+              <div>
+                <div class="text-[9px] font-semibold tracking-widest text-ink-700/60">AVG/DAY PER USER</div>
+                <div class="font-display text-2xl font-bold mt-1">32</div>
+                <div class="text-[10px] text-ink-700/70 mt-0.5">Applications</div>
+              </div>
+              <svg viewBox="0 0 100 30" class="mt-2 w-full h-6"><polyline fill="none" stroke="#5B66E8" stroke-width="2" points="0,25 10,20 20,22 30,15 40,18 50,10 60,13 70,8 80,10 90,5 100,6"/></svg>
+            </div>
+            <div class="p-4 rounded-2xl bg-brand-50 border border-brand-100 card-glow flex flex-col justify-between">
+              <div>
+                <div class="text-[9px] font-semibold tracking-widest text-brand-700">REPLY RATE</div>
+                <div class="font-display text-2xl font-bold mt-1 text-brand-900">17.4%</div>
+                <div class="text-[10px] text-brand-700/80 mt-0.5">vs 3.1% avg</div>
+              </div>
+              <div class="mt-3 w-full h-1 rounded-full bg-white overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-brand-500 to-accent-500" style="width:82%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-white to-brand-50/60 border border-ink-900/5 card-glow flex flex-col justify-center">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-ink-900 text-white grid place-items-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"/></svg>
               </div>
               <div>
-                <div class="text-[11px] font-semibold tracking-widest text-ink-700/60">EXCLUSIVITY GUARDRAIL</div>
-                <div class="font-display text-xl font-semibold">LinkedIn-verified IIT & IIM members only</div>
+                <div class="text-[9px] font-semibold tracking-widest text-ink-700/60">EXCLUSIVITY GUARDRAIL</div>
+                <div class="font-display text-[13px] font-semibold text-ink-900 mt-0.5">IIT & IIM members only</div>
               </div>
             </div>
-            <p class="mt-3 text-[14px] text-ink-800/70 text-justify">We manually verify every new account by reviewing the education section on LinkedIn. Our team approves only IIT or IIM students and alumni. No verified alumni, No access.</p>
+            <p class="mt-2 text-[11px] text-ink-800/70 leading-relaxed text-justify">We manually verify every account via LinkedIn. Approved for IIT/IIM alumni and students only.</p>
           </div>
         </div>
       </div>
@@ -375,24 +446,12 @@
         <div class="max-w-2xl">
           <div class="text-[12px] font-semibold tracking-widest text-accent-600">COMING SOON</div>
           <h2 class="font-display text-4xl md:text-5xl font-bold mt-2">Your AI team, multiplied.</h2>
-          <p class="mt-4 text-ink-800/70">Three more agents on the way. Each with its own purpose — and its own pricing.</p>
+          <p class="mt-4 text-ink-800/70">One more agent on the way. Each with its own purpose — and its own pricing.</p>
         </div>
         <button onclick="openWaitlistModal('Upcoming Agents')" class="px-4 py-2.5 rounded-xl bg-ink-900 text-white font-semibold hover:bg-brand-700">Join waitlist</button>
       </div>
  
-      <div class="mt-12 grid md:grid-cols-3 gap-5">
-        <div onclick="openWaitlistModal('Naukri AI Agent')" class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden cursor-pointer hover:border-brand-300 transition">
-          <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent-500 text-white">Q3 2026</div>
-          <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-brand-700 text-[15px]">N</div>
-          <div class="font-display font-bold text-xl mt-4">Naukri AI Agent</div>
-          <p class="mt-2 text-[14px] text-ink-800/70">Automatically searches and applies to matching jobs across Naukri.com, with smart filters for role & compensation.</p>
-        </div>
-        <div onclick="openWaitlistModal('LinkedIn Jobs Agent')" class="relative p-6 rounded-3xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 overflow-hidden cursor-pointer hover:border-brand-300 transition">
-          <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent-500 text-white">Q3 2026</div>
-          <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-brand-700 text-[15px]">in</div>
-          <div class="font-display font-bold text-xl mt-4">LinkedIn Jobs Agent</div>
-          <p class="mt-2 text-[14px] text-ink-800/70">Applies directly through LinkedIn Easy Apply and standard job listings — with tailored cover letters.</p>
-        </div>
+      <div class="mt-12 max-w-2xl">
         <div onclick="openWaitlistModal('LinkedIn Growth Agent')" class="relative p-6 rounded-3xl bg-gradient-to-br from-accent-500/10 to-white border border-accent-500/20 overflow-hidden cursor-pointer hover:border-accent-500/40 transition">
           <div class="absolute top-4 right-4 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full bg-ink-900 text-white">Q4 2026</div>
           <div class="w-11 h-11 rounded-xl bg-white border border-ink-900/5 grid place-items-center font-display font-bold text-accent-600 text-[15px]">✦</div>
@@ -1121,7 +1180,7 @@
   <!-- Agent grid -->
   <div class="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
     <!-- Job Seeker Agent (LIVE) -->
-    <div class="ag-card relative sm-card p-6 card-glow overflow-hidden cursor-pointer" onclick="navigate('agentDetail')">
+    <div class="ag-card relative sm-card p-6 card-glow overflow-hidden cursor-pointer" onclick="selectedAgentId = 'job_seeker'; navigate('agentDetail')">
       <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold tracking-widest">
         <span class="pulse-dot"></span>LIVE
       </div>
@@ -1144,35 +1203,45 @@
       </div>
     </div>
 
-    <!-- Naukri Agent (SOON) -->
-    <div onclick="openWaitlistModal('Naukri AI Agent')" class="relative sm-card p-6 overflow-hidden cursor-pointer hover:border-brand-300 transition">
-      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-600 text-[10px] font-bold tracking-widest">Q3 '26</div>
+    <!-- Naukri Agent (LIVE) -->
+    <div class="ag-card relative sm-card p-6 card-glow overflow-hidden cursor-pointer" onclick="selectedAgentId = 'naukri_ai'; navigate('agentDetail')">
+      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold tracking-widest">
+        <span class="pulse-dot"></span>LIVE
+      </div>
       <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-lg">N</div>
       <div class="mt-4 font-display font-bold text-lg">Naukri AI Agent</div>
       <div class="text-[12px] text-ink-700/60">Naukri.com auto-search & apply</div>
       <p class="mt-3 text-[13px] text-ink-800/80">Scans Naukri's massive listing pool and applies to high-match roles with tailored cover letters.</p>
       <div class="mt-4 flex items-center gap-2 text-[11px]">
-        <span class="px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700">Auto-apply</span>
+        <span class="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700">Auto-apply</span>
       </div>
       <div class="mt-5 flex items-center justify-between">
-        <div class="text-[12px] text-ink-700/60">Waitlist open</div>
-        <button class="px-3 py-1.5 rounded-lg border border-ink-900/15 text-[12px] font-semibold">Notify me</button>
+        <div>
+          <div class="text-[11px] text-ink-700/60">Starts at</div>
+          <div class="font-display font-bold text-lg">₹1,000<span class="text-[12px] font-medium text-ink-700/60">/mo</span></div>
+        </div>
+        <div class="ag-cta px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold">Subscribe →</div>
       </div>
     </div>
 
-    <!-- LinkedIn Jobs (SOON) -->
-    <div onclick="openWaitlistModal('LinkedIn Jobs Agent')" class="relative sm-card p-6 overflow-hidden cursor-pointer hover:border-brand-300 transition">
-      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-600 text-[10px] font-bold tracking-widest">Q3 '26</div>
+    <!-- LinkedIn Jobs (LIVE) -->
+    <div class="ag-card relative sm-card p-6 card-glow overflow-hidden cursor-pointer" onclick="selectedAgentId = 'linkedin_jobs'; navigate('agentDetail')">
+      <div class="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold tracking-widest">
+        <span class="pulse-dot"></span>LIVE
+      </div>
       <div class="w-12 h-12 rounded-2xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-lg">in</div>
       <div class="mt-4 font-display font-bold text-lg">LinkedIn Jobs Agent</div>
       <div class="text-[12px] text-ink-700/60">Easy Apply + direct listings</div>
       <p class="mt-3 text-[13px] text-ink-800/80">Applies to roles directly on LinkedIn with tailored cover letters and smart throttling.</p>
       <div class="mt-4 flex items-center gap-2 text-[11px]">
-        <span class="px-2 py-0.5 rounded-full bg-ink-900/5 text-ink-700">Auto-apply</span>
+        <span class="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700">Auto-apply</span>
       </div>
       <div class="mt-5 flex items-center justify-between">
-        <div class="text-[12px] text-ink-700/60">Waitlist open</div>
-        <button class="px-3 py-1.5 rounded-lg border border-ink-900/15 text-[12px] font-semibold">Notify me</button>
+        <div>
+          <div class="text-[11px] text-ink-700/60">Starts at</div>
+          <div class="font-display font-bold text-lg">₹1,000<span class="text-[12px] font-medium text-ink-700/60">/mo</span></div>
+        </div>
+        <div class="ag-cta px-3 py-1.5 rounded-lg bg-ink-900 text-white text-[12px] font-semibold">Subscribe →</div>
       </div>
     </div>
 
@@ -1221,23 +1290,23 @@
     <div class="absolute -right-10 -top-10 w-72 h-72 rounded-full bg-brand-500/30 blur-3xl"></div>
     <div class="absolute -left-10 -bottom-10 w-72 h-72 rounded-full bg-accent-500/20 blur-3xl"></div>
     <div class="relative flex items-start gap-5 flex-wrap">
-      <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 grid place-items-center">
+      <div id="pubDetailIcon" class="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 grid place-items-center">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>
       </div>
       <div class="flex-1 min-w-[220px]">
         <div class="flex items-center gap-2 flex-wrap">
-          <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-bold tracking-widest">
+          <div id="pubDetailBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-bold tracking-widest">
             <span class="pulse-dot"></span>LIVE · PHASE 1
           </div>
-          <div class="text-[11px] text-white/60">v1.4</div>
+          <div id="pubDetailVersion" class="text-[11px] text-white/60">v1.4</div>
         </div>
-        <h1 class="font-display text-3xl md:text-4xl font-bold mt-2">Job Seeker Agent</h1>
-        <p class="mt-2 text-white/70 max-w-xl">Automates role discovery and outreach across LinkedIn DMs, recruiter emails, and company portals — 24/7.</p>
+        <h1 id="pubDetailTitle" class="font-display text-3xl md:text-4xl font-bold mt-2">Job Seeker Agent</h1>
+        <p id="pubDetailDesc" class="mt-2 text-white/70 max-w-xl">Automates role discovery and outreach across LinkedIn DMs, recruiter emails, and company portals — 24/7.</p>
       </div>
       <div class="flex flex-col items-start md:items-end gap-1">
         <div class="text-[11px] text-white/60">SUBSCRIBERS</div>
-        <div class="font-display text-2xl font-bold">1,284</div>
-        <div class="flex items-center gap-1.5 text-[11px] text-emerald-300"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l5-5 4 4 5-5"/></svg> +142 this month</div>
+        <div id="pubDetailSubscribers" class="font-display text-2xl font-bold">1,284</div>
+        <div id="pubDetailSubscribersGrowth" class="flex items-center gap-1.5 text-[11px] text-emerald-300"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l5-5 4 4 5-5"/></svg> +142 this month</div>
       </div>
     </div>
 
@@ -1245,19 +1314,19 @@
     <div class="relative mt-7 grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
         <div class="text-[11px] text-white/60">Avg applications / day</div>
-        <div class="font-display text-2xl font-bold mt-1">32</div>
+        <div id="pubDetailStatApps" class="font-display text-2xl font-bold mt-1">32</div>
       </div>
       <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
         <div class="text-[11px] text-white/60">Reply rate</div>
-        <div class="font-display text-2xl font-bold mt-1">17.4%</div>
+        <div id="pubDetailStatReply" class="font-display text-2xl font-bold mt-1">17.4%</div>
       </div>
       <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
         <div class="text-[11px] text-white/60">Interviews / mo (median)</div>
-        <div class="font-display text-2xl font-bold mt-1">8</div>
+        <div id="pubDetailStatInterviews" class="font-display text-2xl font-bold mt-1">8</div>
       </div>
       <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
         <div class="text-[11px] text-white/60">Time saved / week</div>
-        <div class="font-display text-2xl font-bold mt-1">11 hrs</div>
+        <div id="pubDetailStatTimeSaved" class="font-display text-2xl font-bold mt-1">11 hrs</div>
       </div>
     </div>
   </div>
@@ -1268,7 +1337,7 @@
     <div class="lg:col-span-2 space-y-6">
       <div class="sm-card p-6">
         <div class="font-display text-lg font-bold">What this agent does</div>
-        <ul class="mt-4 grid sm:grid-cols-2 gap-3 text-[14px]">
+        <ul id="pubDetailFeatures" class="mt-4 grid sm:grid-cols-2 gap-3 text-[14px]">
           <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Sends LinkedIn DMs to relevant recruiters & hiring managers</li>
           <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Drafts & sends cold emails with your resume + personalized pitch</li>
           <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> Auto-fills application forms on company career pages</li>
@@ -1293,16 +1362,16 @@
       <!-- Channels -->
       <div class="sm-card p-6">
         <div class="font-display text-lg font-bold">Channel mix</div>
-        <div class="mt-3 grid grid-cols-3 gap-3 text-[13px]">
-          <div class="p-3 rounded-xl bg-brand-50 border border-brand-100">
+        <div id="pubDetailChannelMix" class="mt-3 flex flex-wrap gap-3 text-[13px]">
+          <div class="p-3 rounded-xl bg-brand-50 border border-brand-100 flex-1 min-w-[120px]">
             <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>LinkedIn DMs</b></div>
             <div class="mt-1 text-ink-700/70">48% of daily outreach</div>
           </div>
-          <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+          <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 flex-1 min-w-[120px]">
             <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Cold emails</b></div>
             <div class="mt-1 text-ink-700/70">31% of daily outreach</div>
           </div>
-          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex-1 min-w-[120px]">
             <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>Company portals</b></div>
             <div class="mt-1 text-ink-700/70">21% of daily outreach</div>
           </div>
@@ -1312,7 +1381,7 @@
       <!-- FAQ -->
       <div class="sm-card p-6">
         <div class="font-display text-lg font-bold">Frequently asked</div>
-        <div class="mt-3 divide-y divide-ink-900/5">
+        <div id="pubDetailFaqs" class="mt-3 divide-y divide-ink-900/5">
           <details class="py-3 group" open>
             <summary class="flex items-center justify-between font-semibold text-[14px]">How many applications per day?<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
             <p class="mt-2 text-[13px] text-ink-700/80">Up to 40/day depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.</p>
@@ -1450,9 +1519,9 @@
     <div class="md:col-span-2 sm-card p-7 bg-gradient-to-br from-brand-50 to-white border-brand-100">
       <div class="text-[12px] font-semibold tracking-widest text-brand-700">ORDER SUMMARY</div>
       <div class="mt-3 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-ink-900 text-white grid place-items-center font-display">A</div>
+        <div id="paymentSummaryIcon" class="w-10 h-10 rounded-xl bg-ink-900 text-white grid place-items-center font-display">A</div>
         <div>
-          <div class="font-semibold">Job Seeker Agent</div>
+          <div id="paymentSummaryTitle" class="font-semibold">Job Seeker Agent</div>
           <div id="summaryPlanText" class="text-[12px] text-ink-700/70">3-month plan · ₹2,500/mo</div>
         </div>
       </div>
@@ -1590,7 +1659,7 @@
             <td class="py-3 px-3">19 Jul 2026</td>
             <td class="py-3 px-3 text-right"><button onclick="navigate('agent')" class="text-[12px] text-brand-700 font-semibold">Manage →</button></td>
           </tr>
-          <tr onclick="openWaitlistModal('Naukri AI Agent')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
+          <tr onclick="selectedAgentId = 'naukri_ai'; navigate('agentDetail')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
             <td class="py-3 px-3">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-[13px]">N</div>
@@ -1601,12 +1670,12 @@
               </div>
             </td>
             <td class="py-3 px-3">—</td>
-            <td class="py-3 px-3"><span class="inline-flex items-center text-[11px] font-semibold text-accent-600 bg-accent-500/10 px-2 py-0.5 rounded-full">Coming Soon</span></td>
+            <td class="py-3 px-3"><span class="inline-flex items-center text-[11px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">Subscribe</span></td>
             <td class="py-3 px-3">—</td>
             <td class="py-3 px-3">—</td>
-            <td class="py-3 px-3 text-right"><button onclick="event.stopPropagation(); openWaitlistModal('Naukri AI Agent')" class="text-[12px] text-brand-700 font-semibold">Notify me</button></td>
+            <td class="py-3 px-3 text-right"><button onclick="event.stopPropagation(); selectedAgentId = 'naukri_ai'; navigate('agentDetail')" class="text-[12px] text-brand-700 font-semibold">Subscribe →</button></td>
           </tr>
-          <tr onclick="openWaitlistModal('LinkedIn Jobs Agent')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
+          <tr onclick="selectedAgentId = 'linkedin_jobs'; navigate('agentDetail')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
             <td class="py-3 px-3">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-white border border-ink-900/10 grid place-items-center font-display font-bold text-brand-700 text-[13px]">in</div>
@@ -1617,10 +1686,10 @@
               </div>
             </td>
             <td class="py-3 px-3">—</td>
-            <td class="py-3 px-3"><span class="inline-flex items-center text-[11px] font-semibold text-accent-600 bg-accent-500/10 px-2 py-0.5 rounded-full">Coming Soon</span></td>
+            <td class="py-3 px-3"><span class="inline-flex items-center text-[11px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">Subscribe</span></td>
             <td class="py-3 px-3">—</td>
             <td class="py-3 px-3">—</td>
-            <td class="py-3 px-3 text-right"><button onclick="event.stopPropagation(); openWaitlistModal('LinkedIn Jobs Agent')" class="text-[12px] text-brand-700 font-semibold">Notify me</button></td>
+            <td class="py-3 px-3 text-right"><button onclick="event.stopPropagation(); selectedAgentId = 'linkedin_jobs'; navigate('agentDetail')" class="text-[12px] text-brand-700 font-semibold">Subscribe →</button></td>
           </tr>
           <tr onclick="openWaitlistModal('LinkedIn Growth Agent')" class="hover:bg-ink-900/[.02] border-t border-ink-900/5 cursor-pointer opacity-75 hover:opacity-100 transition">
             <td class="py-3 px-3">
@@ -2122,6 +2191,140 @@
   // Protected views require authentication. Onboarding/payment are reached post-signup,
   // so we allow them through the signup flow via setAuthenticated().
   const protectedViews = ['dashboard','agent','settings','billing'];
+  let selectedAgentId = 'job_seeker';
+  const agentDetails = {
+    job_seeker: {
+      title: 'Job Seeker Agent',
+      icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 10h.01M15 10h.01M9 15h6"/></svg>`,
+      subtitle: 'LIVE · PHASE 1',
+      version: 'v1.4',
+      desc: 'Automates role discovery and outreach across LinkedIn DMs, recruiter emails, and company portals — 24/7.',
+      subscribers: '1,284',
+      subscribersGrowth: '+142 this month',
+      statApps: '32',
+      statReply: '17.4%',
+      statInterviews: '8',
+      statTimeSaved: '11 hrs',
+      features: [
+        'Sends LinkedIn DMs to relevant recruiters & hiring managers',
+        'Drafts & sends cold emails with your resume + personalized pitch',
+        'Auto-fills application forms on company career pages',
+        'Matches roles to your preferences (role, location, comp)',
+        'Tracks replies and auto-schedules follow-ups',
+        'Respects LinkedIn & email rate limits with smart throttling'
+      ],
+      channelMix: `
+        <div class="p-3 rounded-xl bg-brand-50 border border-brand-100 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>LinkedIn DMs</b></div>
+          <div class="mt-1 text-ink-700/70">48% of daily outreach</div>
+        </div>
+        <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Cold emails</b></div>
+          <div class="mt-1 text-ink-700/70">31% of daily outreach</div>
+        </div>
+        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>Company portals</b></div>
+          <div class="mt-1 text-ink-700/70">21% of daily outreach</div>
+        </div>
+      `,
+      faqs: [
+        { q: 'How many applications per day?', a: 'Up to 40/day depending on your LinkedIn age and email domain reputation. The agent auto-adjusts to stay safe.' },
+        { q: 'Can I approve messages before they go out?', a: 'Yes — toggle "human-in-the-loop" in Settings. You\'ll get a mobile push to approve every outreach.' },
+        { q: 'Do I get a refund if I cancel early?', a: 'Longer plans (3 and 6-month) are pro-rated. The 1-month plan is non-refundable after day 7.' }
+      ],
+      chartData: {
+        labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+        subscribers: [22,40,55,68,80,98,115,130,152,180,210,240],
+        replies: [2,5,8,10,14,18,22,26,30,38,45,52]
+      }
+    },
+    linkedin_jobs: {
+      title: 'LinkedIn Jobs Agent',
+      icon: `<div class="font-display font-bold text-2xl text-white">in</div>`,
+      subtitle: 'LIVE · EASY APPLY',
+      version: 'v1.8',
+      desc: 'Applies to roles directly on LinkedIn with tailored cover letters, dynamic form-fill answers, and smart limit safety.',
+      subscribers: '1,102',
+      subscribersGrowth: '+125 this month',
+      statApps: '25',
+      statReply: '18.2%',
+      statInterviews: '7',
+      statTimeSaved: '10 hrs',
+      features: [
+        'Automates LinkedIn "Easy Apply" process with zero friction',
+        'Solves multi-step application screening questions on the fly',
+        'Tailors resume attachment dynamically if needed',
+        'Emulates realistic human browsing behavior to prevent account flags',
+        'Tracks outreach funnel from view to submission',
+        'Dismisses outdated, expired, or non-matching jobs'
+      ],
+      channelMix: `
+        <div class="p-3 rounded-xl bg-brand-50 border border-brand-100 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>Easy Apply</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">60% of daily outreach</div>
+        </div>
+        <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Direct links</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">25% of daily outreach</div>
+        </div>
+        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><b>InMail referrals</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">15% of daily outreach</div>
+        </div>
+      `,
+      faqs: [
+        { q: 'Will my account get restricted or flagged?', a: 'No — the agent uses human-like delays, limits daily applications to safe levels, and operates on your local session.' },
+        { q: 'Does it upload different resumes?', a: 'Yes — it uses your master resume but can tailor details if you upload a primary profile.' },
+        { q: 'How does it answer complex salary or visa questions?', a: 'It uses pre-configured settings you define during the onboarding setup.' }
+      ],
+      chartData: {
+        labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+        subscribers: [15,30,45,58,72,85,98,110,122,138,155,175],
+        replies: [1,3,5,7,10,12,15,18,21,25,30,35]
+      }
+    },
+    naukri_ai: {
+      title: 'Naukri AI Agent',
+      icon: `<div class="font-display font-bold text-2xl text-white">N</div>`,
+      subtitle: 'LIVE · AUTO APPLY',
+      version: 'v1.2',
+      desc: 'Automatically searches and applies to matching jobs across Naukri.com, with smart filters for role, experience, and compensation.',
+      subscribers: '842',
+      subscribersGrowth: '+110 this month',
+      statApps: '28',
+      statReply: '16.8%',
+      statInterviews: '6',
+      statTimeSaved: '9 hrs',
+      features: [
+        'Scans Naukri\'s listing pool continuously for matching roles',
+        'Applies to high-match roles automatically with tailored details',
+        'Dynamic screening question solver utilizing pre-configured Answer Bank',
+        'Tailors cover letters and submission answers dynamically',
+        'Detailed execution logs & real-time notification alerts',
+        'Advanced browser simulation avoids security challenges & captcha flags'
+      ],
+      channelMix: `
+        <div class="p-3 rounded-xl bg-brand-50 border border-brand-100 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-brand-600"></div><b>Auto-search</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">100% of daily scan</div>
+        </div>
+        <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 flex-1 min-w-[120px]">
+          <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent-500"></div><b>Auto-fill</b></div>
+          <div class="mt-1 text-ink-700/70 font-semibold">100% submission rate</div>
+        </div>
+      `,
+      faqs: [
+        { q: 'How does the Naukri Agent handle screening questions?', a: 'The agent checks your pre-configured Answer Bank first. If a new screening question is encountered, it saves it for your review and alerts you, ensuring maximum accuracy without getting stuck.' },
+        { q: 'Will my Naukri account get blocked?', a: 'No — the agent emulates authentic mouse and typing movements, employs local cookies/sessions, and controls application limits safely to avoid flags.' },
+        { q: 'Can I set specific filters for salary & location?', a: 'Yes — you can specify strict filter rules for salary ranges, job location, and required experience in Settings.' }
+      ],
+      chartData: {
+        labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+        subscribers: [12, 25, 38, 50, 65, 80, 95, 110, 128, 145, 162, 180],
+        replies: [1, 3, 5, 7, 10, 12, 15, 18, 22, 26, 31, 38]
+      }
+    }
+  };
   let selectedPlan = { months: 3, amount: 4000, due: 4720 };
   let isCouponApplied = false;
   let appliedCouponCode = '';
@@ -2345,6 +2548,7 @@
                 razorpay_order_id:   response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature:  response.razorpay_signature,
+                agent_id:            selectedAgentId,
               }),
             });
             const verifyData = await verifyRes.json();
@@ -2493,20 +2697,79 @@
   }
 
   function initAgentDetail() {
+    const details = agentDetails[selectedAgentId] || agentDetails.job_seeker;
+
     // Plan radios
     const radios = document.querySelectorAll('.plan-radio');
     radios.forEach(r => r.addEventListener('change', updatePlanSummary));
     updatePlanSummary();
+
+    // Dynamically update DOM fields in the public agent detail page container
+    const container = document.getElementById('publicAgentDetailContainer');
+    if (container) {
+      const iconEl = container.querySelector('#pubDetailIcon');
+      if (iconEl) iconEl.innerHTML = details.icon;
+
+      const badgeEl = container.querySelector('#pubDetailBadge');
+      if (badgeEl) badgeEl.innerHTML = `<span class="pulse-dot"></span>${details.subtitle}`;
+
+      const versionEl = container.querySelector('#pubDetailVersion');
+      if (versionEl) versionEl.textContent = details.version;
+
+      const titleEl = container.querySelector('#pubDetailTitle');
+      if (titleEl) titleEl.textContent = details.title;
+
+      const descEl = container.querySelector('#pubDetailDesc');
+      if (descEl) descEl.textContent = details.desc;
+
+      const subscribersEl = container.querySelector('#pubDetailSubscribers');
+      if (subscribersEl) subscribersEl.textContent = details.subscribers;
+
+      const growthEl = container.querySelector('#pubDetailSubscribersGrowth');
+      if (growthEl) growthEl.innerHTML = `<svg class="icon animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l5-5 4 4 5-5"/></svg> ${details.subscribersGrowth}`;
+
+      const statAppsEl = container.querySelector('#pubDetailStatApps');
+      if (statAppsEl) statAppsEl.textContent = details.statApps;
+
+      const statReplyEl = container.querySelector('#pubDetailStatReply');
+      if (statReplyEl) statReplyEl.textContent = details.statReply;
+
+      const statInterviewsEl = container.querySelector('#pubDetailStatInterviews');
+      if (statInterviewsEl) statInterviewsEl.textContent = details.statInterviews;
+
+      const statTimeSavedEl = container.querySelector('#pubDetailStatTimeSaved');
+      if (statTimeSavedEl) statTimeSavedEl.textContent = details.statTimeSaved;
+
+      const featuresEl = container.querySelector('#pubDetailFeatures');
+      if (featuresEl) {
+        featuresEl.innerHTML = details.features.map(f => `
+          <li class="flex gap-2"><svg class="icon text-emerald-600 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg> ${f}</li>
+        `).join('');
+      }
+
+      const mixEl = container.querySelector('#pubDetailChannelMix');
+      if (mixEl) mixEl.innerHTML = details.channelMix;
+
+      const faqsEl = container.querySelector('#pubDetailFaqs');
+      if (faqsEl) {
+        faqsEl.innerHTML = details.faqs.map((f, i) => `
+          <details class="py-3 group" ${i === 0 ? 'open' : ''}>
+            <summary class="flex items-center justify-between font-semibold text-[14px] cursor-pointer">${f.q}<svg class="icon transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="mt-2 text-[13px] text-ink-700/80 leading-relaxed">${f.a}</p>
+          </details>
+        `).join('');
+      }
+    }
 
     const pc = document.getElementById('agentPerfChart');
     if (pc) {
       new Chart(pc, {
         type: 'line',
         data: {
-          labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+          labels: details.chartData.labels,
           datasets: [
-            { label:'Subscribers', data:[22,40,55,68,80,98,115,130,152,180,210,240], borderColor:'#5B66E8', backgroundColor:'rgba(91,102,232,0.08)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 },
-            { label:'Replies/week', data:[2,5,8,10,14,18,22,26,30,38,45,52], borderColor:'#FF9E50', backgroundColor:'rgba(255,158,80,0.06)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 }
+            { label:'Subscribers', data: details.chartData.subscribers, borderColor:'#5B66E8', backgroundColor:'rgba(91,102,232,0.08)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 },
+            { label:'Replies/week', data: details.chartData.replies, borderColor:'#FF9E50', backgroundColor:'rgba(255,158,80,0.06)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 }
           ]
         },
         options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{size:11}}}}, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#6b7280'}}, y:{ grid:{color:'#eef0fa'}, ticks:{font:{size:10},color:'#6b7280'}}}}
@@ -2550,6 +2813,7 @@
   }
 
   function initPayment() {
+    const details = agentDetails[selectedAgentId] || agentDetails.job_seeker;
     isCouponApplied = false;
     appliedCouponCode = '';
     const months = selectedPlan.months;
@@ -2569,6 +2833,8 @@
 
     // Update SPA payment UI elements
     const paymentPlanHeader = document.getElementById('paymentPlanHeader');
+    const paymentSummaryIcon = document.getElementById('paymentSummaryIcon');
+    const paymentSummaryTitle = document.getElementById('paymentSummaryTitle');
     const summaryPlanText = document.getElementById('summaryPlanText');
     const summarySubtotal = document.getElementById('summarySubtotal');
     const summaryGst = document.getElementById('summaryGst');
@@ -2578,7 +2844,9 @@
     const savingsAmountText = document.getElementById('savingsAmountText');
     const payLabel = document.getElementById('payLabel');
 
-    if (paymentPlanHeader) paymentPlanHeader.textContent = `Job Seeker Agent · ${months}-month plan`;
+    if (paymentPlanHeader) paymentPlanHeader.textContent = `${details.title} · ${months}-month plan`;
+    if (paymentSummaryIcon) paymentSummaryIcon.innerHTML = details.icon;
+    if (paymentSummaryTitle) paymentSummaryTitle.textContent = details.title;
     if (summaryPlanText) summaryPlanText.textContent = `${months}-month plan · ₹${perMonth.toLocaleString('en-IN')}/mo`;
     if (summarySubtotal) summarySubtotal.textContent = `₹${subtotal.toLocaleString('en-IN')}.00`;
     if (summaryGst) summaryGst.textContent = `₹${gst.toLocaleString('en-IN')}.00`;

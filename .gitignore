@@ -55,6 +55,7 @@ Thumbs.db
 # Scraper session cookies
 job_seeker_agent/sessions/
 naukri_agent/sessions/
+linkedin_jobs_agent/sessions/
 
 # Temporary scratch scripts
 scratch/

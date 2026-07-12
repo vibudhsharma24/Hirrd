@@ -802,6 +802,41 @@ def get_user_naukri_apps(user_id):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/users/<int:user_id>/linkedin-outreach-funnel", methods=["GET"])
+def get_user_linkedin_outreach_funnel(user_id):
+    try:
+        funnel = db.get_linkedin_outreach_funnel(user_id)
+        return jsonify({"ok": True, "funnel": funnel})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/subscribe-linkedin-jobs", methods=["POST"])
+def subscribe_user_linkedin_jobs(user_id):
+    try:
+        data = request.get_json(silent=True) or {}
+        subscribed = bool(data.get("subscribed", True))
+        ok = db.set_user_linkedin_jobs_subscribed(user_id, subscribed)
+        if not ok:
+            return jsonify({"ok": False, "error": "User not found or update failed"}), 404
+        return jsonify({"ok": True, "message": f"LinkedIn Jobs Agent subscription status updated to {subscribed}."})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/subscribe-naukri", methods=["POST"])
+def subscribe_user_naukri(user_id):
+    try:
+        data = request.get_json(silent=True) or {}
+        subscribed = bool(data.get("subscribed", True))
+        ok = db.set_user_naukri_subscribed(user_id, subscribed)
+        if not ok:
+            return jsonify({"ok": False, "error": "User not found or update failed"}), 404
+        return jsonify({"ok": True, "message": f"Naukri AI Agent subscription status updated to {subscribed}."})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/users/<int:user_id>/naukri-applications/<int:app_id>/dismiss", methods=["POST"])
 def dismiss_naukri_app(user_id, app_id):
     try:
@@ -2924,21 +2959,28 @@ def verify_payment():
     # ── Activate subscription for the logged-in user ──────────────────────
     user_id = flask_current_user.id
     user_email = flask_current_user.email
+    agent_id = (data.get("agent_id") or "job_seeker").strip()
 
-    # 1. Flag user as agent buyer
-    db.set_user_agent_buyer(user_id, True)
+    if agent_id == "linkedin_jobs":
+        db.set_user_linkedin_jobs_subscribed(user_id, True)
+    elif agent_id == "naukri_ai":
+        db.set_user_naukri_subscribed(user_id, True)
+    else:
+        # Default: job_seeker
+        # 1. Flag user as agent buyer
+        db.set_user_agent_buyer(user_id, True)
 
-    # 2. Activate linked agent_buyers record if it exists
-    try:
-        from core.database import get_all_agent_buyers, update_buyer_subscription
-        buyers = get_all_agent_buyers()
-        matched = [b for b in buyers if b.get("email", "").lower() == user_email.lower()]
-        for buyer in matched:
-            update_buyer_subscription(buyer["id"], "active")
-    except Exception as e:
-        print(f"[Razorpay] Warning: Could not activate buyer record: {e}")
+        # 2. Activate linked agent_buyers record if it exists
+        try:
+            from core.database import get_all_agent_buyers, update_buyer_subscription
+            buyers = get_all_agent_buyers()
+            matched = [b for b in buyers if b.get("email", "").lower() == user_email.lower()]
+            for buyer in matched:
+                update_buyer_subscription(buyer["id"], "active")
+        except Exception as e:
+            print(f"[Razorpay] Warning: Could not activate buyer record: {e}")
 
-    print(f"[Razorpay] Payment verified: order={order_id} payment={payment_id} | User {user_id} activated")
+    print(f"[Razorpay] Payment verified: order={order_id} payment={payment_id} | User {user_id} activated for agent {agent_id}")
     return jsonify({"ok": True, "message": "Payment verified successfully", "activated": True})
 
 

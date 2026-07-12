@@ -10,7 +10,7 @@ Write-Host "1. Creating local archive (app.tar.gz)..." -ForegroundColor Cyan
 if (Test-Path app.tar.gz) { Remove-Item app.tar.gz -Force }
 
 # Create tarball using local bsdtar
-tar -czf app.tar.gz core frontend job_seeker_agent naukri_agent requirements.txt run.py linkedin-cookies.json linkedin-config.yml
+tar -czf app.tar.gz core frontend job_seeker_agent naukri_agent linkedin_jobs_agent requirements.txt run.py linkedin-cookies.json linkedin-config.yml
 
 Write-Host "2. Backing up existing database on EC2..." -ForegroundColor Cyan
 ssh -n -i $Key -o StrictHostKeyChecking=no "${User}@${IP}" 'mkdir -p /home/ubuntu/iitiim_backups && TS=$(date +%Y%m%d%H%M%S) && [ -f /home/ubuntu/iitiim/users.db ] && cp /home/ubuntu/iitiim/users.db /home/ubuntu/iitiim_backups/users.db.bak.$TS || true && [ -f /home/ubuntu/iitiim/jobs.db ] && cp /home/ubuntu/iitiim/jobs.db /home/ubuntu/iitiim_backups/jobs.db.bak.$TS || true'
