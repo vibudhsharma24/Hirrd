@@ -221,20 +221,7 @@
         Exit app
       </a>
     </nav>
-    <!-- Resume Tracker Block -->
-    <div id="sidebarResumeTracker" onclick="showResumeTrackerModal()" class="mt-4 p-3.5 rounded-xl bg-emerald-50/30 border border-emerald-100/30 cursor-pointer hover:bg-emerald-50/60 transition mb-2">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white grid place-items-center font-semibold text-xs shrink-0">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-          </svg>
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="text-[13px] font-semibold text-ink-900 leading-tight">Resume Tracker</div>
-          <div class="text-[11px] text-emerald-700/60 truncate leading-normal">Resumes sent per application</div>
-        </div>
-      </div>
-    </div>
+
     <!-- Password Manager Block -->
     <div id="sidebarPasswordManager" onclick="showPasswordManagerModal()" class="p-3.5 rounded-xl bg-indigo-50/30 border border-indigo-100/30 cursor-pointer hover:bg-indigo-50/60 transition mb-2">
       <div class="flex items-center gap-2.5">
@@ -302,7 +289,6 @@ let agentPrefs = {};
 let activeAgentTab = 'overview';
 let agentPollInterval = null;
 let connectionsPreview = null;
-let logInterval = null;
 let linkedinJobsAgentRunning = false;
 let naukriAgentRunning = false;
 let agentStatusPollInterval = null;
@@ -346,6 +332,90 @@ function getRenewsStr() {
   return renewsStr;
 }
 
+function getResumeTrackerHTML(applications, agentName) {
+  if (!applications || applications.length === 0) {
+    return `
+      <div class="sm-card p-6 bg-white text-center py-10">
+        <svg class="w-12 h-12 text-ink-700/20 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+        </svg>
+        <div class="text-ink-700/50 text-xs font-medium">No resumes submitted yet by ${agentName}.</div>
+        <p class="text-[11px] text-ink-700/40 mt-1 max-w-[280px] mx-auto">Applications and their submitted resumes will appear here once the agent starts submitting applications.</p>
+      </div>
+    `;
+  }
+
+  const listItems = applications.map(app => {
+    let resumeName = 'Default Resume';
+    const resumePath = app.resume_used || app.tailored_resume_path;
+    if (resumePath) {
+      const parts = resumePath.split(/[/\\]/);
+      resumeName = parts[parts.length - 1];
+    }
+    
+    const appliedDate = app.applied_at ? new Date(app.applied_at).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }) : 'Pending';
+
+    let statusClass = 'bg-amber-50 text-amber-700 border border-amber-100/50';
+    if (app.status === 'applied') {
+      statusClass = 'bg-emerald-50 text-emerald-800 border border-emerald-100/50';
+    } else if (app.status === 'failed') {
+      statusClass = 'bg-rose-50 text-rose-700 border border-rose-100/50';
+    }
+
+    return `
+      <div class="p-4 rounded-xl border border-ink-900/5 bg-ink-900/[0.01] flex items-center justify-between gap-4 hover:bg-ink-900/[0.02] transition">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-ink-900 text-sm truncate" title="${app.company}">${app.company}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold ${statusClass}">
+              ${(app.status || 'applied').toUpperCase()}
+            </span>
+          </div>
+          <div class="text-xs text-ink-700/60 truncate mt-0.5" title="${app.title}">${app.title}</div>
+          <div class="text-[10px] text-ink-700/40 mt-1 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-ink-700/30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Applied: ${appliedDate}
+          </div>
+        </div>
+        <div class="shrink-0 text-right">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 text-xs font-semibold rounded-xl border border-brand-100/30 max-w-[200px] truncate" title="${resumeName}">
+            <svg class="w-3.5 h-3.5 shrink-0 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+            </svg>
+            ${resumeName}
+          </span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="sm-card p-6 bg-white space-y-6">
+      <div>
+        <h3 class="font-display font-bold text-base text-ink-900 flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+          Resume Tracker
+        </h3>
+        <p class="text-xs text-ink-700/60 mt-1">Tracking which tailored resume was submitted by the agent for each application.</p>
+      </div>
+      <div class="space-y-3">
+        ${listItems}
+      </div>
+    </div>
+  `;
+}
+
 async function pollAgentData() {
   try {
     const meRes = await fetch('/api/me');
@@ -357,16 +427,6 @@ async function pollAgentData() {
         if (lastRunTextEl) {
           lastRunTextEl.innerHTML = `3-month plan &middot; renews ${getRenewsStr()} &middot; last run ${formatLastRunTime(U.last_activity_at)}`;
         }
-      }
-    }
-    
-    const logsRes = await fetch('/api/submission-logs');
-    if (logsRes.ok) {
-      subLogs = await logsRes.json();
-      if (activeAgentTab === 'overview') {
-        renderAgentLogsFeed();
-      } else if (activeAgentTab === 'logs') {
-        renderAgentFullLogsTable();
       }
     }
     
@@ -1181,7 +1241,7 @@ function renderLinkedinAgent() {
     <div class="flex gap-6 text-[13px] font-semibold text-ink-700/50 mt-6 border-b border-ink-900/5">
       <button onclick="switchLinkedinAgentTab('overview')" class="pb-3 border-b-2 ${activeLinkedinAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
       <button onclick="switchLinkedinAgentTab('preferences')" class="pb-3 border-b-2 ${activeLinkedinAgentTab === 'preferences' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Preferences</button>
-      <button onclick="switchLinkedinAgentTab('logs')" class="pb-3 border-b-2 ${activeLinkedinAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
+      <button onclick="switchLinkedinAgentTab('resume_tracker')" class="pb-3 border-b-2 ${activeLinkedinAgentTab === 'resume_tracker' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Resume Tracker</button>
     </div>
 
     <!-- Tab Content -->
@@ -1266,25 +1326,21 @@ function renderLinkedinAgentTabContent() {
         </div>
       </div>
     </div>`;
-  } else if (activeLinkedinAgentTab === 'logs') {
+  } else if (activeLinkedinAgentTab === 'resume_tracker') {
     container.innerHTML = `
-    <div class="sm-card p-6 bg-white">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="font-display font-bold text-base text-ink-900">Execution Logs</h3>
-          <p class="text-xs text-ink-700/60 mt-1">Real-time execution log of the LinkedIn Jobs Agent.</p>
-        </div>
-      </div>
-      <div class="font-mono text-[11px] bg-ink-900 text-ink-100 p-4 rounded-xl h-64 overflow-y-auto space-y-1.5 leading-relaxed">
-        <div class="text-ink-400">[2026-07-10 14:02:10] Agent initialized. Target: Software Engineer in India.</div>
-        <div class="text-ink-400">[2026-07-10 14:02:12] Querying database for unsurfaced LinkedIn postings...</div>
-        <div class="text-emerald-400">[2026-07-10 14:02:15] Found 5 match candidates in database. Running de-duplication...</div>
-        <div class="text-emerald-400">[2026-07-10 14:02:16] Zero duplicate job matches detected. Ready to process.</div>
-        <div class="text-ink-400">[2026-07-10 14:02:20] Resolving recruiter availability for job ID 105...</div>
-        <div class="text-brand-300">[2026-07-10 14:02:22] Recruiter identified: Alice Message. Sending connection note...</div>
-        <div class="text-emerald-400">[2026-07-10 14:02:24] Connection request note successfully sent. Status tracked as connection_sent.</div>
-      </div>
+    <div class="sm-card p-6 bg-white text-center py-10">
+      <p class="text-ink-700/60 text-xs">Loading tracker data...</p>
     </div>`;
+
+    fetch(`/api/users/${U.id}/linkedin-applications`)
+      .then(res => res.json())
+      .then(data => {
+        const apps = data.ok ? data.applications : [];
+        container.innerHTML = getResumeTrackerHTML(apps, 'LinkedIn Jobs Agent');
+      })
+      .catch(err => {
+        container.innerHTML = `<div class="text-xs text-rose-600 p-4">Failed to load tracker: ${err.message}</div>`;
+      });
   }
 }
 
@@ -1437,7 +1493,7 @@ function renderNaukriAgent() {
     <div class="flex gap-6 text-[13px] font-semibold text-ink-700/50 mt-6 border-b border-ink-900/5">
       <button onclick="switchNaukriAgentTab('overview')" class="pb-3 border-b-2 ${activeNaukriAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
       <button onclick="switchNaukriAgentTab('answer-bank')" class="pb-3 border-b-2 ${activeNaukriAgentTab === 'answer-bank' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Answer Bank</button>
-      <button onclick="switchNaukriAgentTab('logs')" class="pb-3 border-b-2 ${activeNaukriAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
+      <button onclick="switchNaukriAgentTab('resume_tracker')" class="pb-3 border-b-2 ${activeNaukriAgentTab === 'resume_tracker' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Resume Tracker</button>
     </div>
 
     <!-- Tab Content -->
@@ -1606,41 +1662,21 @@ async function renderNaukriAgentTabContent() {
       console.error("Failed to load answer bank:", e);
     }
 
-  } else if (activeNaukriAgentTab === 'logs') {
+  } else if (activeNaukriAgentTab === 'resume_tracker') {
     container.innerHTML = `
-    <div class="sm-card p-6 bg-white">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="font-display font-bold text-base text-ink-900">Execution Logs</h3>
-          <p class="text-xs text-ink-700/60 mt-1">Real-time execution log of the Naukri AI Agent.</p>
-        </div>
-      </div>
-      <div id="naukriLogsContainer" class="font-mono text-[11px] bg-ink-900 text-ink-100 p-4 rounded-xl h-64 overflow-y-auto space-y-1.5 leading-relaxed">
-        <div class="text-ink-400">[System] Initializing log viewer...</div>
-      </div>
+    <div class="sm-card p-6 bg-white text-center py-10">
+      <p class="text-ink-700/60 text-xs">Loading tracker data...</p>
     </div>`;
 
-    try {
-      const res = await fetch(`/api/users/${U.id}/naukri-logs`);
-      const data = await res.json();
-      const logEl = document.getElementById('naukriLogsContainer');
-      if (logEl) {
-        if (data.ok && data.logs && data.logs.length > 0) {
-          logEl.innerHTML = data.logs.map(log => `
-            <div class="${log.status === 'success' ? 'text-emerald-400' : log.status === 'failed' ? 'text-rose-400' : 'text-ink-400'}">
-              [${new Date(log.created_at || Date.now()).toLocaleTimeString()}] ${log.message}
-            </div>
-          `).join('');
-        } else {
-          logEl.innerHTML = `
-            <div class="text-ink-400">[2026-07-11 10:10:02] Agent initialized.</div>
-            <div class="text-emerald-400">[2026-07-11 10:10:05] Idle. Click "Run now" to trigger job search.</div>
-          `;
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load logs:", e);
-    }
+    fetch(`/api/users/${U.id}/naukri-applications`)
+      .then(res => res.json())
+      .then(data => {
+        const apps = data.ok ? data.applications : [];
+        container.innerHTML = getResumeTrackerHTML(apps, 'Naukri AI Agent');
+      })
+      .catch(err => {
+        container.innerHTML = `<div class="text-xs text-rose-600 p-4">Failed to load tracker: ${err.message}</div>`;
+      });
   }
 }
 
@@ -2476,7 +2512,7 @@ function renderAgent() {
     <div class="flex gap-6 text-[13px] font-semibold text-ink-700/50 mt-6 border-b border-ink-900/5">
       <button onclick="switchAgentTab('overview')" class="pb-3 border-b-2 ${activeAgentTab === 'overview' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Overview</button>
       <button onclick="switchAgentTab('preferences')" class="pb-3 border-b-2 ${activeAgentTab === 'preferences' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Preferences</button>
-      <button onclick="switchAgentTab('logs')" class="pb-3 border-b-2 ${activeAgentTab === 'logs' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Logs</button>
+      <button onclick="switchAgentTab('resume_tracker')" class="pb-3 border-b-2 ${activeAgentTab === 'resume_tracker' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Resume Tracker</button>
       <button onclick="switchAgentTab('subscription')" class="pb-3 border-b-2 ${activeAgentTab === 'subscription' ? 'border-brand-500 text-brand-700' : 'border-transparent hover:text-brand-700'}">Subscription</button>
     </div>
 
@@ -2575,39 +2611,6 @@ function renderAgentTabContent() {
             <div class="mt-2 text-[11px] text-ink-700/60">Runs every 4 hours &middot; 8 AM - 8 PM</div>
           </div>
         </div>
-
-        <!-- Live Activity timeline -->
-        <div class="sm-card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <div class="text-[12px] font-semibold tracking-widest text-brand-700">LIVE ACTIVITY</div>
-              <h3 class="font-display font-bold text-lg mt-0.5">Real-time Outreach Logs</h3>
-            </div>
-            <span id="agentStreamingStatus" class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-              <span class="pulse-dot"></span>streaming
-            </span>
-          </div>
-          
-          <!-- Interactive Terminal Console -->
-          <div class="mt-4 border border-ink-900/10 rounded-2xl overflow-hidden bg-[#0c0f12] text-zinc-100 font-mono text-xs shadow-lg">
-            <div class="bg-[#161b22] px-4 py-2.5 border-b border-ink-900/10 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-rose-500"></span>
-                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
-                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
-                <span class="text-[11px] font-semibold text-zinc-400 ml-2">agent-session.log</span>
-              </div>
-              <button onclick="clearTerminalLogs()" class="text-[10px] text-zinc-400 hover:text-white px-2 py-0.5 rounded bg-[#21262d] hover:bg-[#30363d] transition">
-                Clear
-              </button>
-            </div>
-            <div class="p-4 h-64 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-700" id="agentTerminalLogs">
-              <div class="text-zinc-500">// Waiting for logs... Click "Run now" or "Resume agent" to start.</div>
-            </div>
-          </div>
-        </div>
-
-
       </div>
 
       <!-- Right side (1/3 width) - Mini Preferences Panel -->
@@ -2680,7 +2683,6 @@ function renderAgentTabContent() {
     </div>`;
 
     renderMiniPrefsTags();
-    renderAgentLogsFeed();
 
   }
 
@@ -2782,29 +2784,20 @@ function renderAgentTabContent() {
     renderFullPrefsTags();
   }
 
-  else if (activeAgentTab === 'logs') {
+  else if (activeAgentTab === 'resume_tracker') {
     container.innerHTML = `
-    <div class="sm-card p-6">
-      <div class="text-[12px] font-semibold tracking-widest text-brand-700 mb-1">AGENT EXECUTION LOGS</div>
-      <h3 class="font-display font-bold text-lg mb-4">Complete System Output Logs</h3>
-      <div class="overflow-x-auto mt-4">
-        <table class="w-full text-left border-collapse text-[13px]">
-          <thead>
-            <tr class="border-b border-ink-900/5 text-ink-700/50">
-              <th class="pb-3 font-semibold">Timestamp</th>
-              <th class="pb-3 font-semibold">Action / Step</th>
-              <th class="pb-3 font-semibold">Target URL</th>
-              <th class="pb-3 font-semibold">Screenshot / DOM</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-ink-900/5" id="agentFullLogsTable">
-            <tr><td colspan="4" class="py-6 text-center text-ink-700/40">Loading logs...</td></tr>
-          </tbody>
-        </table>
-      </div>
+    <div class="sm-card p-6 bg-white text-center py-10">
+      <p class="text-ink-700/60 text-xs">Loading tracker data...</p>
     </div>`;
 
-    renderAgentFullLogsTable();
+    fetch('/api/my-applications')
+      .then(res => res.json())
+      .then(apps => {
+        container.innerHTML = getResumeTrackerHTML(apps, 'Job Seeker Agent');
+      })
+      .catch(err => {
+        container.innerHTML = `<div class="text-xs text-rose-600 p-4">Failed to load tracker: ${err.message}</div>`;
+      });
   }
 
   else if (activeAgentTab === 'subscription') {
@@ -3057,136 +3050,7 @@ async function saveFullAgentPrefs() {
   }
 }
 
-async function renderAgentLogsFeed() {
-  const term = document.getElementById('agentTerminalLogs');
-  if (!term) return;
 
-  await pollLogs();
-
-  if (logInterval) clearInterval(logInterval);
-  logInterval = setInterval(pollLogs, 1500);
-}
-
-async function pollLogs() {
-  const term = document.getElementById('agentTerminalLogs');
-  if (!term) {
-    if (logInterval) {
-      clearInterval(logInterval);
-      logInterval = null;
-    }
-    return;
-  }
-  
-  try {
-    const res = await fetch('/api/agent/live-logs');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ok && data.logs && data.logs.trim() !== '') {
-        const lines = data.logs.split('\n');
-        term.innerHTML = lines.map(line => {
-          if (!line.trim()) return '';
-          let colorClass = 'text-zinc-300';
-          if (line.toLowerCase().includes('error') || line.toLowerCase().includes('fail') || line.toLowerCase().includes('exception')) {
-            colorClass = 'text-rose-400 font-semibold';
-          } else if (line.toLowerCase().includes('success') || line.toLowerCase().includes('done') || line.toLowerCase().includes('completed') || line.toLowerCase().includes('successfully') || line.toLowerCase().includes('ready')) {
-            colorClass = 'text-emerald-400 font-semibold';
-          } else if (line.toLowerCase().includes('warning') || line.toLowerCase().includes('checkpoint')) {
-            colorClass = 'text-amber-400';
-          } else if (line.includes('[Agent]') || line.includes('[Connector]') || line.includes('[Scraper]') || line.includes('[API]')) {
-            colorClass = 'text-blue-400';
-          }
-          return `<div class="${colorClass}">${escapeHtml(line)}</div>`;
-        }).join('');
-        term.scrollTop = term.scrollHeight;
-        
-        const streamEl = document.getElementById('agentStreamingStatus');
-        if (streamEl) {
-          streamEl.className = 'flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full';
-          streamEl.innerHTML = '<span class="pulse-dot"></span>streaming';
-        }
-      } else {
-        const agentStatus = U.agent_status || 'inactive';
-        const isActive = agentStatus === 'running';
-        if (isActive) {
-          term.innerHTML = `<div class="text-zinc-500">// Agent is active. Waiting for incoming execution log stream...</div>`;
-        } else {
-          term.innerHTML = `<div class="text-zinc-500">// Agent is inactive. Click 'Run now' or 'Resume agent' to start.</div>`;
-        }
-        
-        const streamEl = document.getElementById('agentStreamingStatus');
-        if (streamEl) {
-          streamEl.className = 'flex items-center gap-1.5 text-[11px] font-semibold text-zinc-500 bg-zinc-50 px-2 py-0.5 rounded-full';
-          streamEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>idle';
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Error polling agent logs:', e);
-  }
-}
-
-function clearTerminalLogs() {
-  const term = document.getElementById('agentTerminalLogs');
-  if (term) {
-    term.innerHTML = `<div class="text-zinc-500">// Logs cleared.</div>`;
-  }
-}
-
-function escapeHtml(text) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function renderAgentFullLogsTable() {
-  const tbody = document.getElementById('agentFullLogsTable');
-  if (!tbody) return;
-
-  if (subLogs.length === 0) {
-    tbody.innerHTML = `
-      <tr class="hover:bg-ink-900/[.01] transition-colors">
-        <td class="py-3.5 text-ink-700">Today, 11:42 AM</td>
-        <td class="py-3.5"><div class="font-semibold">linkedin_dm_sent</div></td>
-        <td class="py-3.5 font-mono text-xs text-brand-700">https://www.linkedin.com/jobs/view/382902</td>
-        <td class="py-3.5"><span class="text-ink-700/40">No Media</span></td>
-      </tr>
-      <tr class="hover:bg-ink-900/[.01] transition-colors">
-        <td class="py-3.5 text-ink-700">Today, 11:28 AM</td>
-        <td class="py-3.5"><div class="font-semibold">cold_email_dispatched</div></td>
-        <td class="py-3.5 font-mono text-xs text-brand-700">mailto:rohan@razorpay.com</td>
-        <td class="py-3.5"><span class="text-ink-700/40">No Media</span></td>
-      </tr>
-      <tr class="hover:bg-ink-900/[.01] transition-colors">
-        <td class="py-3.5 text-ink-700">Today, 11:03 AM</td>
-        <td class="py-3.5"><div class="font-semibold">portal_apply_success</div></td>
-        <td class="py-3.5 font-mono text-xs text-brand-700">https://careers.rippling.com/jobs/pm</td>
-        <td class="py-3.5"><span class="text-ink-700/40">No Media</span></td>
-      </tr>
-    `;
-  } else {
-    tbody.innerHTML = subLogs.map(log => {
-      const d = new Date(log.timestamp);
-      const formattedDate = d.toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) + ', ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      const screenshotLink = log.screenshot_path ? `<a href="/api/applications/${log.application_id}/screenshot" target="_blank" class="text-brand-700 font-semibold hover:underline">Screenshot ↗</a>` : '<span class="text-ink-700/40">No Media</span>';
-      
-      const stepDisplay = log.post_company 
-        ? `<div class="font-semibold">${log.step_name}</div><div class="text-[10px] text-ink-700/50">${log.post_title || ''} @ ${log.post_company}</div>`
-        : `<div class="font-semibold">${log.step_name}</div>`;
-
-      return `
-        <tr class="hover:bg-ink-900/[.01] transition-colors">
-          <td class="py-3.5 text-ink-700">${formattedDate}</td>
-          <td class="py-3.5">${stepDisplay}</td>
-          <td class="py-3.5 font-mono text-xs text-brand-700 truncate max-w-[250px]" title="${log.page_url || ''}">${log.page_url || '—'}</td>
-          <td class="py-3.5">${screenshotLink}</td>
-        </tr>
-      `;
-    }).join('');
-  }
-}
 
 async function renderInvoicesTable() {
   const tbody = document.getElementById('invoicesTable');
@@ -3225,19 +3089,6 @@ async function runAgentNow() {
       U.agent_status = 'running';
       renderSidebar();
       renderDashboard();
-      setTimeout(async () => {
-        try {
-          const logsRes = await fetch('/api/submission-logs');
-          if (logsRes.ok) {
-            subLogs = await logsRes.json();
-            if (activeAgentTab === 'overview') {
-              renderAgentLogsFeed();
-            } else if (activeAgentTab === 'logs') {
-              renderAgentFullLogsTable();
-            }
-          }
-        } catch (e) {}
-      }, 2000);
     } else {
       alert('Error: ' + (data.error || 'Failed to trigger agent run'));
     }
@@ -3894,80 +3745,7 @@ function closePasswordManagerModal(event) {
   }
 }
 
-async function showResumeTrackerModal() {
-  const modal = document.getElementById('resumeTrackerModal');
-  if (!modal) return;
-  
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  
-  const listEl = document.getElementById('resumeTrackerList');
-  if (!listEl) return;
-  
-  try {
-    const res = await fetch('/api/my-applications');
-    if (!res.ok) {
-      listEl.innerHTML = `<div class="text-center py-8 text-rose-600 font-semibold text-xs">Failed to load resume applications.</div>`;
-      return;
-    }
-    const data = await res.json();
-    if (data.length === 0) {
-      listEl.innerHTML = `
-        <div class="text-center py-10">
-          <svg class="w-12 h-12 text-ink-700/20 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-          </svg>
-          <div class="text-ink-700/50 text-xs font-medium">No resumes submitted yet.</div>
-          <p class="text-[11px] text-ink-700/40 mt-1 max-w-[280px] mx-auto">Applications and their submitted resumes will appear here once the agent starts submitting applications.</p>
-        </div>
-      `;
-      return;
-    }
-    
-    listEl.innerHTML = data.map((app, idx) => {
-      let resumeName = 'Default Resume';
-      if (app.resume_used) {
-        const parts = app.resume_used.split(/[/\\]/);
-        resumeName = parts[parts.length - 1];
-      }
-      
-      const appliedDate = app.applied_at ? new Date(app.applied_at).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }) : 'Pending';
 
-      return `
-        <div class="p-3.5 rounded-xl border border-ink-900/5 bg-ink-900/[0.01] flex items-center justify-between gap-4">
-          <div class="min-w-0 flex-1">
-            <div class="font-bold text-ink-900 text-[13px] truncate" title="${app.company}">${app.company}</div>
-            <div class="text-[11px] text-ink-700/60 truncate mt-0.5" title="${app.title}">${app.title}</div>
-            <div class="text-[10px] text-ink-700/40 mt-1">Applied: ${appliedDate}</div>
-          </div>
-          <div class="shrink-0 text-right">
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-semibold rounded-full border border-emerald-100/50 max-w-[180px] truncate" title="${resumeName}">
-              <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-              </svg>
-              ${resumeName}
-            </span>
-          </div>
-        </div>
-      `;
-    }).join('');
-  } catch (e) {
-    listEl.innerHTML = `<div class="text-center py-8 text-rose-600 font-semibold text-xs">Error loading resume data: ${e.message}</div>`;
-  }
-}
-
-function closeResumeTrackerModal(event) {
-  if (event && event.target !== document.getElementById('resumeTrackerModal')) return;
-  const modal = document.getElementById('resumeTrackerModal');
-  if (modal) {
-    modal.classList.remove('flex');
-    modal.classList.add('hidden');
-  }
-}
 
 function togglePortalPasswordVisibility(btn) {
   const input = btn.previousElementSibling;
@@ -3999,33 +3777,7 @@ async function copyToClipboard(text, btn) {
 loadDashboard();
 </script>
 
-<!-- ── Resume Tracker Modal ────────────────────────────────────────── -->
-<div id="resumeTrackerModal" class="fixed inset-0 bg-ink-900/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden" onclick="closeResumeTrackerModal(event)">
-  <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-ink-900/5 overflow-hidden slide-in" onclick="event.stopPropagation()">
-    <!-- Modal Header -->
-    <div class="px-6 py-5 border-b border-ink-900/5 flex items-center justify-between">
-      <div>
-        <h3 class="font-display font-bold text-base text-ink-900 flex items-center gap-2">
-          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-          </svg>
-          Resume Tracker
-        </h3>
-        <p class="text-[11px] text-ink-700/60 mt-0.5">Tracking which resume was submitted to each company.</p>
-      </div>
-      <button onclick="closeResumeTrackerModal(null)" class="w-8 h-8 rounded-full border border-ink-900/10 hover:bg-ink-900/5 grid place-items-center text-ink-700 transition">
-        ✕
-      </button>
-    </div>
 
-    <!-- Modal Body -->
-    <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-      <div id="resumeTrackerList" class="space-y-3">
-        <div class="text-center py-8 text-ink-700/40 text-xs">Loading resumes...</div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ── Password Manager Modal ────────────────────────────────────────── -->
 <div id="passwordManagerModal" class="fixed inset-0 bg-ink-900/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden" onclick="closePasswordManagerModal(event)">

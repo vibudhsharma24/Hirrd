@@ -900,6 +900,21 @@ def get_user_naukri_apps(user_id):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/users/<int:user_id>/linkedin-applications", methods=["GET"])
+def get_user_linkedin_apps(user_id):
+    try:
+        apps = db.get_linkedin_applications(user_id)
+        for app in apps:
+            job_details = db.get_linkedin_job_by_id(app.get("job_id"))
+            if job_details:
+                app["title"] = job_details.get("title")
+                app["company"] = job_details.get("company")
+                app["url"] = job_details.get("url")
+        return jsonify({"ok": True, "applications": apps})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/users/<int:user_id>/linkedin-outreach-funnel", methods=["GET"])
 def get_user_linkedin_outreach_funnel(user_id):
     try:
@@ -2158,6 +2173,116 @@ def save_master_cv_endpoint():
     cv_data = data["cv"]
     db.save_master_cv(flask_current_user.id, cv_data)
     return jsonify({"ok": True, "message": "Master CV saved successfully"})
+
+
+@app.route("/api/user/master-cv/save-and-recommend-role", methods=["POST"])
+@login_required
+def save_and_recommend_role():
+    """Save user's Master CV details and generate the best roles for their active agent subscriptions."""
+    user = db.get_user(flask_current_user.id)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+
+    data = request.get_json(silent=True)
+    if not data or "cv" not in data:
+        return jsonify({"ok": False, "error": "Missing 'cv' payload"}), 400
+    cv_data = data["cv"]
+
+    # 1. Save the CV details first
+    db.save_master_cv(flask_current_user.id, cv_data)
+
+    # 2. Call Claude to generate the best matching roles
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"ok": False, "error": "Anthropic API key not configured."}), 500
+
+    try:
+        import json as _json
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = f"""You are an expert career advisory AI.
+Given the candidate's CV details below, generate the top 3 best matching job role titles for this candidate.
+
+Rules:
+1. The roles must be extremely specific and directly related to their experience and skills.
+2. Output strictly a JSON array of strings containing exactly 3 roles (e.g. ["Senior Software Engineer", "Python Backend Developer", "Tech Lead"]).
+3. Keep each role title concise (2-4 words maximum).
+4. Do NOT output any other text, markdown, explanation, or greeting. Output ONLY the JSON array.
+
+CANDIDATE CV DETAILS:
+{_json.dumps(cv_data, indent=2)[:6000]}"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=150,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        
+        try:
+            generated_roles = _json.loads(raw.strip())
+            if not isinstance(generated_roles, list):
+                generated_roles = [str(generated_roles)]
+        except Exception:
+            # Fallback regex extraction
+            import re
+            matches = re.findall(r'"([^"]+)"', raw)
+            if matches:
+                generated_roles = matches[:3]
+            else:
+                generated_roles = ["Software Engineer"]
+
+        # Ensure generated_roles is sanitized
+        generated_roles = [r.strip() for r in generated_roles if r and r.strip()]
+        if not generated_roles:
+            generated_roles = ["Software Engineer"]
+
+        # 3. Update the preferences of subscribed agents
+        updated_agents = []
+
+        # General Job Seeker Agent
+        if user.get("is_agent_buyer"):
+            prefs_str = user.get("job_preferences") or "{}"
+            try:
+                prefs = _json.loads(prefs_str)
+            except Exception:
+                prefs = {}
+            prefs["roles"] = generated_roles
+            with db._connect() as conn:
+                conn.execute(
+                    "UPDATE users SET job_preferences = ? WHERE id = ?",
+                    (_json.dumps(prefs), flask_current_user.id),
+                )
+                conn.commit()
+            updated_agents.append("Job Seeker Agent")
+
+        # LinkedIn Jobs Agent
+        if user.get("linkedin_jobs_subscribed"):
+            prefs = user.get("linkedin_preferences") or {}
+            prefs["roles"] = generated_roles
+            db.update_user_linkedin_preferences(flask_current_user.id, prefs)
+            updated_agents.append("LinkedIn Jobs Agent")
+
+        # Naukri AI Agent
+        if user.get("naukri_subscribed"):
+            prefs = user.get("naukri_preferences") or {}
+            prefs["roles"] = generated_roles
+            db.update_user_naukri_preferences(flask_current_user.id, prefs)
+            updated_agents.append("Naukri AI Agent")
+
+        return jsonify({
+            "ok": True,
+            "message": "CV saved successfully and recommended roles sent to subscribed agents.",
+            "updated_agents": updated_agents
+        })
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Failed to recommend roles: {str(e)[:300]}"}), 500
+
 
 
 @app.route("/api/user/master-cv/parse-resume", methods=["POST"])

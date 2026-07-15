@@ -33,7 +33,8 @@ function _renderCVForm() {
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Import from Resume
         </button>
-        <button onclick="_saveMasterCV()" id="cvSaveBtn" class="px-5 py-2 bg-ink-900 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition">Save CV</button>
+        <button onclick="_saveMasterCV()" id="cvSaveBtn" class="px-5 py-2 bg-white border border-brand-200 text-brand-700 text-xs font-bold rounded-xl hover:bg-brand-50 transition">Save CV</button>
+        <button onclick="_saveDetailsAndRecommend()" id="cvSaveDetailsBtn" class="px-5 py-2 bg-ink-900 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition">Save Details</button>
       </div>
     </div>
     <div id="cvSaveStatus" class="text-xs font-semibold mb-4 hidden"></div>
@@ -628,6 +629,29 @@ async function _saveMasterCV() {
     status.textContent = 'Save failed: '+e.message;
   }
   btn.disabled = false; btn.textContent = 'Save CV';
+  setTimeout(() => status.classList.add('hidden'), 4000);
+}
+
+// ── Save Details & Recommend Roles ──
+async function _saveDetailsAndRecommend() {
+  _readCurrentTab();
+  const btn = document.getElementById('cvSaveDetailsBtn');
+  const status = document.getElementById('cvSaveStatus');
+  btn.disabled = true; btn.textContent = 'Saving details…';
+  try {
+    const res = await fetch('/api/user/master-cv/save-and-recommend-role', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({cv: _cvData})
+    });
+    const data = await res.json();
+    status.classList.remove('hidden','text-rose-700'); status.classList.add('text-emerald-700');
+    status.textContent = data.ok ? '✓ Details saved and recommended roles sent to subscribed agents!' : 'Error: '+(data.error||'Unknown');
+    if (!data.ok) { status.classList.replace('text-emerald-700','text-rose-700'); }
+  } catch(e) {
+    status.classList.remove('hidden','text-emerald-700'); status.classList.add('text-rose-700');
+    status.textContent = 'Save failed: '+e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Save Details';
   setTimeout(() => status.classList.add('hidden'), 4000);
 }
 

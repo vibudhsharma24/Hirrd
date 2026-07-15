@@ -90,7 +90,7 @@ class TestApplier(unittest.TestCase):
         mock_session_valid.return_value = True
         
         # Mock answers: Notice period is approved, Relocate is pending_review
-        def get_answer_side_effect(user_id, question):
+        def get_answer_side_effect(user_id, question, *args, **kwargs):
             if "notice" in question.lower():
                 return "Immediate", "approved"
             return "Yes, willing to relocate", "pending_review"
@@ -136,13 +136,16 @@ class TestApplier(unittest.TestCase):
         def page_locator_side_effect(selector):
             locator_mock = MagicMock()
             locator_mock.first = MagicMock()
+            locator_mock.all = AsyncMock(return_value=[])
+            locator_mock.first.locator = MagicMock(return_value=locator_mock)
+            locator_mock.locator = MagicMock(return_value=locator_mock)
             
             if "button.applied" in selector or "already-applied" in selector:
                 locator_mock.first.count = AsyncMock(return_value=0)
                 return locator_mock
             elif "button.apply-button" in selector:
                 return mock_apply_btn
-            elif "question" in selector or "chatbot-message" in selector:
+            elif "div.question" in selector or "question-label" in selector:
                 # We need to distinguish between approved and pending_review jobs
                 current_url = mock_page.goto.call_args[0][0]
                 locator_mock.count = AsyncMock(return_value=1)
@@ -155,11 +158,14 @@ class TestApplier(unittest.TestCase):
                 
                 # Input elements inside nth_mock
                 input_mock = MagicMock()
+                input_mock.all = AsyncMock(return_value=[])
+                input_mock.locator = MagicMock(return_value=input_mock)
                 input_mock.first = MagicMock()
                 input_mock.first.count = AsyncMock(return_value=1)
                 input_mock.first.fill = AsyncMock()
                 input_mock.first.select_option = AsyncMock()
                 input_mock.first.click = AsyncMock()
+                input_mock.first.locator = MagicMock(return_value=input_mock)
                 
                 nth_mock.locator = MagicMock(return_value=input_mock)
                 locator_mock.nth = MagicMock(return_value=nth_mock)
