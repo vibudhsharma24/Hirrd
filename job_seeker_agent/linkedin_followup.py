@@ -29,7 +29,6 @@ Config:
 import argparse
 import json
 import os
-import sqlite3
 import sys
 import time
 import random
@@ -102,29 +101,17 @@ CONFIG = {
 # DATABASE
 # ─────────────────────────────────────────────────────────────────────────────
 
-def open_db(db_path: Path) -> sqlite3.Connection:
-    """Open jobs.db and add followup tracking columns if they don't exist."""
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA foreign_keys = ON")
-
-    # Add followup columns — silently ignored if already present
-    for col, definition in [
-        ("followup_sent_at",  "TEXT DEFAULT NULL"),
-        ("followup_status",   "TEXT DEFAULT NULL"),
-        ("followup_msg",      "TEXT DEFAULT NULL"),
-    ]:
-        try:
-            conn.execute(f"ALTER TABLE posts ADD COLUMN {col} {definition}")
-            conn.commit()
-        except sqlite3.OperationalError:
-            pass  # column already exists
-
-    return conn
+def open_db(db_path: Path):
+    """Get connection to RDS MySQL jobs database."""
+    import sys
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+    from core.database import get_db_connection
+    return get_db_connection("jobs")
 
 
-def load_pending(conn: sqlite3.Connection, limit: int) -> list[sqlite3.Row]:
+def load_pending(conn, limit: int) -> list:
     """
     Load posts where:
       - A connection request was sent (connected_at IS NOT NULL)
@@ -147,7 +134,7 @@ def load_pending(conn: sqlite3.Connection, limit: int) -> list[sqlite3.Row]:
     """, (limit,)).fetchall()
 
 
-def mark_followup(conn: sqlite3.Connection, post_id: int, status: str, message: str = ""):
+def mark_followup(conn, post_id: int, status: str, message: str = ""):
     """Record the followup result in the DB."""
     conn.execute("""
         UPDATE posts

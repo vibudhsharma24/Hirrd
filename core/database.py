@@ -5,13 +5,115 @@ SQLite database layer for IITIIMJobAssistant.
 All DB files live in the project root (one directory up from core/).
 """
 
-import sqlite3
+import pymysql
+import pymysql.cursors
 import hashlib
 import os
 import re
 import json
 from datetime import datetime, timezone
 from urllib.parse import urlparse
+
+# ── Wrapper classes to emulate SQLite DB-API and Row factory in PyMySQL ────────
+class MySQLCursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def execute(self, sql, params=None):
+        # Translate SQLite ? to MySQL %s, ignoring ? inside string literals
+        pattern = r"('[^']*'|\"[^\"]*\"|\?[?]*)"
+        def repl(match):
+            token = match.group(0)
+            return '%s' if token == '?' else token
+        sql = re.sub(pattern, repl, sql)
+
+        # Translate other SQLite-specific keywords
+        sql = re.sub(r'(?i)\bINSERT\s+OR\s+IGNORE\b', 'INSERT IGNORE', sql)
+        sql = re.sub(r'(?i)\bINSERT\s+OR\s+REPLACE\b', 'REPLACE', sql)
+        sql = re.sub(r'(?i)\bCREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\b', 'CREATE INDEX', sql)
+        sql = re.sub(r'(?i)\bINTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b', 'INT AUTO_INCREMENT PRIMARY KEY', sql)
+
+        self.cursor.execute(sql, params)
+        return self
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        if row is None:
+            return None
+        return MySQLRowWrapper(row)
+
+    def fetchall(self):
+        rows = self.cursor.fetchall()
+        return [MySQLRowWrapper(r) for r in rows]
+
+    @property
+    def lastrowid(self):
+        return self.cursor.lastrowid
+
+    @property
+    def rowcount(self):
+        return self.cursor.rowcount
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        row = self.cursor.fetchone()
+        if row is None:
+            raise StopIteration
+        return MySQLRowWrapper(row)
+
+
+class MySQLRowWrapper(dict):
+    """Emulate sqlite3.Row: access columns by name (dict keys) and index (0, 1, 2, ...)."""
+    def __init__(self, data):
+        super().__init__(data)
+        self._keys = list(data.keys())
+        self._values = list(data.values())
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._values[key]
+        return super().__getitem__(key)
+
+    def keys(self):
+        return self._keys
+
+
+class MySQLConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def cursor(self):
+        return MySQLCursorWrapper(self.conn.cursor())
+
+    def execute(self, sql, params=None):
+        cursor = self.cursor()
+        cursor.execute(sql, params)
+        return cursor
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
+    def close(self):
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        else:
+            self.commit()
+        self.close()
+
 
 # ── Paths — everything is relative to the project root (parent of core/) ──────
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -24,21 +126,23 @@ GENERATED_RESUMES_DIR = os.path.join(PROJECT_ROOT, "resumes", "generated")
 
 # ── Connection helpers ─────────────────────────────────────────────────────────
 def _connect():
-    """Connection to users.db (user registration system)."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row          # access columns by name
-    conn.execute("PRAGMA journal_mode=WAL") # safe concurrent reads
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+    """Connection to RDS MySQL database."""
+    conn = pymysql.connect(
+        host=os.getenv("DB_HOST"),
+        port=int(os.getenv("DB_PORT", 3306)),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor,
+        autocommit=True
+    )
+    return MySQLConnectionWrapper(conn)
 
 
 def _connect_jobs():
-    """Connection to jobs.db (populated by linkedin-scan.mjs)."""
-    conn = sqlite3.connect(JOBS_DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+    """Connection to RDS MySQL database (sharing same RDS instance)."""
+    return _connect()
 
 
 def get_db_connection(db_name: str = "users"):
@@ -46,7 +150,7 @@ def get_db_connection(db_name: str = "users"):
     Args:
         db_name: 'users' for users.db, 'jobs' for jobs.db
     Returns:
-        sqlite3.Connection with row_factory set.
+        MySQLConnectionWrapper connection.
     """
     if db_name == "jobs":
         return _connect_jobs()
@@ -67,31 +171,31 @@ def init_db():
         # Create users table if it doesn't already exist (preserves existing data)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                name          TEXT    NOT NULL,
-                last_name     TEXT    NOT NULL,
-                email         TEXT    NOT NULL UNIQUE,
-                password_hash TEXT    NOT NULL,
-                linkedin_url  TEXT    DEFAULT '',
-                mobile_number TEXT    DEFAULT '',
-                avatar        TEXT    DEFAULT '',
-                status        TEXT    DEFAULT 'pending',
-                reject_reason TEXT    DEFAULT '',
-                submitted_at  TEXT    NOT NULL
+                id            INT AUTO_INCREMENT PRIMARY KEY,
+                name          VARCHAR(255) NOT NULL DEFAULT '',
+                last_name     VARCHAR(255) NOT NULL DEFAULT '',
+                email         VARCHAR(255) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                linkedin_url  VARCHAR(512) DEFAULT '',
+                mobile_number VARCHAR(50)  DEFAULT '',
+                avatar        VARCHAR(10)  DEFAULT '',
+                status        VARCHAR(50)  DEFAULT 'pending',
+                reject_reason TEXT,
+                submitted_at  VARCHAR(100) NOT NULL
             )
         """)
 
         # Create google_connections table if it doesn't exist
         conn.execute("""
             CREATE TABLE IF NOT EXISTS google_connections (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id       INTEGER NOT NULL UNIQUE,
-                google_email  TEXT    NOT NULL,
+                id            INT AUTO_INCREMENT PRIMARY KEY,
+                user_id       INT NOT NULL UNIQUE,
+                google_email  VARCHAR(255) NOT NULL,
                 access_token  TEXT    NOT NULL,
                 refresh_token TEXT    NOT NULL,
-                token_expiry  TEXT    NOT NULL,
+                token_expiry  VARCHAR(100) NOT NULL,
                 scopes        TEXT    NOT NULL,
-                connected_at  TEXT    NOT NULL,
+                connected_at  VARCHAR(100) NOT NULL,
                 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         """)
@@ -99,38 +203,38 @@ def init_db():
         # Create agent_buyers table if it doesn't already exist (preserves existing buyers)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS agent_buyers (
-                id                     INTEGER PRIMARY KEY AUTOINCREMENT,
-                name                   TEXT    NOT NULL,
-                last_name              TEXT    NOT NULL,
-                email                  TEXT    NOT NULL,
-                resume_path            TEXT    NOT NULL,
-                subscription_status    TEXT    NOT NULL DEFAULT 'active',
-                subscription_expires_at TEXT   DEFAULT '',
-                daily_apply_limit      INTEGER NOT NULL DEFAULT 5,
-                created_at             TEXT    NOT NULL
+                id                     INT AUTO_INCREMENT PRIMARY KEY,
+                name                   VARCHAR(255) NOT NULL,
+                last_name              VARCHAR(255) NOT NULL,
+                email                  VARCHAR(255) NOT NULL,
+                resume_path            VARCHAR(512) NOT NULL,
+                subscription_status    VARCHAR(50)  NOT NULL DEFAULT 'active',
+                subscription_expires_at VARCHAR(100) DEFAULT '',
+                daily_apply_limit      INT          NOT NULL DEFAULT 5,
+                created_at             VARCHAR(100) NOT NULL
             )
         """)
 
         # Migrate agent_buyers with password columns
         for col in ["workday_password", "lever_password", "greenhouse_password", "ashby_password", "smartrecruiters_password", "other_passwords"]:
             try:
-                conn.execute(f"ALTER TABLE agent_buyers ADD COLUMN {col} TEXT DEFAULT ''")
+                conn.execute(f"ALTER TABLE agent_buyers ADD COLUMN {col} VARCHAR(255) DEFAULT ''")
                 conn.commit()
             except Exception:
                 pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                title      TEXT    NOT NULL,
-                company    TEXT    NOT NULL DEFAULT '',
-                location   TEXT    NOT NULL DEFAULT '',
-                url        TEXT    UNIQUE   NOT NULL,
-                apply_link TEXT    NOT NULL DEFAULT '',
-                source     TEXT    NOT NULL DEFAULT 'linkedin',
-                keywords   TEXT    NOT NULL DEFAULT '',
-                scraped_at TEXT    NOT NULL,
-                status     TEXT    NOT NULL DEFAULT 'new'
+                id         INT AUTO_INCREMENT PRIMARY KEY,
+                title      VARCHAR(255) NOT NULL,
+                company    VARCHAR(255) NOT NULL DEFAULT '',
+                location   VARCHAR(255) NOT NULL DEFAULT '',
+                url        VARCHAR(512) NOT NULL UNIQUE,
+                apply_link TEXT    NOT NULL,
+                source     VARCHAR(100) NOT NULL DEFAULT 'linkedin',
+                keywords   VARCHAR(255) NOT NULL DEFAULT '',
+                scraped_at VARCHAR(100) NOT NULL,
+                status     VARCHAR(50)  NOT NULL DEFAULT 'new'
             )
         """)
         # Migrate existing databases that don't have apply_link yet
@@ -145,80 +249,80 @@ def init_db():
     with _connect_jobs() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS applications (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                buyer_id        INTEGER NOT NULL,
-                post_id         INTEGER,
-                job_id          INTEGER,
-                portal_hostname TEXT    NOT NULL DEFAULT '',
-                ats_type        TEXT    NOT NULL DEFAULT '',
-                status          TEXT    NOT NULL DEFAULT 'pending',
-                confirmation_id TEXT    DEFAULT '',
-                resume_used     TEXT    DEFAULT '',
-                cover_letter    TEXT    DEFAULT '',
-                applied_at      TEXT,
-                notes           TEXT    DEFAULT '',
-                created_at      TEXT    NOT NULL
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                buyer_id        INT NOT NULL,
+                post_id         INT,
+                job_id          INT,
+                portal_hostname VARCHAR(255) NOT NULL DEFAULT '',
+                ats_type        VARCHAR(100) NOT NULL DEFAULT '',
+                status          VARCHAR(50)  NOT NULL DEFAULT 'pending',
+                confirmation_id VARCHAR(255) DEFAULT '',
+                resume_used     VARCHAR(512) DEFAULT '',
+                cover_letter    VARCHAR(512) DEFAULT '',
+                applied_at      VARCHAR(100),
+                notes           TEXT,
+                created_at      VARCHAR(100) NOT NULL
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS submission_logs (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                application_id  INTEGER NOT NULL,
-                step_name       TEXT    NOT NULL,
-                screenshot_path TEXT    DEFAULT '',
-                dom_snapshot    TEXT    DEFAULT '',
-                page_url        TEXT    DEFAULT '',
-                timestamp       TEXT    NOT NULL
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                application_id  INT NOT NULL,
+                step_name       VARCHAR(255) NOT NULL,
+                screenshot_path VARCHAR(512) DEFAULT '',
+                dom_snapshot    TEXT,
+                page_url        VARCHAR(512) DEFAULT '',
+                timestamp       VARCHAR(100) NOT NULL
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS failure_queue (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                application_id  INTEGER NOT NULL,
-                apply_url       TEXT    NOT NULL,
-                failure_reason  TEXT    NOT NULL,
-                failure_type    TEXT    NOT NULL,
-                buyer_id        INTEGER NOT NULL,
-                post_title      TEXT    DEFAULT '',
-                company         TEXT    DEFAULT '',
-                resolved        INTEGER DEFAULT 0,
-                resolved_at     TEXT,
-                created_at      TEXT    NOT NULL
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                application_id  INT NOT NULL,
+                apply_url       VARCHAR(512) NOT NULL,
+                failure_reason  VARCHAR(512) NOT NULL,
+                failure_type    VARCHAR(100) NOT NULL,
+                buyer_id        INT NOT NULL,
+                post_title      VARCHAR(255) DEFAULT '',
+                company         VARCHAR(255) DEFAULT '',
+                resolved        INT DEFAULT 0,
+                resolved_at     VARCHAR(100),
+                created_at      VARCHAR(100) NOT NULL
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS portal_profiles (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                hostname        TEXT    UNIQUE NOT NULL,
-                ats_type        TEXT    NOT NULL,
-                login_required  INTEGER DEFAULT 0,
-                resume_upload   TEXT    DEFAULT 'pdf',
-                cover_letter    TEXT    DEFAULT 'optional',
-                steps_json      TEXT    NOT NULL DEFAULT '[]',
-                known_quirks    TEXT    DEFAULT '',
-                success_count   INTEGER DEFAULT 0,
-                fail_count      INTEGER DEFAULT 0,
-                last_used_at    TEXT,
-                created_at      TEXT    NOT NULL
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                hostname        VARCHAR(255) UNIQUE NOT NULL,
+                ats_type        VARCHAR(100) NOT NULL,
+                login_required  INT DEFAULT 0,
+                resume_upload   VARCHAR(50) DEFAULT 'pdf',
+                cover_letter    VARCHAR(50) DEFAULT 'optional',
+                steps_json      TEXT    NOT NULL,
+                known_quirks    TEXT,
+                success_count   INT DEFAULT 0,
+                fail_count      INT DEFAULT 0,
+                last_used_at    VARCHAR(100),
+                created_at      VARCHAR(100) NOT NULL
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS payments (
-                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-                razorpay_order_id   TEXT    UNIQUE NOT NULL,
-                razorpay_payment_id TEXT    DEFAULT '',
-                razorpay_signature  TEXT    DEFAULT '',
-                amount_paise        INTEGER NOT NULL,
-                currency            TEXT    NOT NULL DEFAULT 'INR',
-                receipt             TEXT    DEFAULT '',
-                buyer_id            INTEGER,
-                status              TEXT    NOT NULL DEFAULT 'created',
-                verified_at         TEXT    DEFAULT '',
-                created_at          TEXT    NOT NULL
+                id                  INT AUTO_INCREMENT PRIMARY KEY,
+                razorpay_order_id   VARCHAR(255) UNIQUE NOT NULL,
+                razorpay_payment_id VARCHAR(255) DEFAULT '',
+                razorpay_signature  VARCHAR(255) DEFAULT '',
+                amount_paise        INT NOT NULL,
+                currency            VARCHAR(10) NOT NULL DEFAULT 'INR',
+                receipt             VARCHAR(255) DEFAULT '',
+                buyer_id            INT,
+                status              VARCHAR(50) NOT NULL DEFAULT 'created',
+                verified_at         VARCHAR(100) DEFAULT '',
+                created_at          VARCHAR(100) NOT NULL
             )
         """)
 
@@ -229,27 +333,27 @@ def init_db():
         except Exception:
             pass
         try:
-            conn.execute("ALTER TABLE payments ADD COLUMN coupon TEXT DEFAULT ''")
+            conn.execute("ALTER TABLE payments ADD COLUMN coupon VARCHAR(255) DEFAULT ''")
             conn.commit()
         except Exception:
             pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS naukri_jobs (
-                id                INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_id            TEXT    NOT NULL DEFAULT '',
-                title             TEXT    NOT NULL DEFAULT '',
-                company           TEXT    NOT NULL DEFAULT '',
-                location          TEXT    NOT NULL DEFAULT '',
-                experience        TEXT    NOT NULL DEFAULT '',
-                description       TEXT    NOT NULL DEFAULT '',
-                skills            TEXT    NOT NULL DEFAULT '[]',
-                posted_date       TEXT    NOT NULL DEFAULT '',
-                url               TEXT    UNIQUE NOT NULL,
-                portal            TEXT    NOT NULL DEFAULT 'naukri.com',
-                scraped_at        TEXT    NOT NULL,
-                status            TEXT    NOT NULL DEFAULT 'new',
-                relevance_percent INTEGER DEFAULT 0
+                id                INT AUTO_INCREMENT PRIMARY KEY,
+                job_id            VARCHAR(255) NOT NULL DEFAULT '',
+                title             VARCHAR(255) NOT NULL DEFAULT '',
+                company           VARCHAR(255) NOT NULL DEFAULT '',
+                location          VARCHAR(255) NOT NULL DEFAULT '',
+                experience        VARCHAR(100) NOT NULL DEFAULT '',
+                description       TEXT    NOT NULL,
+                skills            TEXT    NOT NULL,
+                posted_date       VARCHAR(100) NOT NULL DEFAULT '',
+                url               VARCHAR(512) UNIQUE NOT NULL,
+                portal            VARCHAR(100) NOT NULL DEFAULT 'naukri.com',
+                scraped_at        VARCHAR(100) NOT NULL,
+                status            VARCHAR(50)  NOT NULL DEFAULT 'new',
+                relevance_percent INT DEFAULT 0
             )
         """)
 
@@ -261,11 +365,11 @@ def init_db():
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS naukri_applications (
-                id                INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id           INTEGER NOT NULL,
-                job_id            TEXT    NOT NULL,
-                status            TEXT    NOT NULL DEFAULT 'surfaced',
-                applied_at        TEXT    NOT NULL,
+                id                INT AUTO_INCREMENT PRIMARY KEY,
+                user_id           INT NOT NULL,
+                job_id            VARCHAR(255) NOT NULL,
+                status            VARCHAR(50)  NOT NULL DEFAULT 'surfaced',
+                applied_at        VARCHAR(100) NOT NULL,
                 tailored_resume_path TEXT,
                 UNIQUE(user_id, job_id)
             )
@@ -306,22 +410,22 @@ def init_db():
         # Create linkedin_jobs table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS linkedin_jobs (
-                id                INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_id            TEXT    NOT NULL DEFAULT '',
-                title             TEXT    NOT NULL DEFAULT '',
-                company           TEXT    NOT NULL DEFAULT '',
-                location          TEXT    NOT NULL DEFAULT '',
-                description       TEXT    NOT NULL DEFAULT '',
-                poster_info       TEXT    NOT NULL DEFAULT '',
-                poster_name       TEXT    NOT NULL DEFAULT '',
-                poster_url        TEXT    NOT NULL DEFAULT '',
-                has_recruiter_outreach INTEGER DEFAULT 0,
-                posted_date       TEXT    NOT NULL DEFAULT '',
-                url               TEXT    UNIQUE NOT NULL,
-                portal            TEXT    NOT NULL DEFAULT 'linkedin.com',
-                scraped_at        TEXT    NOT NULL,
-                status            TEXT    NOT NULL DEFAULT 'new',
-                relevance_percent INTEGER DEFAULT 0
+                id                INT AUTO_INCREMENT PRIMARY KEY,
+                job_id            VARCHAR(255) NOT NULL DEFAULT '',
+                title             VARCHAR(255) NOT NULL DEFAULT '',
+                company           VARCHAR(255) NOT NULL DEFAULT '',
+                location          VARCHAR(255) NOT NULL DEFAULT '',
+                description       TEXT    NOT NULL,
+                poster_info       TEXT,
+                poster_name       VARCHAR(255) NOT NULL DEFAULT '',
+                poster_url        VARCHAR(512) NOT NULL DEFAULT '',
+                has_recruiter_outreach INT DEFAULT 0,
+                posted_date       VARCHAR(100) NOT NULL DEFAULT '',
+                url               VARCHAR(512) UNIQUE NOT NULL,
+                portal            VARCHAR(100) NOT NULL DEFAULT 'linkedin.com',
+                scraped_at        VARCHAR(100) NOT NULL,
+                status            VARCHAR(50)  NOT NULL DEFAULT 'new',
+                relevance_percent INT DEFAULT 0
             )
         """)
 
@@ -335,13 +439,13 @@ def init_db():
         # Create linkedin_applications table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS linkedin_applications (
-                id                INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id           INTEGER NOT NULL,
-                job_id            TEXT    NOT NULL,
-                status            TEXT    NOT NULL DEFAULT 'surfaced',
-                applied_at        TEXT    NOT NULL,
+                id                INT AUTO_INCREMENT PRIMARY KEY,
+                user_id           INT NOT NULL,
+                job_id            VARCHAR(255) NOT NULL,
+                status            VARCHAR(50)  NOT NULL DEFAULT 'surfaced',
+                applied_at        VARCHAR(100) NOT NULL,
                 tailored_resume_path TEXT,
-                retry_count       INTEGER DEFAULT 0,
+                retry_count       INT DEFAULT 0,
                 last_error        TEXT,
                 UNIQUE(user_id, job_id)
             )
@@ -350,16 +454,16 @@ def init_db():
         # Create linkedin_outreach table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS linkedin_outreach (
-                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id             INTEGER NOT NULL,
-                job_id              TEXT    NOT NULL,
-                poster_url          TEXT    NOT NULL,
-                connection_status   TEXT    NOT NULL DEFAULT 'none',
-                note                TEXT    DEFAULT '',
-                follow_up_message   TEXT    DEFAULT '',
-                follow_up_sent      INTEGER DEFAULT 0,
-                created_at          TEXT    NOT NULL,
-                updated_at          TEXT    NOT NULL,
+                id                  INT AUTO_INCREMENT PRIMARY KEY,
+                user_id             INT NOT NULL,
+                job_id              VARCHAR(255) NOT NULL,
+                poster_url          VARCHAR(512) NOT NULL,
+                connection_status   VARCHAR(50)  NOT NULL DEFAULT 'none',
+                note                TEXT,
+                follow_up_message   TEXT,
+                follow_up_sent      INT DEFAULT 0,
+                created_at          VARCHAR(100) NOT NULL,
+                updated_at          VARCHAR(100) NOT NULL,
                 UNIQUE(user_id, job_id)
             )
         """)
@@ -367,10 +471,10 @@ def init_db():
         # Create linkedin_jobs_tracking table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS linkedin_jobs_tracking (
-                user_id             INTEGER NOT NULL,
-                job_id              TEXT    NOT NULL,
-                surfaced_at         TEXT    NOT NULL,
-                actioned            INTEGER DEFAULT 0,
+                user_id             INT NOT NULL,
+                job_id              VARCHAR(255) NOT NULL,
+                surfaced_at         VARCHAR(100) NOT NULL,
+                actioned            INT DEFAULT 0,
                 PRIMARY KEY (user_id, job_id)
             )
         """)
@@ -381,42 +485,42 @@ def init_db():
     with _connect() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS admin_users (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                email         TEXT    NOT NULL UNIQUE,
-                password_hash TEXT    NOT NULL,
-                role          TEXT    NOT NULL DEFAULT 'ADMIN',
-                name          TEXT    NOT NULL DEFAULT '',
-                permissions   TEXT    NOT NULL DEFAULT '',
-                created_at    TEXT    NOT NULL,
-                updated_at    TEXT    NOT NULL,
-                last_login_at TEXT    DEFAULT ''
+                id            INT AUTO_INCREMENT PRIMARY KEY,
+                email         VARCHAR(255) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                role          VARCHAR(50)  NOT NULL DEFAULT 'ADMIN',
+                name          VARCHAR(255) NOT NULL DEFAULT '',
+                permissions   TEXT,
+                created_at    VARCHAR(100) NOT NULL,
+                updated_at    VARCHAR(100) NOT NULL,
+                last_login_at VARCHAR(100) DEFAULT ''
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS naukri_answer_bank (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id      INTEGER NOT NULL,
-                question     TEXT    NOT NULL,
+                id           INT AUTO_INCREMENT PRIMARY KEY,
+                user_id      INT NOT NULL,
+                question     VARCHAR(512) NOT NULL,
                 answer       TEXT    NOT NULL,
-                status       TEXT    NOT NULL DEFAULT 'approved',
-                updated_at   TEXT    NOT NULL,
+                status       VARCHAR(50)  NOT NULL DEFAULT 'approved',
+                updated_at   VARCHAR(100) NOT NULL,
                 UNIQUE(user_id, question)
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS audit_logs (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                admin_id        INTEGER NOT NULL,
-                admin_email     TEXT    NOT NULL DEFAULT '',
-                action          TEXT    NOT NULL,
-                target_user_id  INTEGER,
-                previous_value  TEXT    DEFAULT '',
-                new_value       TEXT    DEFAULT '',
-                reason          TEXT    DEFAULT '',
-                timestamp       TEXT    NOT NULL,
-                ip_address      TEXT    DEFAULT ''
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                admin_id        INT NOT NULL,
+                admin_email     VARCHAR(255) NOT NULL DEFAULT '',
+                action          VARCHAR(255) NOT NULL,
+                target_user_id  INT,
+                previous_value  TEXT,
+                new_value       TEXT,
+                reason          TEXT,
+                timestamp       VARCHAR(100) NOT NULL,
+                ip_address      VARCHAR(50)  DEFAULT ''
             )
         """)
         try:
@@ -434,17 +538,17 @@ def init_db():
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS verification_requests (
-                id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id          INTEGER NOT NULL UNIQUE,
-                linkedin_url     TEXT    NOT NULL DEFAULT '',
-                status           TEXT    NOT NULL DEFAULT 'PENDING',
-                parsed_data      TEXT    DEFAULT '',
-                raw_evidence     TEXT    DEFAULT '',
-                reviewed_by      INTEGER,
-                reviewed_at      TEXT    DEFAULT '',
-                rejection_reason TEXT    DEFAULT '',
-                created_at       TEXT    NOT NULL,
-                updated_at       TEXT    NOT NULL
+                id               INT AUTO_INCREMENT PRIMARY KEY,
+                user_id          INT NOT NULL UNIQUE,
+                linkedin_url     VARCHAR(512) DEFAULT '',
+                status           VARCHAR(50)  NOT NULL DEFAULT 'PENDING',
+                parsed_data      TEXT,
+                raw_evidence     TEXT,
+                reviewed_by      INT,
+                reviewed_at      VARCHAR(100) DEFAULT '',
+                rejection_reason TEXT,
+                created_at       VARCHAR(100) NOT NULL,
+                updated_at       VARCHAR(100) NOT NULL
             )
         """)
         try:
@@ -520,10 +624,10 @@ def init_db():
         # ── Master CV table ─────────────────────────────────────────
         conn.execute("""
             CREATE TABLE IF NOT EXISTS master_cv (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id       INTEGER NOT NULL UNIQUE,
+                id            INT AUTO_INCREMENT PRIMARY KEY,
+                user_id       INT NOT NULL UNIQUE,
                 cv_data       TEXT    NOT NULL,
-                updated_at    TEXT    NOT NULL,
+                updated_at    VARCHAR(100) NOT NULL,
                 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         """)
@@ -1645,39 +1749,28 @@ def init_posts_table():
     with _connect_jobs() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS posts (
-                id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                title            TEXT    NOT NULL DEFAULT '',
-                company          TEXT    NOT NULL DEFAULT '',
-                location         TEXT    NOT NULL DEFAULT '',
-                apply_link       TEXT    NOT NULL DEFAULT '',
-                poster_name      TEXT    NOT NULL DEFAULT '',
-                poster_url       TEXT    NOT NULL DEFAULT '',
-                post_text        TEXT    NOT NULL DEFAULT '',
-                source           TEXT    NOT NULL DEFAULT 'linkedin-posts',
-                keywords         TEXT    NOT NULL DEFAULT '',
-                scraped_at       TEXT    NOT NULL,
-                status           TEXT    NOT NULL DEFAULT 'new',
-                post_urn         TEXT    UNIQUE DEFAULT NULL,
-                post_url         TEXT    NOT NULL DEFAULT '',
-                apply_url        TEXT    NOT NULL DEFAULT '',
-                apply_method     TEXT    NOT NULL DEFAULT ''
+                id               INT AUTO_INCREMENT PRIMARY KEY,
+                title            VARCHAR(255) NOT NULL DEFAULT '',
+                company          VARCHAR(255) NOT NULL DEFAULT '',
+                location         VARCHAR(255) NOT NULL DEFAULT '',
+                apply_link       TEXT,
+                poster_name      VARCHAR(255) NOT NULL DEFAULT '',
+                poster_url       VARCHAR(512) NOT NULL DEFAULT '',
+                post_text        TEXT,
+                source           VARCHAR(100) NOT NULL DEFAULT 'linkedin-posts',
+                keywords         VARCHAR(255) NOT NULL DEFAULT '',
+                scraped_at       VARCHAR(100) NOT NULL,
+                status           VARCHAR(50)  NOT NULL DEFAULT 'new',
+                post_urn         VARCHAR(255) UNIQUE DEFAULT NULL,
+                post_url         VARCHAR(512) NOT NULL DEFAULT '',
+                apply_url        VARCHAR(512) NOT NULL DEFAULT '',
+                apply_method     VARCHAR(100) NOT NULL DEFAULT '',
+                connected_at     VARCHAR(100) DEFAULT NULL,
+                followup_sent_at VARCHAR(100) DEFAULT NULL,
+                followup_status  VARCHAR(50)  DEFAULT NULL,
+                followup_msg     TEXT
             )
         """)
-        # Idempotently add post_url column if it doesn't exist
-        try:
-            conn.execute("ALTER TABLE posts ADD COLUMN post_url TEXT NOT NULL DEFAULT ''")
-        except Exception:
-            pass
-        # Idempotently add apply_url column if it doesn't exist
-        try:
-            conn.execute("ALTER TABLE posts ADD COLUMN apply_url TEXT NOT NULL DEFAULT ''")
-        except Exception:
-            pass
-        # Idempotently add apply_method column if it doesn't exist
-        try:
-            conn.execute("ALTER TABLE posts ADD COLUMN apply_method TEXT NOT NULL DEFAULT ''")
-        except Exception:
-            pass
         conn.commit()
 
 

@@ -11,7 +11,6 @@ import json
 import time
 import asyncio
 import pdfplumber
-import sqlite3
 import anthropic
 from pathlib import Path
 from docx import Document
@@ -116,43 +115,43 @@ RESUME TEXT:
 
 def fetch_user_from_db(user_id: int = None, email: str = None) -> dict:
     """
-    Fetch user profile from the SQLite database.
+    Fetch user profile from the MySQL database on RDS.
     Looks up in both 'agent_buyers' and 'users' tables by user_id or email.
     """
-    print("🗄️  Fetching user profile from SQLite...")
-
-    db_path = os.path.join(os.path.dirname(__file__), "users.db")
-    if not os.path.exists(db_path):
-        print(f"⚠️  Database file not found at {db_path}. Running without DB data.")
-        return {}
+    print("🗄️  Fetching user profile from RDS MySQL...")
 
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
+        import sys
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        from core.database import get_db_connection
+
+        conn = get_db_connection("users")
         cursor = conn.cursor()
 
         row = None
         # 1. First look in agent_buyers table
         if user_id:
-            cursor.execute("SELECT * FROM agent_buyers WHERE id = ? LIMIT 1", (user_id,))
+            cursor.execute("SELECT * FROM agent_buyers WHERE id = %s LIMIT 1", (user_id,))
             row = cursor.fetchone()
         elif email:
-            cursor.execute("SELECT * FROM agent_buyers WHERE email = ? LIMIT 1", (email,))
+            cursor.execute("SELECT * FROM agent_buyers WHERE email = %s LIMIT 1", (email,))
             row = cursor.fetchone()
 
         # 2. If not found, look in users table
         if not row:
             if user_id:
-                cursor.execute("SELECT * FROM users WHERE id = ? LIMIT 1", (user_id,))
+                cursor.execute("SELECT * FROM users WHERE id = %s LIMIT 1", (user_id,))
                 row = cursor.fetchone()
             elif email:
-                cursor.execute("SELECT * FROM users WHERE email = ? LIMIT 1", (email,))
+                cursor.execute("SELECT * FROM users WHERE email = %s LIMIT 1", (email,))
                 row = cursor.fetchone()
 
         conn.close()
         return dict(row) if row else {}
     except Exception as e:
-        print(f"⚠️  SQLite error: {e}. Running without DB data.")
+        print(f"⚠️  Database error: {e}. Running without DB data.")
         return {}
 
 
