@@ -79,7 +79,8 @@ def signup_page():
 
 
 @app.route("/dashboard")
-def dashboard_page():
+@app.route("/dashboard/<path:subpath>")
+def dashboard_page(subpath=None):
     if not flask_current_user.is_authenticated:
         return send_file(os.path.join(FRONTEND_DIR, "index.html"))
     return send_file(os.path.join(FRONTEND_DIR, "dashboard.html"))
