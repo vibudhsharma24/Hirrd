@@ -570,11 +570,11 @@ def init_db():
             ("users", "reviewed_at",        "TEXT DEFAULT ''"),
             # ── New columns for login, agent, and payment ─────────────
             ("users", "is_agent_buyer",     "INTEGER DEFAULT 0"),
-            ("users", "agent_status",       "TEXT DEFAULT 'inactive'"),
+            ("users", "agent_status",       "VARCHAR(50) DEFAULT 'inactive'"),
             ("users", "linkedin_username",  "TEXT DEFAULT ''"),
             ("users", "linkedin_password",  "TEXT DEFAULT ''"),
-            ("users", "job_preferences",    "TEXT DEFAULT '{}'"),
-            ("users", "auth_provider",      "TEXT DEFAULT 'email'"),
+            ("users", "job_preferences",    "VARCHAR(4096) DEFAULT '{}'"),
+            ("users", "auth_provider",      "VARCHAR(50) DEFAULT 'email'"),
             ("users", "google_id",          "TEXT DEFAULT ''"),
             ("users", "password_set",       "INTEGER DEFAULT 1"),
             # ── New settings columns ──────────────────────────────────
@@ -592,11 +592,11 @@ def init_db():
             # ── Naukri credential columns ─────────────────────────────
             ("users", "naukri_username",     "TEXT DEFAULT ''"),
             ("users", "naukri_password",     "TEXT DEFAULT ''"),
-            ("users", "naukri_preferences",  "TEXT DEFAULT '{}'"),
+            ("users", "naukri_preferences",  "VARCHAR(4096) DEFAULT '{}'"),
             # ── LinkedIn profile name column ──────────────────────────
             ("users", "linkedin_profile_name", "TEXT DEFAULT ''"),
             # ── LinkedIn preferences column ───────────────────────────
-            ("users", "linkedin_preferences", "TEXT DEFAULT '{}'"),
+            ("users", "linkedin_preferences", "VARCHAR(4096) DEFAULT '{}'"),
             # ── Password reset code columns ───────────────────────────
             ("users", "reset_code",          "TEXT DEFAULT ''"),
             ("users", "reset_code_expires_at", "TEXT DEFAULT ''"),
