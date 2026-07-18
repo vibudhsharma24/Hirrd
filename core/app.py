@@ -3061,6 +3061,7 @@ def validate_coupon():
     data = request.get_json(silent=True) or {}
     coupon = (data.get("coupon") or "").strip().upper()
     plan_months = data.get("plan_months")
+    agent_id = (data.get("agent_id") or "job_seeker").strip()
 
     if not coupon:
         return jsonify({"ok": False, "error": "Coupon code is required"}), 400
@@ -3079,10 +3080,51 @@ def validate_coupon():
         if plan_months != 3:
             return jsonify({"ok": False, "error": "JOB99 coupon is only applicable on the 3-month subscription plan"}), 400
 
+        if agent_id != "job_seeker":
+            return jsonify({"ok": False, "error": "JOB99 coupon is only applicable for Job Seeker Agent"}), 400
+
         if db.has_user_used_coupon(flask_current_user.id, "JOB99"):
             return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
 
         return jsonify({"ok": True, "message": "Coupon applied successfully! 100% discount applied."})
+
+    if coupon == "NAUKRI99":
+        if plan_months is None:
+            return jsonify({"ok": False, "error": "Plan duration is required"}), 400
+        try:
+            plan_months = int(plan_months)
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "Invalid plan duration"}), 400
+
+        if plan_months != 3:
+            return jsonify({"ok": False, "error": "NAUKRI99 coupon is only applicable on the 3-month subscription plan"}), 400
+
+        if agent_id != "naukri_ai":
+            return jsonify({"ok": False, "error": "NAUKRI99 coupon is only applicable for Naukri AI Agent"}), 400
+
+        if db.has_user_used_coupon(flask_current_user.id, "NAUKRI99"):
+            return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
+
+        return jsonify({"ok": True, "message": "Coupon applied successfully! Promo price of ₹1 applied."})
+
+    if coupon == "LINK99":
+        if plan_months is None:
+            return jsonify({"ok": False, "error": "Plan duration is required"}), 400
+        try:
+            plan_months = int(plan_months)
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "Invalid plan duration"}), 400
+
+        if plan_months != 3:
+            return jsonify({"ok": False, "error": "LINK99 coupon is only applicable on the 3-month subscription plan"}), 400
+
+        if agent_id != "linkedin_jobs":
+            return jsonify({"ok": False, "error": "LINK99 coupon is only applicable for LinkedIn Jobs Agent"}), 400
+
+        if db.has_user_used_coupon(flask_current_user.id, "LINK99"):
+            return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
+
+        return jsonify({"ok": True, "message": "Coupon applied successfully! Promo price of ₹1 applied."})
 
     return jsonify({"ok": False, "error": "Invalid coupon code"}), 400
 
@@ -3101,6 +3143,7 @@ def create_order():
     receipt  = (data.get("receipt") or "").strip()
     coupon   = (data.get("coupon") or "").strip().upper()
     plan_months = data.get("plan_months")
+    agent_id = (data.get("agent_id") or "job_seeker").strip()
 
     # Apply coupon logic
     if coupon == "IIT99":
@@ -3117,11 +3160,52 @@ def create_order():
         if plan_months != 3:
             return jsonify({"ok": False, "error": "JOB99 coupon is only applicable on the 3-month subscription plan"}), 400
 
+        if agent_id != "job_seeker":
+            return jsonify({"ok": False, "error": "JOB99 coupon is only applicable for Job Seeker Agent"}), 400
+
         if db.has_user_used_coupon(flask_current_user.id, "JOB99"):
             return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
 
         amount = 100  # Force ₹1.00 (100 paise)
         print(f"[Coupon] JOB99 applied — amount overridden to 100 paise (₹1)")
+    elif coupon == "NAUKRI99":
+        if plan_months is None:
+            return jsonify({"ok": False, "error": "plan_months is required when using coupon NAUKRI99"}), 400
+        try:
+            plan_months = int(plan_months)
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "plan_months must be an integer"}), 400
+
+        if plan_months != 3:
+            return jsonify({"ok": False, "error": "NAUKRI99 coupon is only applicable on the 3-month subscription plan"}), 400
+
+        if agent_id != "naukri_ai":
+            return jsonify({"ok": False, "error": "NAUKRI99 coupon is only applicable for Naukri AI Agent"}), 400
+
+        if db.has_user_used_coupon(flask_current_user.id, "NAUKRI99"):
+            return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
+
+        amount = 100  # Force ₹1.00 (100 paise)
+        print(f"[Coupon] NAUKRI99 applied — amount overridden to 100 paise (₹1)")
+    elif coupon == "LINK99":
+        if plan_months is None:
+            return jsonify({"ok": False, "error": "plan_months is required when using coupon LINK99"}), 400
+        try:
+            plan_months = int(plan_months)
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "plan_months must be an integer"}), 400
+
+        if plan_months != 3:
+            return jsonify({"ok": False, "error": "LINK99 coupon is only applicable on the 3-month subscription plan"}), 400
+
+        if agent_id != "linkedin_jobs":
+            return jsonify({"ok": False, "error": "LINK99 coupon is only applicable for LinkedIn Jobs Agent"}), 400
+
+        if db.has_user_used_coupon(flask_current_user.id, "LINK99"):
+            return jsonify({"ok": False, "error": "You have already used this coupon code"}), 400
+
+        amount = 100  # Force ₹1.00 (100 paise)
+        print(f"[Coupon] LINK99 applied — amount overridden to 100 paise (₹1)")
 
     if not razorpay_client:
         return jsonify({"ok": False, "error": "Razorpay not configured on server"}), 503

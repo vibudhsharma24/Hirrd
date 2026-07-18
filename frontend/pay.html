@@ -395,16 +395,21 @@ async function applyCoupon() {
   status.classList.remove('hidden');
 
   try {
+    const agentId = urlParams.get('agent') || 'job_seeker';
     const res = await fetch('/api/validate-coupon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ coupon: code, plan_months: totalMonths })
+      body: JSON.stringify({ coupon: code, plan_months: totalMonths, agent_id: agentId })
     });
     const data = await res.json();
     if (data.ok) {
       isCouponApplied = true;
       appliedCouponCode = code;
       discountRow.classList.remove('hidden');
+      const discountLabel = discountRow.querySelector('span:first-child');
+      if (discountLabel) {
+        discountLabel.textContent = `Discount (${code})`;
+      }
       const discountAmount = totalAmount - 1;
       discountAmountEl.textContent = `–₹${discountAmount.toLocaleString('en-IN')}.00`;
       totalEl.textContent = '₹1.00';
@@ -564,10 +569,11 @@ async function startPayment() {
     // Convert amount dynamically to paise
     const amountPaise = isCouponApplied ? 100 : Math.round(totalAmount * 100);
 
+    const agentId = urlParams.get('agent') || 'job_seeker';
     const orderRes = await fetch('/api/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: amountPaise, currency: 'INR', coupon: isCouponApplied ? appliedCouponCode : '', plan_months: totalMonths }),
+      body: JSON.stringify({ amount: amountPaise, currency: 'INR', coupon: isCouponApplied ? appliedCouponCode : '', plan_months: totalMonths, agent_id: agentId }),
     });
     const orderData = await orderRes.json();
     if (!orderData.ok) throw new Error(orderData.error || 'Order creation failed');
