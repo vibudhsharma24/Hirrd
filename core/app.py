@@ -2951,7 +2951,13 @@ def google_oauth_callback():
 
     client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI", "http://localhost:5000/auth/google/callback")
+    
+    # Build redirect_uri dynamically based on headers if running locally or not set, to support 127.0.0.1/localhost/production seamlessly
+    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+    req_host = request.headers.get("X-Forwarded-Host", request.host)
+    if not redirect_uri or "localhost" in req_host or "127.0.0.1" in req_host:
+        scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
+        redirect_uri = f"{scheme}://{req_host}/auth/google/callback"
 
     if not client_secret:
         qs = urllib.parse.urlencode({"code": code, "state": state})
