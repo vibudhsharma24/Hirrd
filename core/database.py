@@ -2421,7 +2421,7 @@ def get_verifications(
         rows = conn.execute(
             f"""SELECT v.*, u.name as user_name, u.last_name as user_last_name,
                        u.email as user_email, u.avatar as user_avatar,
-                       u.submitted_at as user_signup_date,
+                       u.submitted_at as user_signup_date, u.mobile_number as user_mobile,
                        a.name as reviewer_name, a.email as reviewer_email
                 FROM verification_requests v
                 JOIN users u ON u.id = v.user_id
@@ -2491,6 +2491,45 @@ def reject_verification(verif_id: int, admin_id: int, reason: str) -> bool:
                WHERE id = ?""",
             (reason, admin_id, now, verif["user_id"]),
         )
+        conn.commit()
+    return True
+
+
+def update_user_verification(user_id: int, linkedin_url: str, mobile_number: str) -> bool:
+    """Updates user's status to 'pending', updates linkedin_url and mobile_number.
+    Also updates/creates verification request with 'PENDING' status."""
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            """UPDATE users
+               SET status = 'pending', reject_reason = '',
+                   linkedin_url = ?, mobile_number = ?
+               WHERE id = ?""",
+            (linkedin_url, mobile_number, user_id),
+        )
+        
+        # Check if verification request exists
+        verif = conn.execute(
+            "SELECT id FROM verification_requests WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        
+        if verif:
+            conn.execute(
+                """UPDATE verification_requests
+                   SET status = 'PENDING', linkedin_url = ?,
+                       rejection_reason = NULL, reviewed_by = NULL, reviewed_at = '',
+                       updated_at = ?
+                   WHERE user_id = ?""",
+                (linkedin_url, now, user_id),
+            )
+        else:
+            conn.execute(
+                """INSERT INTO verification_requests
+                   (user_id, linkedin_url, status, parsed_data, raw_evidence, created_at, updated_at)
+                   VALUES (?, ?, 'PENDING', '', '', ?, ?)""",
+                (user_id, linkedin_url, now, now),
+            )
         conn.commit()
     return True
 

@@ -1399,6 +1399,27 @@ def set_password():
     return jsonify({"ok": True, "message": "Password set successfully"})
 
 
+@app.route("/api/user/submit-verification", methods=["POST"])
+@login_required
+def submit_verification():
+    data = request.get_json(silent=True) or {}
+    linkedin_url = (data.get("linkedin_url") or "").strip()
+    mobile_number = (data.get("mobile_number") or "").strip()
+
+    if not linkedin_url:
+        return jsonify({"ok": False, "error": "LinkedIn URL is required"}), 400
+    if not mobile_number:
+        return jsonify({"ok": False, "error": "Mobile Number is required"}), 400
+
+    try:
+        linkedin_url = db.validate_linkedin_url(linkedin_url)
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+    db.update_user_verification(flask_current_user.id, linkedin_url, mobile_number)
+    return jsonify({"ok": True, "message": "Verification request submitted successfully"})
+
+
 @app.route("/api/check-email", methods=["GET"])
 def check_email():
     email = request.args.get("email", "").strip().lower()

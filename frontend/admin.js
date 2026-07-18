@@ -488,7 +488,7 @@ function renderQueueCard(v) {
           <div class="mb-4 p-4" style="background:linear-gradient(135deg,#EEF0FF,#F5F6FD);border:1.5px solid #C3CAFF;border-radius:12px;display:flex;align-items:center;gap:16px">
             <div style="width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0A66C2;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></div>
             <div style="flex:1;min-width:0"><div class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#9CA3AF">LinkedIn Profile</div><a href="${li}" target="_blank" class="text-sm font-semibold break-all" style="color:#4B52D1">${v.linkedin_url || '—'}</a></div>
-            <a href="${li}" target="_blank" class="btn-brand" style="text-decoration:none;flex-shrink:0;font-size:13px;padding:8px 16px">Open Profile</a>
+            <a href="${li}" target="_blank" class="btn-brand" style="text-decoration:none;flex-shrink:0;font-size:13px;padding:8px 16px">Verify credentials</a>
           </div>
           <div class="flex items-center gap-3 flex-wrap">
             <button class="btn-ok" onclick="approveVerif(${v.id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Approve access</button>
