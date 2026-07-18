@@ -159,7 +159,7 @@ function showApp() {
     if (isMockMode) {
       mBadge.innerHTML = '<span style="background:#FEF3C7;color:#92400e;border:1px solid #fde68a;" class="badge"><span class="dot dot-warn pulse"></span>Demo Mode</span>';
     } else {
-      mBadge.innerHTML = '<span style="background:#DCFCE7;color:#15803d;border:1px solid #bbf7d0;" class="badge"><span class="dot dot-ok pulse"></span>Live SQLite API</span>';
+      mBadge.innerHTML = '<span style="background:#DCFCE7;color:#15803d;border:1px solid #bbf7d0;" class="badge"><span class="dot dot-ok pulse"></span>Live Database</span>';
     }
   }
 
