@@ -578,30 +578,51 @@ function renderSidebar() {
   const agentStatus = U.agent_status || 'inactive';
   const isActive = agentStatus === 'running';
   
+  document.getElementById('storeNavLink').classList.remove('hidden');
+  document.getElementById('agentNavLink').classList.remove('hidden');
+  document.getElementById('linkedinAgentNavLink').classList.remove('hidden');
+  document.getElementById('naukriAgentNavLink').classList.remove('hidden');
+
+  const agentBadge = document.getElementById('agentBadge');
+  if (agentBadge) {
+    if (U.is_agent_buyer) {
+      agentBadge.classList.remove('hidden');
+      agentBadge.classList.add('inline-flex');
+    } else {
+      agentBadge.classList.add('hidden');
+      agentBadge.classList.remove('inline-flex');
+    }
+  }
+
+  const linkedinBadge = document.getElementById('linkedinAgentBadge');
+  if (linkedinBadge) {
+    if (U.linkedin_jobs_subscribed) {
+      linkedinBadge.classList.remove('hidden');
+      linkedinBadge.classList.add('inline-flex');
+    } else {
+      linkedinBadge.classList.add('hidden');
+      linkedinBadge.classList.remove('inline-flex');
+    }
+  }
+
+  const naukriBadge = document.getElementById('naukriAgentBadge');
+  if (naukriBadge) {
+    if (U.naukri_subscribed) {
+      naukriBadge.classList.remove('hidden');
+      naukriBadge.classList.add('inline-flex');
+    } else {
+      naukriBadge.classList.add('hidden');
+      naukriBadge.classList.remove('inline-flex');
+    }
+  }
+
   const isApproved = (U.status === 'approved');
   if (isApproved) {
-    document.getElementById('storeNavLink').classList.remove('hidden');
-    document.getElementById('agentNavLink').classList.remove('hidden');
     document.getElementById('cvNavLink').classList.remove('hidden');
     document.getElementById('billingNavLink').classList.remove('hidden');
-
-    if (U.linkedin_jobs_subscribed) {
-      document.getElementById('linkedinAgentNavLink').classList.remove('hidden');
-    } else {
-      document.getElementById('linkedinAgentNavLink').classList.add('hidden');
-    }
-    if (U.naukri_subscribed) {
-      document.getElementById('naukriAgentNavLink').classList.remove('hidden');
-    } else {
-      document.getElementById('naukriAgentNavLink').classList.add('hidden');
-    }
   } else {
-    document.getElementById('storeNavLink').classList.add('hidden');
-    document.getElementById('agentNavLink').classList.add('hidden');
     document.getElementById('cvNavLink').classList.add('hidden');
     document.getElementById('billingNavLink').classList.add('hidden');
-    document.getElementById('linkedinAgentNavLink').classList.add('hidden');
-    document.getElementById('naukriAgentNavLink').classList.add('hidden');
   }
 
   let subtitleStr = "Free plan";
@@ -1041,7 +1062,7 @@ function renderLinkedinFunnel(containerId) {
           <div class="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-display font-bold text-sm mb-4">in</div>
           <h4 class="font-display font-bold text-sm text-ink-900">Unlock LinkedIn Outreach Funnel</h4>
           <p class="text-xs text-ink-700/60 mt-1 max-w-xs">Track real-time conversion rates from Job Found to Connection, Messages, and Recruiter Replies.</p>
-          <a href="/dashboard/agent-store" onclick="navigateTo('/dashboard/agent-store'); return false;" class="mt-4 px-4 py-2 bg-ink-900 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition">Get LinkedIn Jobs Agent</a>
+          <a href="/dashboard/agent-detail/linkedin_jobs" onclick="navigateTo('/dashboard/agent-detail/linkedin_jobs'); return false;" class="mt-4 px-4 py-2 bg-ink-900 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition">Get LinkedIn Jobs Agent</a>
         </div>
       `;
     } else {
@@ -1208,9 +1229,9 @@ function switchLinkedinAgentTab(tab) {
 
 function renderLinkedinAgent() {
   const renewsStr = getRenewsStr();
+  const isSubscribed = !!U.linkedin_jobs_subscribed;
 
-  document.getElementById('appView').innerHTML = `
-  <div class="slide-in">
+  const agentContent = `
     <!-- Header Row -->
     <div class="flex items-start justify-between flex-wrap gap-4 border-b border-ink-900/5 pb-6">
       <div class="flex items-center gap-4">
@@ -1257,9 +1278,42 @@ function renderLinkedinAgent() {
 
     <!-- Tab Content -->
     <div id="linkedinAgentTabContent" class="mt-6"></div>
-  </div>`;
+  `;
 
-  renderLinkedinAgentTabContent();
+  if (!isSubscribed) {
+    // Show blurred agent view with paywall overlay
+    document.getElementById('appView').innerHTML = `
+    <div class="slide-in agent-paywall-wrapper">
+      <div class="agent-paywall-blurred">${agentContent}</div>
+      <div class="agent-paywall-overlay">
+        <div class="agent-paywall-card">
+          <div class="paywall-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <circle cx="12" cy="16" r="1"/>
+            </svg>
+          </div>
+          <h2>Unlock LinkedIn Jobs Agent</h2>
+          <p>Subscribe to activate your AI-powered LinkedIn Jobs Agent. It auto-applies to matching roles directly on LinkedIn using customized profile matches, dynamic question solving, and smart safety limits.</p>
+          <div class="paywall-features">
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Automated Easy Apply</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Interactive Q&A solver</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Smart limit safety</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Human-like browsing</span>
+          </div>
+          <a href="/dashboard/agent-detail/linkedin_jobs" onclick="navigateTo('/dashboard/agent-detail/linkedin_jobs'); return false;" class="paywall-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Subscribe Now
+          </a>
+          <div style="margin-top:1rem;font-size:11px;color:rgba(11,13,31,0.4);font-weight:500">Starting at ₹1,000/month • Cancel anytime</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    document.getElementById('appView').innerHTML = `<div class="slide-in">${agentContent}</div>`;
+    renderLinkedinAgentTabContent();
+  }
 }
 
 function renderLinkedinAgentTabContent() {
@@ -1303,7 +1357,7 @@ function renderLinkedinAgentTabContent() {
       </div>
     </div>`;
 
-
+    renderLinkedinFunnel('linkedinFunnelCardContainerAgent');
 
   } else if (activeLinkedinAgentTab === 'preferences') {
     container.innerHTML = `
@@ -1464,9 +1518,9 @@ function switchNaukriAgentTab(tab) {
 
 function renderNaukriAgent() {
   const renewsStr = getRenewsStr();
+  const isSubscribed = !!U.naukri_subscribed;
 
-  document.getElementById('appView').innerHTML = `
-  <div class="slide-in">
+  const agentContent = `
     <!-- Header Row -->
     <div class="flex items-start justify-between flex-wrap gap-4 border-b border-ink-900/5 pb-6">
       <div class="flex items-center gap-4">
@@ -1509,9 +1563,42 @@ function renderNaukriAgent() {
 
     <!-- Tab Content -->
     <div id="naukriAgentTabContent" class="mt-6"></div>
-  </div>`;
+  `;
 
-  renderNaukriAgentTabContent();
+  if (!isSubscribed) {
+    // Show blurred agent view with paywall overlay
+    document.getElementById('appView').innerHTML = `
+    <div class="slide-in agent-paywall-wrapper">
+      <div class="agent-paywall-blurred">${agentContent}</div>
+      <div class="agent-paywall-overlay">
+        <div class="agent-paywall-card">
+          <div class="paywall-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <circle cx="12" cy="16" r="1"/>
+            </svg>
+          </div>
+          <h2>Unlock Naukri AI Agent</h2>
+          <p>Subscribe to activate your AI-powered Naukri AI Agent. It continuously scans Naukri for high-match roles and auto-submits tailored applications and cover letters.</p>
+          <div class="paywall-features">
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Automated Naukri apply</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tailored cover letters</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Continuous background scanning</span>
+            <span class="paywall-feature"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B66E8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Dynamic screening solver</span>
+          </div>
+          <a href="/dashboard/agent-detail/naukri_ai" onclick="navigateTo('/dashboard/agent-detail/naukri_ai'); return false;" class="paywall-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Subscribe Now
+          </a>
+          <div style="margin-top:1rem;font-size:11px;color:rgba(11,13,31,0.4);font-weight:500">Starting at ₹1,000/month • Cancel anytime</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    document.getElementById('appView').innerHTML = `<div class="slide-in">${agentContent}</div>`;
+    renderNaukriAgentTabContent();
+  }
 }
 
 
@@ -1796,7 +1883,9 @@ function handleRouting() {
 
   const status = U.status || 'pending';
   if (status !== 'approved') {
-    if (route !== '' && route !== 'settings') {
+    const allowedRoutes = ['', 'settings', 'Job-seeker-agent', 'LinkedIn-jobs-agent', 'Naukri-AI-agent', 'agent-store', 'agent-detail'];
+    const isAllowed = allowedRoutes.some(r => route === r || route.startsWith(r + '/'));
+    if (!isAllowed) {
       history.replaceState(null, '', '/dashboard');
       handleRouting();
       return;
@@ -1830,10 +1919,6 @@ function handleRouting() {
     });
     agentPollInterval = setInterval(pollAgentData, 5000);
   } else if (route === 'LinkedIn-jobs-agent') {
-    if (!U.linkedin_jobs_subscribed) {
-      navigateTo('/dashboard/agent-store');
-      return;
-    }
     const linkedinNav = document.getElementById('linkedinAgentNavLink');
     if (linkedinNav) {
       linkedinNav.classList.add('active');
@@ -1841,10 +1926,6 @@ function handleRouting() {
     }
     renderLinkedinAgent();
   } else if (route === 'Naukri-AI-agent') {
-    if (!U.naukri_subscribed) {
-      navigateTo('/dashboard/agent-store');
-      return;
-    }
     const naukriNav = document.getElementById('naukriAgentNavLink');
     if (naukriNav) {
       naukriNav.classList.add('active');

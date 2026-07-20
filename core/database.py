@@ -7,6 +7,7 @@ All DB files live in the project root (one directory up from core/).
 
 import pymysql
 import pymysql.cursors
+import sqlite3
 import hashlib
 import os
 import re
@@ -32,6 +33,11 @@ class MySQLCursorWrapper:
         sql = re.sub(r'(?i)\bINSERT\s+OR\s+REPLACE\b', 'REPLACE', sql)
         sql = re.sub(r'(?i)\bCREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\b', 'CREATE INDEX', sql)
         sql = re.sub(r'(?i)\bINTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b', 'INT AUTO_INCREMENT PRIMARY KEY', sql)
+
+        # Convert SQLite ON CONFLICT(...) DO UPDATE SET ... to MySQL's ON DUPLICATE KEY UPDATE ...
+        sql = re.sub(r'(?i)\bON\s+CONFLICT\s*\([^)]*\)\s+DO\s+UPDATE\s+SET\b', 'ON DUPLICATE KEY UPDATE', sql)
+        # Convert SQLite excluded.col to MySQL's VALUES(col)
+        sql = re.sub(r'(?i)\bexcluded\.([a-zA-Z0-9_]+)\b', r'VALUES(\1)', sql)
 
         self.cursor.execute(sql, params)
         return self
@@ -124,25 +130,98 @@ SCREENSHOTS_DIR  = os.path.join(PROJECT_ROOT, "screenshots")
 GENERATED_RESUMES_DIR = os.path.join(PROJECT_ROOT, "resumes", "generated")
 
 
+class SQLiteConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def cursor(self):
+        return self.conn.cursor()
+
+    def execute(self, sql, params=None):
+        if params is None:
+            return self.conn.execute(sql)
+        return self.conn.execute(sql, params)
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
+    def close(self):
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        else:
+            self.commit()
+        self.close()
+
+
 # ── Connection helpers ─────────────────────────────────────────────────────────
+_mysql_available = True
+
 def _connect():
-    """Connection to RDS MySQL database."""
-    conn = pymysql.connect(
-        host=os.getenv("DB_HOST"),
-        port=int(os.getenv("DB_PORT", 3306)),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME"),
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor,
-        autocommit=True
-    )
-    return MySQLConnectionWrapper(conn)
+    """Connection to RDS MySQL database, fallback to users.db SQLite."""
+    global _mysql_available
+    if not _mysql_available:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return SQLiteConnectionWrapper(conn)
+    try:
+        conn = pymysql.connect(
+            host=os.getenv("DB_HOST"),
+            port=int(os.getenv("DB_PORT", 3306)),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME"),
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=2,
+            autocommit=True
+        )
+        return MySQLConnectionWrapper(conn)
+    except Exception as e:
+        print(f"[DB] MySQL connection failed: {e}. Falling back to SQLite local database.")
+        _mysql_available = False
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return SQLiteConnectionWrapper(conn)
 
 
 def _connect_jobs():
-    """Connection to RDS MySQL database (sharing same RDS instance)."""
-    return _connect()
+    """Connection to RDS MySQL database (sharing same RDS instance), fallback to jobs.db SQLite."""
+    global _mysql_available
+    if not _mysql_available:
+        conn = sqlite3.connect(JOBS_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return SQLiteConnectionWrapper(conn)
+    try:
+        conn = pymysql.connect(
+            host=os.getenv("DB_HOST"),
+            port=int(os.getenv("DB_PORT", 3306)),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME"),
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=2,
+            autocommit=True
+        )
+        return MySQLConnectionWrapper(conn)
+    except Exception as e:
+        print(f"[DB] MySQL connection failed for jobs: {e}. Falling back to SQLite local jobs database.")
+        _mysql_available = False
+        conn = sqlite3.connect(JOBS_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return SQLiteConnectionWrapper(conn)
 
 
 def get_db_connection(db_name: str = "users"):
@@ -2618,10 +2697,10 @@ def get_daily_signups(days: int = 30, date_from: str = "", date_to: str = "") ->
             rows = conn.execute(
                 """SELECT DATE(submitted_at) as date, COUNT(*) as count
                    FROM users
-                   WHERE submitted_at >= DATE('now', ?)
+                   WHERE submitted_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
                    GROUP BY DATE(submitted_at)
                    ORDER BY date ASC""",
-                (f"-{days} days",),
+                (days,),
             ).fetchall()
     return [{"date": r["date"], "count": r["count"]} for r in rows if r["date"]]
 
