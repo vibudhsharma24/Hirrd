@@ -2487,6 +2487,11 @@ function renderSettings() {
                 <input type="text" id="settingsHeadline" value="${U.headline || ''}" placeholder="e.g. Senior Product Manager - Fintech" class="w-full px-4 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white text-xs text-ink-900 font-bold transition">
               </div>
               
+              <div>
+                <label class="block text-[10.5px] font-bold text-ink-700/60 mb-1.5 px-1 uppercase tracking-wider">Mobile number</label>
+                <input type="text" id="settingsMobile" value="${U.mobile_number || ''}" placeholder="e.g. +91 9999999999" class="w-full px-4 py-2.5 rounded-xl border border-ink-900/10 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white text-xs text-ink-900 font-bold transition">
+              </div>
+              
               <div class="col-span-1 md:col-span-2 flex items-center justify-between border-t border-ink-900/5 pt-4 mt-2">
                 <div id="profileSaveStatus" class="text-xs font-semibold"></div>
                 <button type="submit" class="px-5 py-2.5 bg-ink-900 text-white font-bold text-xs rounded-xl hover:bg-brand-700 transition shadow-sm">
@@ -2716,6 +2721,7 @@ async function saveProfileSettings(event) {
   const email = document.getElementById('settingsEmail').value.trim();
   const institute = document.getElementById('settingsInstitute').value.trim();
   const headline = document.getElementById('settingsHeadline').value.trim();
+  const mobile_number = document.getElementById('settingsMobile').value.trim();
   
   // split full name into first name & last name
   const nameParts = fullName.split(/\s+/);
@@ -2726,7 +2732,7 @@ async function saveProfileSettings(event) {
     const res = await fetch('/api/user/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, last_name, email, institute, headline })
+      body: JSON.stringify({ name, last_name, email, institute, headline, mobile_number })
     });
     const data = await res.json();
     if (data.ok) {
@@ -2739,6 +2745,7 @@ async function saveProfileSettings(event) {
       U.email = email;
       U.institute = institute;
       U.headline = headline;
+      U.mobile_number = mobile_number;
       renderSidebar();
     } else {
       statusEl.className = 'text-xs font-semibold text-rose-700';

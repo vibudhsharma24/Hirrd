@@ -1586,6 +1586,7 @@ def save_user_settings():
     email = (data.get("email") if "email" in data else (user.get("email") or "")).strip()
     institute = (data.get("institute") if "institute" in data else (user.get("institute") or "")).strip()
     headline = (data.get("headline") if "headline" in data else (user.get("headline") or "")).strip()
+    mobile_number = (data.get("mobile_number") if "mobile_number" in data else (user.get("mobile_number") or "")).strip()
 
     if not name:
         return jsonify({"ok": False, "error": "First name is required"}), 400
@@ -1615,12 +1616,12 @@ def save_user_settings():
     with db._connect() as conn:
         conn.execute(
             """UPDATE users SET 
-               name = ?, last_name = ?, email = ?, institute = ?, headline = ?, 
+               name = ?, last_name = ?, email = ?, institute = ?, headline = ?, mobile_number = ?,
                linkedin_connected = ?, gmail_connected = ?, calendly_connected = ?, 
                email_summaries = ?, weekly_report = ?, human_in_loop = ?
                WHERE id = ?""",
             (
-                name, last_name, email, institute, headline,
+                name, last_name, email, institute, headline, mobile_number,
                 linkedin_connected, gmail_connected, calendly_connected,
                 email_summaries, weekly_report, human_in_loop,
                 flask_current_user.id
