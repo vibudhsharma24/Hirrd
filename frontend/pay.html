@@ -257,6 +257,38 @@
         </div>
       </div>
 
+      <!-- Naukri Credentials (shown only for naukri_ai agent) -->
+      <div class="border border-ink-900/6 rounded-2xl overflow-hidden hidden" id="paySetupNaukri">
+        <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-ink-900/[.02] transition" onclick="togglePaySection('paySetupNaukri')">
+          <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 grid place-items-center text-[12px] font-bold shrink-0" id="payCheckNaukri">1</div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">Connect Naukri.com</div>
+            <div class="text-[11px] text-ink-700/60">Your Naukri login for auto-apply</div>
+          </div>
+          <svg class="pay-chevron w-4 h-4 text-ink-700/40 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="pay-section-body px-4 pb-4" style="display:none">
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Naukri Email / Username</label>
+              <input type="text" id="payNkUser" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400" placeholder="your@email.com" autocomplete="username"/>
+            </div>
+            <div class="relative">
+              <label class="text-[11px] font-bold text-ink-700/60 uppercase tracking-wide block mb-1">Naukri Password</label>
+              <input type="password" id="payNkPass" class="w-full px-3.5 py-2.5 border border-ink-900/10 rounded-xl text-[13px] outline-none bg-[#FAFBFD] focus:border-brand-400 pr-10" placeholder="••••••••" autocomplete="current-password"/>
+              <button type="button" onclick="togglePayPw('payNkPass', this)" class="absolute right-3 top-[30px] text-ink-700/40 hover:text-ink-700">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="p-3 rounded-xl bg-brand-50/50 border border-brand-100 text-[11px] text-brand-800">
+              <span class="font-semibold">🔒 Secure:</span> Your password is encrypted with AES-256-GCM. We never store plaintext credentials.
+            </div>
+            <button onclick="savePayNaukri()" id="btnPayNaukri" class="w-full py-2.5 rounded-xl bg-ink-900 text-white font-semibold text-[13px] hover:bg-brand-700 transition">Connect</button>
+            <div id="payNkStatus" class="text-[12px] hidden"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- 3. Connect Email -->
       <div class="border border-ink-900/6 rounded-2xl overflow-hidden" id="paySetupEmail">
         <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-ink-900/[.02] transition" onclick="togglePaySection('paySetupEmail')">
@@ -307,7 +339,7 @@
         </svg>
       </div>
       <h2 class="font-display text-2xl font-bold">You're All Set! 🚀</h2>
-      <p class="text-[13px] text-ink-700/70 mt-2 max-w-sm mx-auto">Your resume, LinkedIn, and email are connected. The agent is ready to start finding and applying to jobs on your behalf.</p>
+      <p id="runAgentDesc" class="text-[13px] text-ink-700/70 mt-2 max-w-sm mx-auto">Your credentials and email are connected. The agent is ready to start working for you.</p>
 
       <div class="mt-6 flex flex-col gap-3">
         <button onclick="executeRunAgent()" id="btnExecuteAgent" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 text-white font-bold text-[15px] hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg flex items-center justify-center gap-2.5">
@@ -319,19 +351,7 @@
         </button>
       </div>
 
-      <div class="mt-5 flex items-center justify-center gap-4 text-[11px] text-ink-700/40">
-        <span class="flex items-center gap-1">
-          <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Resume
-        </span>
-        <span class="flex items-center gap-1">
-          <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          LinkedIn
-        </span>
-        <span class="flex items-center gap-1">
-          <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Email
-        </span>
+      <div id="runAgentBadges" class="mt-5 flex items-center justify-center gap-4 text-[11px] text-ink-700/40">
       </div>
     </div>
   </div>
@@ -542,6 +562,7 @@ let selectedFile = null;
 // ── Setup completion tracking flags ──────────────────────────────────────────
 let payResumeDone = false;
 let payLinkedinDone = false;
+let payNaukriDone = false;
 let payEmailDone = false;
 
 function showStatus(msg, type) {
@@ -646,8 +667,46 @@ function resetBtn() {
 
 // ── Resume Upload Modal ──────────────────────────────────────────────────────
 function showResumeModal() {
+  const agentId = urlParams.get('agent') || 'job_seeker';
   document.getElementById('resumeModal').classList.add('active');
   spawnConfetti();
+
+  // Dynamically show/hide sections based on agent type
+  const resumeSec  = document.getElementById('paySetupResume');
+  const linkedinSec = document.getElementById('paySetupLinkedin');
+  const naukriSec  = document.getElementById('paySetupNaukri');
+  const emailSec   = document.getElementById('paySetupEmail');
+
+  if (agentId === 'naukri_ai') {
+    // Naukri AI Agent: Step 1 = Naukri creds, Step 2 = Gmail
+    resumeSec.classList.add('hidden');
+    linkedinSec.classList.add('hidden');
+    naukriSec.classList.remove('hidden');
+    emailSec.classList.remove('hidden');
+    document.getElementById('payCheckNaukri').textContent = '1';
+    document.getElementById('payCheckEmail').textContent = '2';
+    // Mark irrelevant steps as done
+    payResumeDone = true;
+    payLinkedinDone = true;
+  } else if (agentId === 'linkedin_jobs') {
+    // LinkedIn Jobs Agent: Step 1 = LinkedIn creds, Step 2 = Gmail
+    resumeSec.classList.add('hidden');
+    naukriSec.classList.add('hidden');
+    linkedinSec.classList.remove('hidden');
+    emailSec.classList.remove('hidden');
+    document.getElementById('payCheckLinkedin').textContent = '1';
+    document.getElementById('payCheckEmail').textContent = '2';
+    // Mark irrelevant steps as done
+    payResumeDone = true;
+    payNaukriDone = true;
+  } else {
+    // Job Seeker Agent: Step 1 = Resume, Step 2 = LinkedIn, Step 3 = Gmail
+    resumeSec.classList.remove('hidden');
+    linkedinSec.classList.remove('hidden');
+    naukriSec.classList.add('hidden');
+    emailSec.classList.remove('hidden');
+    payNaukriDone = true;
+  }
 
   // Fetch initial user status to pre-fill completion flags
   fetch('/api/me').then(r => r.json()).then(data => {
@@ -660,6 +719,10 @@ function showResumeModal() {
       if (u.has_linkedin_creds) {
         payLinkedinDone = true;
         updatePayCheck('payCheckLinkedin', true);
+      }
+      if (u.has_naukri_creds) {
+        payNaukriDone = true;
+        updatePayCheck('payCheckNaukri', true);
       }
       
       // Update Gmail connection state
@@ -675,8 +738,8 @@ function showResumeModal() {
         document.getElementById('payEmailDisconnectedState').classList.remove('hidden');
       }
 
-      // If all already done, show run agent modal immediately
-      if (payResumeDone && payLinkedinDone && payEmailDone) {
+      // If all relevant steps are already done, show run agent modal immediately
+      if (allStepsDone()) {
         setTimeout(() => {
           document.getElementById('resumeModal').classList.remove('active');
           showRunAgentModal();
@@ -684,6 +747,10 @@ function showResumeModal() {
       }
     }
   }).catch(() => {});
+}
+
+function allStepsDone() {
+  return payResumeDone && payLinkedinDone && payNaukriDone && payEmailDone;
 }
 
 function skipUpload() {
@@ -873,6 +940,54 @@ async function savePayLinkedin() {
   }
 }
 
+async function savePayNaukri() {
+  const username = document.getElementById('payNkUser').value.trim();
+  const password = document.getElementById('payNkPass').value.trim();
+  const statusEl = document.getElementById('payNkStatus');
+  const btn = document.getElementById('btnPayNaukri');
+
+  if (!username || !password) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Both fields are required.';
+    statusEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/user/naukri-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'text-[12px] text-emerald-700 font-medium';
+      statusEl.textContent = '✓ Naukri.com connected securely!';
+      statusEl.classList.remove('hidden');
+      updatePayCheck('payCheckNaukri', true);
+      btn.textContent = '✓ Connected';
+      btn.className = btn.className.replace('bg-ink-900', 'bg-emerald-600');
+      payNaukriDone = true;
+      autoAdvancePaySection();
+    } else {
+      statusEl.className = 'text-[12px] text-rose-700 font-medium';
+      statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+      statusEl.classList.remove('hidden');
+      btn.textContent = 'Connect';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    statusEl.className = 'text-[12px] text-rose-700 font-medium';
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.classList.remove('hidden');
+    btn.textContent = 'Connect';
+    btn.disabled = false;
+  }
+}
+
 async function connectPayEmail() {
   const statusEl = document.getElementById('payEmailStatus');
   const btn = document.getElementById('btnPayEmail');
@@ -923,17 +1038,32 @@ const _origShowResumeModal = showResumeModal;
 showResumeModal = function() {
   _origShowResumeModal();
   // Open the first incomplete section by default
-  if (!payResumeDone) togglePaySection('paySetupResume');
-  else if (!payLinkedinDone) togglePaySection('paySetupLinkedin');
-  else if (!payEmailDone) togglePaySection('paySetupEmail');
-  else togglePaySection('paySetupResume');
+  openNextIncompleteSection();
 };
+
+function openNextIncompleteSection() {
+  const agentId = urlParams.get('agent') || 'job_seeker';
+  if (agentId === 'naukri_ai') {
+    if (!payNaukriDone) togglePaySection('paySetupNaukri');
+    else if (!payEmailDone) togglePaySection('paySetupEmail');
+    else togglePaySection('paySetupNaukri');
+  } else if (agentId === 'linkedin_jobs') {
+    if (!payLinkedinDone) togglePaySection('paySetupLinkedin');
+    else if (!payEmailDone) togglePaySection('paySetupEmail');
+    else togglePaySection('paySetupLinkedin');
+  } else {
+    if (!payResumeDone) togglePaySection('paySetupResume');
+    else if (!payLinkedinDone) togglePaySection('paySetupLinkedin');
+    else if (!payEmailDone) togglePaySection('paySetupEmail');
+    else togglePaySection('paySetupResume');
+  }
+}
 
 // ── Auto-advance & Run Agent logic ──────────────────────────────────────────
 
 function autoAdvancePaySection() {
-  // Check if all done
-  if (payResumeDone && payLinkedinDone && payEmailDone) {
+  // Check if all relevant steps are done
+  if (allStepsDone()) {
     setTimeout(() => {
       document.getElementById('resumeModal').classList.remove('active');
       showRunAgentModal();
@@ -943,20 +1073,36 @@ function autoAdvancePaySection() {
 
   // Collapse all, open next incomplete
   setTimeout(() => {
-    ['paySetupResume', 'paySetupLinkedin', 'paySetupEmail'].forEach(id => {
+    ['paySetupResume', 'paySetupLinkedin', 'paySetupNaukri', 'paySetupEmail'].forEach(id => {
       const body = document.querySelector('#' + id + ' .pay-section-body');
       const chevron = document.querySelector('#' + id + ' .pay-chevron');
       if (body) body.style.display = 'none';
       if (chevron) chevron.style.transform = '';
     });
-
-    if (!payResumeDone) togglePaySection('paySetupResume');
-    else if (!payLinkedinDone) togglePaySection('paySetupLinkedin');
-    else if (!payEmailDone) togglePaySection('paySetupEmail');
+    openNextIncompleteSection();
   }, 600);
 }
 
 function showRunAgentModal() {
+  const agentId = urlParams.get('agent') || 'job_seeker';
+  const checkSvg = '<svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+  const badgesEl = document.getElementById('runAgentBadges');
+  const descEl = document.getElementById('runAgentDesc');
+
+  let badges = [];
+  if (agentId === 'naukri_ai') {
+    badges = ['Naukri.com', 'Email'];
+    descEl.textContent = 'Your Naukri.com credentials and Gmail are connected. The agent is ready to start auto-applying to jobs on your behalf.';
+  } else if (agentId === 'linkedin_jobs') {
+    badges = ['LinkedIn', 'Email'];
+    descEl.textContent = 'Your LinkedIn and Gmail are connected. The agent is ready to start finding and applying to jobs on your behalf.';
+  } else {
+    badges = ['Resume', 'LinkedIn', 'Email'];
+    descEl.textContent = 'Your resume, LinkedIn, and email are connected. The agent is ready to start finding and applying to jobs on your behalf.';
+  }
+
+  badgesEl.innerHTML = badges.map(b => `<span class="flex items-center gap-1">${checkSvg} ${b}</span>`).join('');
+
   document.getElementById('runAgentModal').classList.add('active');
   spawnConfetti();
 }
@@ -967,13 +1113,26 @@ async function executeRunAgent() {
   btn.innerHTML = '<span class="loader border-white shrink-0" style="width:18px;height:18px"></span> Starting Agent...';
 
   try {
-    const res = await fetch('/api/agent/start', {
+    const agentId = urlParams.get('agent') || 'job_seeker';
+    let startUrl = '/api/agent/start';
+    let startBody = {};
+
+    // For naukri_ai and linkedin_jobs, use the per-agent toggle endpoint
+    if (agentId === 'naukri_ai' || agentId === 'linkedin_jobs') {
+      const meRes = await fetch('/api/me');
+      const meData = await meRes.json();
+      if (meData.ok && meData.user) {
+        startUrl = `/api/users/${meData.user.id}/agent-toggle/${agentId}`;
+      }
+    }
+
+    const res = await fetch(startUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify(startBody)
     });
     const data = await res.json();
-    if (data.ok || data.status === 'already_running') {
+    if (data.ok || data.status === 'already_running' || data.status === 'running') {
       btn.innerHTML = '✓ Agent Started!';
       btn.classList.remove('from-brand-600', 'to-brand-700');
       btn.classList.add('bg-emerald-600');
